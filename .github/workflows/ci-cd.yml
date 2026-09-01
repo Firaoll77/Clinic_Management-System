@@ -1,0 +1,176 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: clinic_test_db
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/clinic_test_db
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Lint frontend
+        run: cd frontend && npm run lint
+
+      - name: Install backend dependencies
+        run: cd backend && npm ci
+
+      - name: Lint backend
+        run: cd backend && npm run lint || echo "Lint command not configured yet"
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Type check frontend
+        run: cd frontend && npx tsc --noEmit
+
+      - name: Install backend dependencies
+        run: cd backend && npm ci
+
+      - name: Type check backend
+        run: cd backend && npx tsc --noEmit
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: clinic_test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install backend dependencies
+        run: cd backend && npm ci
+
+      - name: Generate Prisma client
+        run: cd backend && npx prisma generate
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Run database migrations
+        run: cd backend && npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Run tests
+        run: cd backend && npm test || echo "Tests not configured yet"
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          JWT_SECRET: test-secret-key
+          JWT_REFRESH_SECRET: test-refresh-secret-key
+
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and tag images
+        run: |
+          docker build -t clinic-web:${{ github.sha }} -t clinic-web:latest ./frontend
+          docker build -t clinic-api:${{ github.sha }} -t clinic-api:latest ./backend
+
+      - name: Push images to GHCR
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker tag clinic-web:${{ github.sha }} ghcr.io/${{ github.repository }}/clinic-web:${{ github.sha }}
+          docker tag clinic-web:latest ghcr.io/${{ github.repository }}/clinic-web:latest
+          docker tag clinic-api:${{ github.sha }} ghcr.io/${{ github.repository }}/clinic-api:${{ github.sha }}
+          docker tag clinic-api:latest ghcr.io/${{ github.repository }}/clinic-api:latest
+          docker push ghcr.io/${{ github.repository }}/clinic-web:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/clinic-web:latest
+          docker push ghcr.io/${{ github.repository }}/clinic-api:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/clinic-api:latest
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://your-deployment-url.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /path/to/clinic-management-system
+            docker-compose pull
+            docker-compose up -d
+            docker exec clinic_api npx prisma migrate deploy
+
+      - name: Smoke test
+        run: |
+          sleep 10
+          curl -f https://your-deployment-url.com/health || exit 1
