@@ -510,7 +510,7 @@ Get patients in BILLING status for receptionist dashboard.
 
 Change visit status for routing between clinical stations.
 
-**Roles Required:** NURSE, DOCTOR, LAB_TECH, ACCOUNTANT, ADMIN
+**Roles Required:** NURSE, DOCTOR, LAB_TECH, ADMIN
 
 **Request Body:**
 ```json
@@ -689,136 +689,6 @@ Sign off encounter (mark as complete).
 
 ---
 
-## Prescriptions API
-
-### Create Prescription
-
-**POST** `/api/prescriptions`
-
-Create a new prescription.
-
-**Roles Required:** DOCTOR, ADMIN
-
-**Request Body:**
-```json
-{
-  "encounterId": "encounter-id",
-  "doctorId": "doctor-id",
-  "patientId": "patient-id",
-  "notes": "Take with food"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "message": "Prescription created successfully",
-  "prescription": {
-    "id": "prescription-id",
-    "encounterId": "encounter-id",
-    "patientId": "patient-id",
-    "doctorId": "doctor-id",
-    "status": "ACTIVE"
-  }
-}
-```
-
-### Add Medication
-
-**POST** `/api/prescriptions/:id/medications`
-
-Add medication to prescription with allergy check.
-
-**Roles Required:** DOCTOR, ADMIN
-
-**Request Body:**
-```json
-{
-  "medicationName": "Amoxicillin",
-  "dosage": "500mg",
-  "frequency": "Three times daily",
-  "route": "Oral",
-  "duration": "7 days",
-  "quantity": 21,
-  "instructions": "Take with food",
-  "refills": 0
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "message": "Medication added successfully",
-  "medication": {...},
-  "allergyCheck": {
-    "hasAllergy": false,
-    "allergies": []
-  }
-}
-```
-
-### Check Allergies
-
-**POST** `/api/prescriptions/check-allergies`
-
-Check for drug allergies before prescribing.
-
-**Roles Required:** DOCTOR, ADMIN
-
-**Request Body:**
-```json
-{
-  "patientId": "patient-id",
-  "medicationName": "Penicillin"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "hasAllergy": true,
-  "allergies": [
-    {
-      "id": "allergy-id",
-      "substance": "Penicillin",
-      "severity": "SEVERE",
-      "notes": "Anaphylactic reaction"
-    }
-  ]
-}
-```
-
-### Check Drug Interactions
-
-**POST** `/api/prescriptions/check-interactions`
-
-Check for drug interactions between medications.
-
-**Roles Required:** DOCTOR, ADMIN
-
-**Request Body:**
-```json
-{
-  "medications": ["Warfarin", "Aspirin", "Ibuprofen"]
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "hasInteractions": true,
-  "interactions": [
-    {
-      "drug1": "Warfarin",
-      "drug2": "Aspirin",
-      "severity": "MODERATE"
-    }
-  ]
-}
-```
-
----
-
 ## Laboratory API
 
 ### Create Lab Order
@@ -944,7 +814,7 @@ Get all available lab tests.
 
 Get daily revenue report.
 
-**Roles Required:** ADMIN, ACCOUNTANT
+**Roles Required:** ADMIN
 
 **Response (200 OK):**
 ```json
@@ -964,7 +834,7 @@ Get daily revenue report.
 
 Get monthly revenue report.
 
-**Roles Required:** ADMIN, ACCOUNTANT
+**Roles Required:** ADMIN
 
 **Response (200 OK):**
 ```json
@@ -978,7 +848,6 @@ Get monthly revenue report.
   "revenueByType": {
     "CONSULTATION": 45000.00,
     "LAB_TESTS": 37500.00,
-    "PRESCRIPTIONS": 25000.00,
     "PROCEDURES": 50000.00
   }
 }
@@ -1002,8 +871,7 @@ Get operational statistics for a date range.
   "newPatients": 150,
   "totalAppointments": 1200,
   "totalEncounters": 1100,
-  "totalLabOrders": 350,
-  "totalPrescriptions": 450
+  "totalLabOrders": 350
 }
 ```
 
@@ -1013,7 +881,7 @@ Get operational statistics for a date range.
 
 Get financial summary for a date range.
 
-**Roles Required:** ADMIN, ACCOUNTANT
+**Roles Required:** ADMIN
 
 **Response (200 OK):**
 ```json
@@ -1043,7 +911,7 @@ Get financial summary for a date range.
 
 Export data to CSV format.
 
-**Roles Required:** ADMIN, ACCOUNTANT
+**Roles Required:** ADMIN
 
 **Request Body:**
 ```json
@@ -1134,7 +1002,6 @@ Configure a webhook endpoint.
 - `APPOINTMENT_CREATED` - New appointment created
 - `APPOINTMENT_CANCELLED` - Appointment cancelled
 - `LAB_RESULT_READY` - Lab results ready
-- `PRESCRIPTION_DISPENSED` - Prescription dispensed
 - `PATIENT_REGISTERED` - New patient registered
 
 ---
