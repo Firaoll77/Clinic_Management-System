@@ -37,7 +37,7 @@ const PORT = process.env.API_PORT || 4000;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://host.docker.internal:3000', 'http://172.18.0.4:3000', 'https://clinic-management-system-five-mauve.vercel.app'],
+  origin: ['http://localhost:3000', 'http://host.docker.internal:3000', 'http://172.18.0.4:3000', 'https://clinic-management-system-five-mauve.vercel.app', 'https://clinic-management-system-ten-delta.vercel.app'],
   credentials: true,
 }));
 app.use(express.json());

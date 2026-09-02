@@ -129,7 +129,7 @@
 // 5. Click **Process Payment & Finalize Check-Out**.
 // 6. Status updates to: **`COMPLETED / DISCHARGED`** 🎉
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000/api';
 
 class ApiClient {
   private token: string | null = null;
