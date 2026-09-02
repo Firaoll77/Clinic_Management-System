@@ -72,16 +72,16 @@ Register a new patient with automatic MRN generation.
 **Request Body:**
 ```json
 {
-  "firstName": "John",
-  "lastName": "Doe",
+  "firstName": "Alemu",
+  "lastName": "Firisa",
   "dob": "1990-01-01",
   "gender": "MALE",
   "phone": "+1234567890",
-  "email": "john.doe@example.com",
+  "email": "Alemufir@example.com",
   "nationalId": "1234567890123",
   "address": "123 Main St, City, State",
   "bloodGroup": "O+",
-  "emergencyContact": "+1234567890 (Jane Doe)",
+  "emergencyContact": "+1234567890 (Alemitu Bona)",
   "allergies": [
     {
       "substance": "Penicillin",
@@ -99,16 +99,16 @@ Register a new patient with automatic MRN generation.
   "patient": {
     "id": "patient-id",
     "mrn": "MRN-2024-12345678",
-    "firstName": "John",
-    "lastName": "Doe",
+    "firstName": "Alemu",
+    "lastName": "Firisa",
     "dob": "1990-01-01",
     "gender": "MALE",
     "phone": "+1234567890",
-    "email": "john.doe@example.com",
+    "email": "Alemufir@example.com",
     "nationalId": "1234567890123",
     "address": "123 Main St, City, State",
     "bloodGroup": "O+",
-    "emergencyContact": "+1234567890 (Jane Doe)",
+    "emergencyContact": "+1234567890 (Alemitu Bona)",
     "allergies": [...],
     "createdAt": "2024-08-20T10:00:00Z",
     "lastActivityAt": "2024-08-20T10:00:00Z"
@@ -448,8 +448,8 @@ Get patients in TRIAGE status for nurse dashboard.
       "patient": {
         "id": "patient-id",
         "mrn": "MRN-2024-12345678",
-        "firstName": "John",
-        "lastName": "Doe",
+        "firstName": "Alemu",
+        "lastName": "Firisa",
         "phone": "+1234567890"
       },
       "visitStatus": "TRIAGE",
@@ -931,7 +931,7 @@ Export data to CSV format.
 ```json
 {
   "filename": "patients_export.csv",
-  "content": "id,name,total\n1,John Doe,150.00",
+  "content": "id,name,total\n1,Alemu Firisa,150.00",
   "mimeType": "text/csv"
 }
 ```
@@ -1020,8 +1020,8 @@ const api = new ClinicAPI({
 
 // Register patient
 const patient = await api.patients.register({
-  firstName: 'John',
-  lastName: 'Doe',
+  firstName: 'Alemu',
+  lastName: 'Firisa',
   dob: '1990-01-01',
   gender: 'MALE',
   phone: '+1234567890'
