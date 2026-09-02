@@ -37,7 +37,8 @@ async function testWorkflow() {
         lastName: 'Doe',
         dob: new Date('1990-01-01'),
         gender: 'MALE',
-        phone: '+15550001111'
+        phone: '+15550001111',
+        nationalId: '1234567890123'
       }
     });
   }
