@@ -170,6 +170,11 @@ export async function seedDefaultData() {
 }
 
 export async function checkAndInitDatabase() {
+  const dbUrl = process.env.DATABASE_URL || '';
+  if (dbUrl.includes('localhost') && process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ CONFIGURATION ERROR: DATABASE_URL is pointing to localhost in production. Please configure DATABASE_URL in your Render Web Service Environment Variables.');
+  }
+
   try {
     let userCount: number;
     try {
@@ -184,11 +189,15 @@ export async function checkAndInitDatabase() {
             env: process.env,
           });
           console.log('✅ Database tables initialized successfully!');
+          userCount = await prisma.user.count();
         } catch (pushErr: any) {
           console.error('Failed to auto-push schema:', pushErr.message);
+          return;
         }
+      } else {
+        console.error('⚠️ Cannot connect to database:', errMsg);
+        return;
       }
-      userCount = await prisma.user.count();
     }
 
     if (userCount === 0) {
