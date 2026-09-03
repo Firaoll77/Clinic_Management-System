@@ -32,14 +32,51 @@ const logger = pino({
 }));
 
 const app = express();
-const PORT = process.env.API_PORT || 4000;
+const PORT = process.env.PORT || process.env.API_PORT || 4000;
 
 // Middleware
-app.use(helmet());
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://host.docker.internal:3000', 'http://172.18.0.4:3000', 'https://clinic-management-system-five-mauve.vercel.app', 'https://clinic-management-system-ten-delta.vercel.app'],
-  credentials: true,
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
+
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://host.docker.internal:3000',
+  'http://172.18.0.4:3000',
+  'https://clinic-management-system-five-mauve.vercel.app',
+  'https://clinic-management-system-ten-delta.vercel.app',
+  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map((s) => s.trim()) : []),
+  ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim()) : []),
+];
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser requests or same-origin (no Origin header)
+    if (!origin) return callback(null, true);
+
+    const isAllowed = allowedOrigins.some((allowed) => {
+      if (!allowed) return false;
+      return origin === allowed || origin.replace(/\/$/, '') === allowed.replace(/\/$/, '');
+    });
+
+    // Automatically allow any Vercel deployment (production, preview, branch URLs)
+    const isVercel = origin.endsWith('.vercel.app');
+
+    if (isAllowed || isVercel || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+
+    logger.warn(`CORS blocked request from origin: ${origin}`);
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -129,7 +129,19 @@
 // 5. Click **Process Payment & Finalize Check-Out**.
 // 6. Status updates to: **`COMPLETED / DISCHARGED`** 🎉
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || 'http://localhost:4000/api';
+function getBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '') || '';
+  if (!envUrl) {
+    return 'http://localhost:4000/api';
+  }
+  // Ensure the /api suffix is present if user provided base origin
+  if (!envUrl.endsWith('/api')) {
+    return `${envUrl}/api`;
+  }
+  return envUrl;
+}
+
+const BASE_URL = getBaseUrl();
 
 class ApiClient {
   private token: string | null = null;
@@ -187,9 +199,20 @@ class ApiClient {
 
       return { data: responseData as T, error: null };
     } catch (error: any) {
+      console.error(`API connection error for ${url}:`, error);
+
+      let errorMsg = error instanceof Error ? error.message : 'Network error occurred';
+      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+
+      if (isHttps && url.startsWith('http://localhost')) {
+        errorMsg = 'Frontend is deployed on HTTPS, but NEXT_PUBLIC_API_URL is pointing to localhost. Please configure NEXT_PUBLIC_API_URL in your Vercel Project Settings and redeploy.';
+      } else if (errorMsg === 'Failed to fetch') {
+        errorMsg = 'Failed to connect to backend server. The Render service may be waking up (cold start can take 50s), CORS is blocking, or the Render backend is inactive. Please check Render logs and retry.';
+      }
+
       return {
         data: null,
-        error: error instanceof Error ? error.message : 'Network error occurred',
+        error: errorMsg,
       };
     }
   }
