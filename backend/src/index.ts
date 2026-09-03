@@ -20,6 +20,8 @@ import assignmentRoutes from './routes/assignments';
 import feeRoutes from './routes/fees';
 import auditRoutes from './routes/audit';
 import { setupPrismaMiddleware } from './lib/prismaMiddleware';
+import { prisma } from './lib/prisma';
+import { checkAndInitDatabase, seedDefaultData } from './lib/dbInit';
 
 dotenv.config();
 
@@ -132,8 +134,48 @@ app.get('/api', (req, res) => {
       medical: '/api/medical',
       dashboard: '/api/dashboard',
       billing: '/api/billing',
+      health: '/api/health',
+      seed: '/api/seed',
     },
   });
+});
+
+// Database health check endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    const userCount = await prisma.user.count();
+    res.json({
+      status: 'healthy',
+      database: 'connected',
+      userCount,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    res.status(503).json({
+      status: 'error',
+      database: 'disconnected',
+      error: error?.message || 'Database connection error',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// Manual database seed endpoint (safe: idempotent upserts)
+app.get('/api/seed', async (req, res) => {
+  try {
+    await seedDefaultData();
+    const count = await prisma.user.count();
+    res.json({
+      success: true,
+      message: 'Database seeded successfully with default clinic accounts!',
+      userCount: count,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error?.message || 'Seed failed',
+    });
+  }
 });
 
 // 404 handler
@@ -156,10 +198,11 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   logger.info(`Server running on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`API available at http://localhost:${PORT}/api`);
+  await checkAndInitDatabase();
 });
 
 export default app;

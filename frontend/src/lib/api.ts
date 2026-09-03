@@ -193,7 +193,13 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        const errorMsg = responseData?.error || responseData?.message || `Request failed with status ${response.status}`;
+        let errorMsg = responseData?.message || responseData?.error;
+        if (responseData?.error && responseData?.message && responseData.error !== responseData.message) {
+          errorMsg = `${responseData.error}: ${responseData.message}`;
+        }
+        if (!errorMsg) {
+          errorMsg = `Request failed with status ${response.status}`;
+        }
         return { data: null, error: errorMsg };
       }
 

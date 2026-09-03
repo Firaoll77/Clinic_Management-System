@@ -169,7 +169,7 @@ router.post('/login', async (req: Request, res: Response) => {
     console.error('Login error:', error);
     res.status(500).json({
       error: 'Login failed',
-      message: 'An error occurred during login',
+      message: error instanceof Error ? error.message : 'An error occurred during login',
     });
   }
 });
