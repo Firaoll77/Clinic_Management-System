@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { apiClient } from '@/lib/api';
 import { evaluateCdsRules } from '@/lib/cdsRules';
 import { 
@@ -73,6 +74,7 @@ interface Encounter {
 export default function DoctorDashboardPage() {
   const { user } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
+  const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState<'intake' | 'vitals' | 'encounter' | 'orders' | 'lab-results'>('intake');
   const [patients, setPatients] = useState<Patient[]>([]);
