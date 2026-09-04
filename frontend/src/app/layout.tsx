@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
+import { NavigationProvider } from "@/contexts/NavigationContext";
 import { PageTransition } from "@/components/PageTransition";
 
 const inter = Inter({
@@ -22,11 +23,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-gradient-to-br from-teal-50 via-blue-50 to-indigo-50" suppressHydrationWarning>
-        <ToastProvider>
-          <AuthProvider>
-            <PageTransition>{children}</PageTransition>
-          </AuthProvider>
-        </ToastProvider>
+        <NavigationProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <PageTransition>{children}</PageTransition>
+            </AuthProvider>
+          </ToastProvider>
+        </NavigationProvider>
       </body>
     </html>
   );

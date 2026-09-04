@@ -1,8 +1,9 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { 
   LogOut, 
   HeartPulse,
@@ -22,8 +23,8 @@ export default function DoctorDashboardLayout({
   children: React.ReactNode;
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
+  const { activeTab, setActiveTab } = useNavigation();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('patients');
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
