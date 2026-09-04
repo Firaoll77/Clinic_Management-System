@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
 import { evaluateCdsRules } from '@/lib/cdsRules';
 import { 
@@ -71,6 +72,7 @@ interface Encounter {
 
 export default function DoctorDashboardPage() {
   const { user } = useAuth();
+  const { showSuccess, showError, showInfo } = useToast();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState<'intake' | 'vitals' | 'encounter' | 'orders' | 'lab-results'>('intake');
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -236,7 +238,7 @@ export default function DoctorDashboardPage() {
       });
 
       if (response.error) {
-        alert(`Failed to save encounter: ${response.error}`);
+        showError(`Failed to save encounter: ${response.error}`);
         return;
       }
 
@@ -245,7 +247,7 @@ export default function DoctorDashboardPage() {
         setCurrentEncounterId(response.data.id as string);
       }
 
-      alert('Encounter saved successfully!');
+      showSuccess('Encounter saved successfully!');
       setEncounterForm({
         chiefComplaint: '',
         subjective: '',
@@ -258,7 +260,7 @@ export default function DoctorDashboardPage() {
       fetchPatientData(selectedPatient.patientId);
     } catch (error) {
       console.error('Encounter save error:', error);
-      alert('Failed to save encounter. Please try again.');
+      showError('Failed to save encounter. Please try again.');
     }
   };
 
@@ -299,12 +301,12 @@ export default function DoctorDashboardPage() {
       frequency: '',
       duration: ''
     });
-    alert('Prescription added to treatment plan!');
+    showInfo('Prescription added to treatment plan!');
   };
 
   const handlePrintPrescription = async () => {
     if (!currentEncounterId) {
-      alert('Please save the encounter first before printing prescription');
+      showInfo('Please save the encounter first before printing prescription');
       return;
     }
 
@@ -321,7 +323,7 @@ export default function DoctorDashboardPage() {
       }
     } catch (error) {
       console.error('Failed to print prescription:', error);
-      alert('Failed to generate prescription');
+      showError('Failed to generate prescription');
     }
   };
 
@@ -340,7 +342,7 @@ export default function DoctorDashboardPage() {
       });
 
       if (response.error) {
-        alert(`Failed to create lab order: ${response.error}`);
+        showError(`Failed to create lab order: ${response.error}`);
         return;
       }
 
@@ -353,11 +355,11 @@ export default function DoctorDashboardPage() {
           });
         } catch (assignmentError) {
           console.error('Failed to assign lab technician:', assignmentError);
-          alert('Lab order created but failed to assign lab technician');
+          showError('Lab order created but failed to assign lab technician');
         }
       }
 
-      alert('Lab order created successfully!');
+      showSuccess('Lab order created successfully!');
       setLabOrderForm({
         testType: '',
         priority: 'routine',
@@ -367,7 +369,7 @@ export default function DoctorDashboardPage() {
       fetchAvailableLabTechs();
     } catch (error) {
       console.error('Lab order error:', error);
-      alert('Failed to create lab order. Please try again.');
+      showError('Failed to create lab order. Please try again.');
     }
   };
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
 import {
   Search,
@@ -78,6 +79,7 @@ interface NewPatient {
 
 export default function ReceptionistDashboardPage() {
   const { user } = useAuth();
+  const { showSuccess, showError, showInfo } = useToast();
   const [activeTab, setActiveTab] = useState<'search' | 'register' | 'doctors' | 'billing'>('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<WaitingPatient | null>(null);
@@ -243,7 +245,7 @@ export default function ReceptionistDashboardPage() {
       // Check if patient already has an active encounter
       const existingEncounter = waitingPatients.find(p => p.id === patientId);
       if (existingEncounter && existingEncounter.visitStatus !== 'WAITING') {
-        alert('Patient is already checked in. Current status: ' + existingEncounter.visitStatus);
+        showInfo('Patient is already checked in. Current status: ' + existingEncounter.visitStatus);
         return;
       }
       
@@ -262,7 +264,7 @@ export default function ReceptionistDashboardPage() {
       console.log('Encounter response:', encounterResponse);
 
       if (encounterResponse.error) {
-        alert(`Check-in failed: ${encounterResponse.error}`);
+        showError(`Check-in failed: ${encounterResponse.error}`);
         return;
       }
 
@@ -280,18 +282,18 @@ export default function ReceptionistDashboardPage() {
         console.log('Assignment response:', assignmentResponse);
 
         if (assignmentResponse.error) {
-          alert(`Patient checked in but nurse assignment failed: ${assignmentResponse.error}`);
+          showError(`Patient checked in but nurse assignment failed: ${assignmentResponse.error}`);
         } else {
-          alert('Patient checked in and assigned to nurse!');
+          showSuccess('Patient checked in and assigned to nurse!');
         }
       } else {
-        alert('Patient checked in and sent to triage queue!');
+        showSuccess('Patient checked in and sent to triage queue!');
       }
 
       fetchWaitingPatients(); // Refresh the waiting patients list
     } catch (error) {
       console.error('Check-in error:', error);
-      alert('Check-in failed. Please try again.');
+      showError('Check-in failed. Please try again.');
     }
   };
 
@@ -312,7 +314,7 @@ export default function ReceptionistDashboardPage() {
       });
       
       if (response.error) {
-        alert(`Registration failed: ${response.error}`);
+        showError(`Registration failed: ${response.error}`);
         return;
       }
       
@@ -330,12 +332,12 @@ export default function ReceptionistDashboardPage() {
         });
 
         if (encounterResponse.error) {
-          alert(`Patient registered but failed to send to triage: ${encounterResponse.error}`);
+          showError(`Patient registered but failed to send to triage: ${encounterResponse.error}`);
         } else {
-          alert('Patient registered and sent to triage queue!');
+          showSuccess('Patient registered and sent to triage queue!');
         }
       } else {
-        alert('Patient registered successfully!');
+        showSuccess('Patient registered successfully!');
       }
 
       setShowPatientForm(false);
@@ -354,7 +356,7 @@ export default function ReceptionistDashboardPage() {
       fetchAllPatients(); // Refresh patient list
     } catch (error) {
       console.error('Registration error:', error);
-      alert('Registration failed. Please try again.');
+      showError('Registration failed. Please try again.');
     }
   };
 
@@ -380,7 +382,7 @@ export default function ReceptionistDashboardPage() {
       }
     } catch (error) {
       console.error('Failed to fetch encounter fees:', error);
-      alert('Failed to fetch fees. Please try again.');
+      showError('Failed to fetch fees. Please try again.');
     }
   };
 
@@ -408,12 +410,12 @@ export default function ReceptionistDashboardPage() {
         patientId,
       });
       if (response.data) {
-        alert('Invoice created successfully!');
+        showSuccess('Invoice created successfully!');
         fetchInvoices();
       }
     } catch (error) {
       console.error('Failed to create invoice:', error);
-      alert('Failed to create invoice. Please try again.');
+      showError('Failed to create invoice. Please try again.');
     }
   };
 
@@ -421,7 +423,7 @@ export default function ReceptionistDashboardPage() {
     try {
       const response = await apiClient.patch(`/billing/invoices/${invoiceId}/mark-paid`);
       if (response.data) {
-        alert('Invoice marked as paid!');
+        showSuccess('Invoice marked as paid!');
         fetchInvoices();
         setShowInvoiceModal(false);
 
@@ -431,7 +433,7 @@ export default function ReceptionistDashboardPage() {
             await apiClient.patch(`/encounters/${selectedInvoice.encounterId}/discharge`, {
               dischargeNotes: 'Auto-discharged after payment'
             });
-            alert('Patient automatically discharged!');
+            showSuccess('Patient automatically discharged!');
             fetchWaitingPatients();
           } catch (dischargeError) {
             console.error('Auto-discharge failed:', dischargeError);
@@ -441,7 +443,7 @@ export default function ReceptionistDashboardPage() {
       }
     } catch (error) {
       console.error('Failed to mark invoice as paid:', error);
-      alert('Failed to mark invoice as paid. Please try again.');
+      showError('Failed to mark invoice as paid. Please try again.');
     }
   };
 
@@ -451,12 +453,12 @@ export default function ReceptionistDashboardPage() {
         dischargeNotes: 'Discharged after payment'
       });
       if (response.data) {
-        alert('Patient discharged successfully!');
+        showSuccess('Patient discharged successfully!');
         fetchWaitingPatients();
       }
     } catch (error) {
       console.error('Failed to discharge patient:', error);
-      alert('Failed to discharge patient. Please try again.');
+      showError('Failed to discharge patient. Please try again.');
     }
   };
 
@@ -469,7 +471,7 @@ export default function ReceptionistDashboardPage() {
       }
     } catch (error) {
       console.error('Failed to fetch invoice:', error);
-      alert('Failed to fetch invoice. Please try again.');
+      showError('Failed to fetch invoice. Please try again.');
     }
   };
 
@@ -650,7 +652,7 @@ export default function ReceptionistDashboardPage() {
                     </div>
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => alert('Full patient record view - to be implemented')}
+                        onClick={() => showInfo('Full patient record view - to be implemented')}
                         className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                       >
                         View Full Record

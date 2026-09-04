@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
 import {
   Beaker,
@@ -45,6 +46,7 @@ interface LabAssignment {
 
 export default function LaboratoristDashboardPage() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [assignments, setAssignments] = useState<LabAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAvailable, setIsAvailable] = useState(true);
@@ -147,19 +149,19 @@ export default function LaboratoristDashboardPage() {
       });
 
       if (resultRes.error) {
-        alert(`Failed to save results: ${resultRes.error}`);
+        showError(`Failed to save results: ${resultRes.error}`);
         setSubmittingResult(false);
         return;
       }
 
       await apiClient.post(`/lab/orders/${selectedAssignmentForResults.labOrderId}/complete`, {});
 
-      alert('Lab results saved and order completed successfully!');
+      showSuccess('Lab results saved and order completed successfully!');
       setSelectedAssignmentForResults(null);
       fetchAssignments();
     } catch (error) {
       console.error('Error submitting lab result:', error);
-      alert('An error occurred while saving lab results');
+      showError('An error occurred while saving lab results');
     } finally {
       setSubmittingResult(false);
     }

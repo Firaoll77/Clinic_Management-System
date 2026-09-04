@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { apiClient } from '@/lib/api';
 import { 
   HeartPulse, 
@@ -66,6 +67,7 @@ interface Doctor {
 
 export default function NurseDashboardPage() {
   const { user } = useAuth();
+  const { showSuccess, showError, showInfo } = useToast();
   const [triagePatients, setTriagePatients] = useState<TriagePatient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<TriagePatient | null>(null);
   const [showVitalsForm, setShowVitalsForm] = useState(false);
@@ -131,16 +133,16 @@ export default function NurseDashboardPage() {
       });
 
       if (response.error) {
-        alert(`Failed to toggle availability: ${response.error}`);
+        showError(`Failed to toggle availability: ${response.error}`);
         return;
       }
 
       setIsAvailable(newAvailability);
       localStorage.setItem('nurseAvailability', JSON.stringify(newAvailability));
-      alert(`Availability ${newAvailability ? 'enabled' : 'disabled'} successfully!`);
+      showSuccess(`Availability ${newAvailability ? 'enabled' : 'disabled'} successfully!`);
     } catch (error) {
       console.error('Toggle availability error:', error);
-      alert('Failed to toggle availability. Please try again.');
+      showError('Failed to toggle availability. Please try again.');
     }
   };
 
@@ -205,7 +207,7 @@ export default function NurseDashboardPage() {
       });
 
       if (response.error) {
-        alert(`Failed to record vitals: ${response.error}`);
+        showError(`Failed to record vitals: ${response.error}`);
         return;
       }
 
@@ -220,10 +222,10 @@ export default function NurseDashboardPage() {
         height: '',
         respiratoryRate: ''
       });
-      alert('Vitals recorded successfully!');
+      showSuccess('Vitals recorded successfully!');
     } catch (error) {
       console.error('Vitals recording error:', error);
-      alert('Failed to record vitals. Please try again.');
+      showError('Failed to record vitals. Please try again.');
     }
   };
 
@@ -241,7 +243,7 @@ export default function NurseDashboardPage() {
       });
 
       if (response.error) {
-        alert(`Failed to record intake: ${response.error}`);
+        showError(`Failed to record intake: ${response.error}`);
         return;
       }
 
@@ -253,10 +255,10 @@ export default function NurseDashboardPage() {
         medicalHistory: '',
         notes: ''
       });
-      alert('Intake recorded successfully!');
+      showSuccess('Intake recorded successfully!');
     } catch (error) {
       console.error('Intake recording error:', error);
-      alert('Failed to record intake. Please try again.');
+      showError('Failed to record intake. Please try again.');
     }
   };
 
@@ -282,7 +284,7 @@ export default function NurseDashboardPage() {
       });
 
       if (response.error) {
-        alert(`Failed to route patient: ${response.error}`);
+        showError(`Failed to route patient: ${response.error}`);
         return;
       }
 
@@ -309,10 +311,10 @@ export default function NurseDashboardPage() {
         medicalHistory: '',
         notes: ''
       });
-      alert(`Patient successfully sent to Dr. ${doctorName}!`);
+      showSuccess(`Patient successfully sent to Dr. ${doctorName}!`);
     } catch (error) {
       console.error('Route to doctor error:', error);
-      alert('Failed to route patient to doctor. Please try again.');
+      showError('Failed to route patient to doctor. Please try again.');
     }
   };
 

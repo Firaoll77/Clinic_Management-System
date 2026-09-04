@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { useRouter } from 'next/navigation';
 import { 
   User, 
@@ -68,6 +69,7 @@ interface TimelineEvent {
 
 export default function PatientProfilePage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const router = useRouter();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
@@ -192,10 +194,10 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
       }
       
       setEditing(false);
-      alert('Patient information updated successfully');
+      showSuccess('Patient information updated successfully');
     } catch (error) {
       console.error('Error updating patient:', error);
-      alert('Failed to update patient information');
+      showError('Failed to update patient information');
     }
   };
 
