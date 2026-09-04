@@ -15,16 +15,12 @@ const router = Router();
 router.get('/prescription/:encounterId', authenticate, async (req: Request, res: Response) => {
   try {
     const { encounterId } = req.params;
+    const id = Array.isArray(encounterId) ? encounterId[0] : encounterId;
 
     const encounter = await prisma.encounter.findUnique({
-      where: { id: encounterId },
+      where: { id },
       include: {
         patient: true,
-        doctor: {
-          include: {
-            staffProfile: true,
-          },
-        },
       },
     });
 
@@ -124,11 +120,11 @@ router.get('/prescription/:encounterId', authenticate, async (req: Request, res:
   </div>
 
   <div class="patient-info">
-    <div><strong>Patient Name:</strong> ${encounter.patient.firstName} ${encounter.patient.lastName}</div>
-    <div><strong>MRN:</strong> ${encounter.patient.mrn}</div>
-    <div><strong>Date of Birth:</strong> ${new Date(encounter.patient.dob).toLocaleDateString()}</div>
-    <div><strong>Gender:</strong> ${encounter.patient.gender}</div>
-    <div><strong>Phone:</strong> ${encounter.patient.phone}</div>
+    <div><strong>Patient Name:</strong> ${encounter.patient?.firstName} ${encounter.patient?.lastName}</div>
+    <div><strong>MRN:</strong> ${encounter.patient?.mrn}</div>
+    <div><strong>Date of Birth:</strong> ${encounter.patient?.dob ? new Date(encounter.patient.dob).toLocaleDateString() : 'N/A'}</div>
+    <div><strong>Gender:</strong> ${encounter.patient?.gender || 'N/A'}</div>
+    <div><strong>Phone:</strong> ${encounter.patient?.phone || 'N/A'}</div>
   </div>
 
   <div class="prescription-content">
@@ -145,8 +141,7 @@ router.get('/prescription/:encounterId', authenticate, async (req: Request, res:
 
   <div class="footer">
     <div class="signature">
-      <p><strong>Dr. ${encounter.doctor?.staffProfile?.fullName || 'Attending Physician'}</strong></p>
-      ${encounter.doctor?.staffProfile?.specialization ? `<p>${encounter.doctor.staffProfile.specialization}</p>` : ''}
+      <p><strong>Attending Physician</strong></p>
       <div class="signature-line"></div>
       <p>Signature</p>
     </div>

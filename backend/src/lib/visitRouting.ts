@@ -18,7 +18,15 @@ export class VisitRoutingService {
         visitStatus: VisitStatus.DOCTOR_CONSULT,
         ...(doctorId && { doctorId: doctorId }) // Filter by specific doctor if provided
       },
-      include: {
+      select: {
+        id: true,
+        chiefComplaint: true,
+        subjective: true,
+        objective: true,
+        assessment: true,
+        plan: true,
+        visitStatus: true,
+        createdAt: true,
         patient: {
           select: {
             id: true,
@@ -287,7 +295,15 @@ export class VisitRoutingService {
         visitStatus: VisitStatus.LAB_READY,
         ...(doctorId && { doctorId: doctorId })
       },
-      include: {
+      select: {
+        id: true,
+        chiefComplaint: true,
+        subjective: true,
+        objective: true,
+        assessment: true,
+        plan: true,
+        visitStatus: true,
+        createdAt: true,
         patient: {
           select: {
             id: true,
@@ -306,6 +322,10 @@ export class VisitRoutingService {
               },
             },
           },
+        },
+        vitals: {
+          orderBy: { recordedAt: 'desc' },
+          take: 1,
         },
       },
       orderBy: {
@@ -383,7 +403,7 @@ export class VisitRoutingService {
 
   /**
    * RECEPTIONIST QUERY: Get all active patients across different statuses
-   * For reception dashboard overview
+   * For reception dashboard overview - shows only administrative data
    */
   static async getAllActivePatients() {
     return await prisma.encounter.findMany({
@@ -392,20 +412,28 @@ export class VisitRoutingService {
           in: [VisitStatus.TRIAGE, VisitStatus.DOCTOR_CONSULT, VisitStatus.LAB_PENDING, VisitStatus.LAB_READY, VisitStatus.BILLING]
         },
       },
-      include: {
+      select: {
+        id: true,
+        visitStatus: true,
+        createdAt: true,
         patient: {
           select: {
             id: true,
-            mrn: true,
             firstName: true,
             lastName: true,
-            phone: true,
           },
         },
-        appointment: {
+        invoices: {
+          where: {
+            status: { in: ['DRAFT', 'ISSUED', 'PARTIALLY_PAID'] }
+          },
           select: {
-            scheduledAt: true,
-            reason: true,
+            id: true,
+            invoiceNo: true,
+            status: true,
+            total: true,
+            balance: true,
+            createdAt: true,
           },
         },
       },
