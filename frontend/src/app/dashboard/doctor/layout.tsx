@@ -26,6 +26,13 @@ export default function DoctorDashboardLayout({
   const { activeTab, setActiveTab } = useNavigation();
   const router = useRouter();
 
+  // Initialize to patients tab
+  useEffect(() => {
+    if (activeTab === 'default') {
+      setActiveTab('patients');
+    }
+  }, [activeTab, setActiveTab]);
+
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push('/login');

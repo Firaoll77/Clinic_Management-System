@@ -83,6 +83,7 @@ export default function DoctorDashboardPage() {
   const [vitals, setVitals] = useState<Vitals | null>(null);
   const [encounters, setEncounters] = useState<Encounter[]>([]);
   const [patientLabOrders, setPatientLabOrders] = useState<any[]>([]);
+  const [labResults, setLabResults] = useState<any[]>([]);
 
   const [encounterForm, setEncounterForm] = useState({
     chiefComplaint: '',
@@ -393,6 +394,8 @@ export default function DoctorDashboardPage() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
+      {navTab === 'patients' && (
+      <>
       {/* Left Sidebar - Patient Queue (30%) */}
       <div className="w-[30%] border-r border-gray-200 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-cyan-50">
@@ -985,6 +988,16 @@ export default function DoctorDashboardPage() {
           </div>
         )}
       </div>
+      </>
+      )}
+
+      {navTab !== 'patients' && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <p className="text-lg font-medium">{navTab.charAt(0).toUpperCase() + navTab.slice(1)} view coming soon</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
