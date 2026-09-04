@@ -84,13 +84,14 @@ export default function AdminDashboardLayout({
         </div>
       </header>
 
-      {/* Navigation Menu */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1">
+      {/* Main Content with Sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Vertical Sidebar */}
+        <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
+          <div className="p-4 space-y-2">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'overview'
                   ? 'bg-red-100 text-red-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -101,7 +102,7 @@ export default function AdminDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('staff')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'staff'
                   ? 'bg-red-100 text-red-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -112,7 +113,7 @@ export default function AdminDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('appointments')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'appointments'
                   ? 'bg-red-100 text-red-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -123,7 +124,7 @@ export default function AdminDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('billing')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'billing'
                   ? 'bg-red-100 text-red-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -134,7 +135,7 @@ export default function AdminDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('settings')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'settings'
                   ? 'bg-red-100 text-red-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -144,12 +145,12 @@ export default function AdminDashboardLayout({
               <span>Settings</span>
             </button>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Bento-Box Analytics */}
-      <div className="flex-1 overflow-auto p-6">
-        {children}
+        {/* Bento-Box Analytics */}
+        <div className="flex-1 overflow-auto p-6">
+          {children}
+        </div>
       </div>
     </div>
   );

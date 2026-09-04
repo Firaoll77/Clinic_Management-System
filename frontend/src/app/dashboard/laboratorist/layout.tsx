@@ -83,13 +83,14 @@ export default function LaboratoristDashboardLayout({
         </div>
       </header>
 
-      {/* Navigation Menu */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1">
+      {/* Main Content with Sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Vertical Sidebar */}
+        <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
+          <div className="p-4 space-y-2">
             <button
               onClick={() => setActiveTab('pending')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'pending'
                   ? 'bg-orange-100 text-orange-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -100,7 +101,7 @@ export default function LaboratoristDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('in-progress')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'in-progress'
                   ? 'bg-orange-100 text-orange-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -111,7 +112,7 @@ export default function LaboratoristDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('completed')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'completed'
                   ? 'bg-orange-100 text-orange-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -121,12 +122,12 @@ export default function LaboratoristDashboardLayout({
               <span>Completed</span>
             </button>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Kanban Pipeline */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {children}
+        {/* Kanban Pipeline */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {children}
+        </div>
       </div>
     </div>
   );

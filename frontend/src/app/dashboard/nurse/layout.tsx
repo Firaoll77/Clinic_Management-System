@@ -83,13 +83,14 @@ export default function NurseDashboardLayout({
         </div>
       </header>
 
-      {/* Navigation Menu */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1">
+      {/* Main Content with Sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Vertical Sidebar */}
+        <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
+          <div className="p-4 space-y-2">
             <button
               onClick={() => setActiveTab('triage')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'triage'
                   ? 'bg-pink-100 text-pink-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -100,7 +101,7 @@ export default function NurseDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('vitals')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'vitals'
                   ? 'bg-pink-100 text-pink-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -111,7 +112,7 @@ export default function NurseDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('intake')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'intake'
                   ? 'bg-pink-100 text-pink-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -121,12 +122,12 @@ export default function NurseDashboardLayout({
               <span>Patient Intake</span>
             </button>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Tablet-Optimized Task Grid */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {children}
+        {/* Tablet-Optimized Task Grid */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {children}
+        </div>
       </div>
     </div>
   );

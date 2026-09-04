@@ -85,13 +85,14 @@ export default function DoctorDashboardLayout({
         </div>
       </header>
 
-      {/* Navigation Menu */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1">
+      {/* Main Content with Sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Vertical Sidebar */}
+        <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
+          <div className="p-4 space-y-2">
             <button
               onClick={() => setActiveTab('patients')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'patients'
                   ? 'bg-blue-100 text-blue-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -102,7 +103,7 @@ export default function DoctorDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('appointments')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'appointments'
                   ? 'bg-blue-100 text-blue-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -113,7 +114,7 @@ export default function DoctorDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('lab-results')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'lab-results'
                   ? 'bg-blue-100 text-blue-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -124,7 +125,7 @@ export default function DoctorDashboardLayout({
             </button>
             <button
               onClick={() => setActiveTab('prescriptions')}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'prescriptions'
                   ? 'bg-blue-100 text-blue-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -134,12 +135,12 @@ export default function DoctorDashboardLayout({
               <span>Prescriptions</span>
             </button>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Master-Detail Workspace */}
-      <div className="flex-1 flex overflow-hidden">
-        {children}
+        {/* Master-Detail Workspace */}
+        <div className="flex-1 flex overflow-hidden">
+          {children}
+        </div>
       </div>
     </div>
   );
