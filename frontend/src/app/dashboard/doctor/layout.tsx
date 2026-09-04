@@ -2,13 +2,18 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   LogOut, 
   HeartPulse,
   User,
   Settings,
-  ChevronLeft
+  ChevronLeft,
+  Users,
+  Calendar,
+  FileText,
+  Activity,
+  Beaker
 } from 'lucide-react';
 
 export default function DoctorDashboardLayout({
@@ -18,6 +23,7 @@ export default function DoctorDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState('patients');
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -77,6 +83,58 @@ export default function DoctorDashboardLayout({
           </div>
         </div>
       </header>
+
+      {/* Navigation Menu */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setActiveTab('patients')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'patients'
+                  ? 'bg-blue-100 text-blue-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Users className="h-5 w-5" />
+              <span>Patients</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('appointments')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'appointments'
+                  ? 'bg-blue-100 text-blue-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Calendar className="h-5 w-5" />
+              <span>Appointments</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('lab-results')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'lab-results'
+                  ? 'bg-blue-100 text-blue-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Beaker className="h-5 w-5" />
+              <span>Lab Results</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('prescriptions')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'prescriptions'
+                  ? 'bg-blue-100 text-blue-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <FileText className="h-5 w-5" />
+              <span>Prescriptions</span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
       {/* Master-Detail Workspace */}
       <div className="flex-1 flex overflow-hidden">

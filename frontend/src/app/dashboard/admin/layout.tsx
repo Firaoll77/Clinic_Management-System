@@ -2,12 +2,17 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   LogOut, 
   HeartPulse,
   User,
-  Settings
+  Settings,
+  Users,
+  Activity,
+  Calendar,
+  Shield,
+  DollarSign
 } from 'lucide-react';
 
 export default function AdminDashboardLayout({
@@ -17,6 +22,7 @@ export default function AdminDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -76,6 +82,69 @@ export default function AdminDashboardLayout({
           </div>
         </div>
       </header>
+
+      {/* Navigation Menu */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'overview'
+                  ? 'bg-red-100 text-red-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Activity className="h-5 w-5" />
+              <span>Overview</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('staff')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'staff'
+                  ? 'bg-red-100 text-red-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Users className="h-5 w-5" />
+              <span>Staff Management</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('appointments')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'appointments'
+                  ? 'bg-red-100 text-red-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Calendar className="h-5 w-5" />
+              <span>Appointments</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('billing')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'billing'
+                  ? 'bg-red-100 text-red-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <DollarSign className="h-5 w-5" />
+              <span>Billing</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'settings'
+                  ? 'bg-red-100 text-red-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Shield className="h-5 w-5" />
+              <span>Settings</span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
       {/* Bento-Box Analytics */}
       <div className="flex-1 overflow-auto p-6">

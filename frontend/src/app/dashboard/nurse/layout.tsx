@@ -2,12 +2,16 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   LogOut, 
   HeartPulse,
   User,
-  Settings
+  Settings,
+  Users,
+  Activity,
+  Thermometer,
+  Stethoscope
 } from 'lucide-react';
 
 export default function NurseDashboardLayout({
@@ -17,6 +21,7 @@ export default function NurseDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState('triage');
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -76,6 +81,47 @@ export default function NurseDashboardLayout({
           </div>
         </div>
       </header>
+
+      {/* Navigation Menu */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setActiveTab('triage')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'triage'
+                  ? 'bg-pink-100 text-pink-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Users className="h-5 w-5" />
+              <span>Triage Queue</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('vitals')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'vitals'
+                  ? 'bg-pink-100 text-pink-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Thermometer className="h-5 w-5" />
+              <span>Vitals</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('intake')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'intake'
+                  ? 'bg-pink-100 text-pink-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Stethoscope className="h-5 w-5" />
+              <span>Patient Intake</span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
       {/* Tablet-Optimized Task Grid */}
       <div className="flex-1 flex flex-col overflow-hidden">

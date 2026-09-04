@@ -2,12 +2,16 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   LogOut, 
   HeartPulse,
   User,
-  Settings
+  Settings,
+  Users,
+  Calendar,
+  Receipt,
+  Phone
 } from 'lucide-react';
 
 export default function ReceptionistDashboardLayout({
@@ -17,6 +21,7 @@ export default function ReceptionistDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState('queue');
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -76,6 +81,58 @@ export default function ReceptionistDashboardLayout({
           </div>
         </div>
       </header>
+
+      {/* Navigation Menu */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setActiveTab('queue')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'queue'
+                  ? 'bg-green-100 text-green-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Users className="h-5 w-5" />
+              <span>Patient Queue</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('appointments')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'appointments'
+                  ? 'bg-green-100 text-green-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Calendar className="h-5 w-5" />
+              <span>Appointments</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('billing')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'billing'
+                  ? 'bg-green-100 text-green-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Receipt className="h-5 w-5" />
+              <span>Billing</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('register')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'register'
+                  ? 'bg-green-100 text-green-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Phone className="h-5 w-5" />
+              <span>Register Patient</span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
       {/* 50/50 Split-Screen Workspace */}
       <div className="flex-1 flex overflow-hidden">

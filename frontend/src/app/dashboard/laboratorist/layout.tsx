@@ -2,12 +2,16 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   LogOut, 
   HeartPulse,
   User,
-  Settings
+  Settings,
+  Beaker,
+  Clock,
+  CheckCircle,
+  Activity
 } from 'lucide-react';
 
 export default function LaboratoristDashboardLayout({
@@ -17,6 +21,7 @@ export default function LaboratoristDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState('pending');
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -76,6 +81,47 @@ export default function LaboratoristDashboardLayout({
           </div>
         </div>
       </header>
+
+      {/* Navigation Menu */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'pending'
+                  ? 'bg-orange-100 text-orange-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Clock className="h-5 w-5" />
+              <span>Pending Orders</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('in-progress')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'in-progress'
+                  ? 'bg-orange-100 text-orange-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <Activity className="h-5 w-5" />
+              <span>In Progress</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('completed')}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
+                activeTab === 'completed'
+                  ? 'bg-orange-100 text-orange-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <CheckCircle className="h-5 w-5" />
+              <span>Completed</span>
+            </button>
+          </div>
+        </div>
+      </nav>
 
       {/* Kanban Pipeline */}
       <div className="flex-1 flex flex-col overflow-hidden">
