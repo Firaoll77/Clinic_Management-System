@@ -495,30 +495,6 @@ export default function DoctorDashboardPage() {
               </div>
             )}
 
-            {/* Tab Navigation */}
-            <div className="border-b border-gray-200 bg-white">
-              <div className="flex space-x-0">
-                {(['intake', 'vitals', 'encounter', 'orders', 'lab-results'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`flex-1 px-4 py-4 font-medium transition-colors border-b-2 flex items-center justify-center text-sm ${
-                      activeTab === tab
-                        ? 'border-blue-500 text-blue-600 bg-blue-50'
-                        : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    {tab === 'intake' && <FileText className="h-4 w-4 mr-1.5" />}
-                    {tab === 'vitals' && <HeartPulse className="h-4 w-4 mr-1.5" />}
-                    {tab === 'encounter' && <Stethoscope className="h-4 w-4 mr-1.5" />}
-                    {tab === 'orders' && <Pill className="h-4 w-4 mr-1.5" />}
-                    {tab === 'lab-results' && <FlaskConical className="h-4 w-4 mr-1.5" />}
-                    {tab === 'lab-results' ? 'Lab Results' : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto p-6">
               {activeTab === 'intake' && (
