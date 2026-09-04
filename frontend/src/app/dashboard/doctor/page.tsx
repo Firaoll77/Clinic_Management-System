@@ -22,7 +22,8 @@ import {
   Pill,
   FlaskConical,
   X,
-  Save
+  Save,
+  Printer
 } from 'lucide-react';
 
 interface Patient {
@@ -95,6 +96,8 @@ export default function DoctorDashboardPage() {
     frequency: '',
     duration: ''
   });
+
+  const [currentEncounterId, setCurrentEncounterId] = useState<string | null>(null);
 
   const [labOrderForm, setLabOrderForm] = useState({
     testType: '',
@@ -237,6 +240,11 @@ export default function DoctorDashboardPage() {
         return;
       }
 
+      // Save encounter ID for prescription printing
+      if (response.data && typeof response.data === 'object' && 'id' in response.data) {
+        setCurrentEncounterId(response.data.id as string);
+      }
+
       alert('Encounter saved successfully!');
       setEncounterForm({
         chiefComplaint: '',
@@ -280,31 +288,40 @@ export default function DoctorDashboardPage() {
     e.preventDefault();
     if (!selectedPatient) return;
 
+    // Append prescription to the plan field
+    const prescriptionText = `• ${prescriptionForm.medication} - ${prescriptionForm.dosage}, ${prescriptionForm.frequency} for ${prescriptionForm.duration}`;
+    const updatedPlan = encounterForm.plan ? `${encounterForm.plan}\n${prescriptionText}` : prescriptionText;
+
+    setEncounterForm({...encounterForm, plan: updatedPlan});
+    setPrescriptionForm({
+      medication: '',
+      dosage: '',
+      frequency: '',
+      duration: ''
+    });
+    alert('Prescription added to treatment plan!');
+  };
+
+  const handlePrintPrescription = async () => {
+    if (!currentEncounterId) {
+      alert('Please save the encounter first before printing prescription');
+      return;
+    }
+
     try {
-      const response = await apiClient.post('/prescriptions', {
-        patientId: selectedPatient.patientId,
-        doctorId: user?.staffProfile?.id || '',
-        medication: prescriptionForm.medication,
-        dosage: prescriptionForm.dosage,
-        frequency: prescriptionForm.frequency,
-        duration: prescriptionForm.duration
-      });
-
-      if (response.error) {
-        alert(`Failed to create prescription: ${response.error}`);
-        return;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+      const prescriptionUrl = `${apiUrl}/medical/prescription/${currentEncounterId}`;
+      
+      // Open in new window for printing
+      const newWindow = window.open(prescriptionUrl, '_blank');
+      if (newWindow) {
+        newWindow.onload = () => {
+          newWindow.print();
+        };
       }
-
-      alert('Prescription created successfully!');
-      setPrescriptionForm({
-        medication: '',
-        dosage: '',
-        frequency: '',
-        duration: ''
-      });
     } catch (error) {
-      console.error('Prescription error:', error);
-      alert('Failed to create prescription. Please try again.');
+      console.error('Failed to print prescription:', error);
+      alert('Failed to generate prescription');
     }
   };
 
@@ -835,6 +852,16 @@ export default function DoctorDashboardPage() {
                       <Save className="h-5 w-5" />
                       <span>Save Encounter</span>
                     </button>
+                    {currentEncounterId && (
+                      <button
+                        type="button"
+                        onClick={handlePrintPrescription}
+                        className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center space-x-2 mt-3"
+                      >
+                        <Printer className="h-5 w-5" />
+                        <span>Print Prescription</span>
+                      </button>
+                    )}
                   </form>
                 </div>
               )}

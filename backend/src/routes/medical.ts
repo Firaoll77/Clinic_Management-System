@@ -9,6 +9,168 @@ import { VisitRoutingService } from '../lib/visitRouting';
 const router = Router();
 
 /**
+ * GET /api/medical/prescription/:encounterId
+ * Generate prescription for printing
+ */
+router.get('/prescription/:encounterId', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { encounterId } = req.params;
+
+    const encounter = await prisma.encounter.findUnique({
+      where: { id: encounterId },
+      include: {
+        patient: true,
+        doctor: {
+          include: {
+            staffProfile: true,
+          },
+        },
+      },
+    });
+
+    if (!encounter) {
+      return res.status(404).json({
+        error: 'Encounter not found',
+        message: 'No encounter exists with the provided ID',
+      });
+    }
+
+    // Generate HTML prescription template
+    const prescriptionHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Prescription</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: white;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 2px solid #333;
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      color: #333;
+    }
+    .header p {
+      margin: 5px 0;
+      color: #666;
+    }
+    .patient-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 5px;
+    }
+    .patient-info div {
+      margin: 5px 0;
+    }
+    .patient-info strong {
+      color: #333;
+    }
+    .prescription-content {
+      margin: 20px 0;
+    }
+    .prescription-content h3 {
+      color: #333;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+    .prescription-content p {
+      margin: 10px 0;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+    }
+    .signature {
+      text-align: center;
+    }
+    .signature-line {
+      border-top: 1px solid #333;
+      width: 200px;
+      margin-top: 60px;
+    }
+    @media print {
+      body {
+        margin: 0;
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>CLINIC MANAGEMENT SYSTEM</h1>
+    <p>Medical Prescription</p>
+    <p>Date: ${new Date().toLocaleDateString()}</p>
+  </div>
+
+  <div class="patient-info">
+    <div><strong>Patient Name:</strong> ${encounter.patient.firstName} ${encounter.patient.lastName}</div>
+    <div><strong>MRN:</strong> ${encounter.patient.mrn}</div>
+    <div><strong>Date of Birth:</strong> ${new Date(encounter.patient.dob).toLocaleDateString()}</div>
+    <div><strong>Gender:</strong> ${encounter.patient.gender}</div>
+    <div><strong>Phone:</strong> ${encounter.patient.phone}</div>
+  </div>
+
+  <div class="prescription-content">
+    <h3>Chief Complaint</h3>
+    <p>${encounter.chiefComplaint || 'Not specified'}</p>
+
+    <h3>Diagnosis/Assessment</h3>
+    <p>${encounter.assessment || 'Not specified'}</p>
+    ${encounter.icd10Code ? `<p><strong>ICD-10 Code:</strong> ${encounter.icd10Code}</p>` : ''}
+
+    <h3>Treatment Plan / Prescription</h3>
+    <p>${encounter.plan || 'No prescription specified'}</p>
+  </div>
+
+  <div class="footer">
+    <div class="signature">
+      <p><strong>Dr. ${encounter.doctor?.staffProfile?.fullName || 'Attending Physician'}</strong></p>
+      ${encounter.doctor?.staffProfile?.specialization ? `<p>${encounter.doctor.staffProfile.specialization}</p>` : ''}
+      <div class="signature-line"></div>
+      <p>Signature</p>
+    </div>
+    <div>
+      <p><strong>Prescription ID:</strong> ${encounter.id}</p>
+      <p><strong>Date Issued:</strong> ${new Date().toLocaleString()}</p>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+
+    res.setHeader('Content-Type', 'text/html');
+    res.send(prescriptionHtml);
+  } catch (error) {
+    console.error('Prescription generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate prescription',
+      message: 'An error occurred while generating the prescription',
+    });
+  }
+});
+
+/**
  * POST /api/medical/patients/encounter
  * Create a new encounter (for receptionist check-in)
  */
