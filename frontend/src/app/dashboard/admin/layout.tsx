@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useWorkflow } from '@/contexts/WorkflowContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { 
@@ -13,7 +14,10 @@ import {
   Activity,
   Calendar,
   Shield,
-  DollarSign
+  DollarSign,
+  ChevronRight,
+  Lock,
+  CheckCircle
 } from 'lucide-react';
 
 export default function AdminDashboardLayout({
@@ -23,6 +27,7 @@ export default function AdminDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const { activeTab, setActiveTab, role, setRole } = useNavigation();
+  const { currentStep, setCurrentStep, completedSteps, canAccessStep, getNextStep, getPreviousStep, setWorkflowSteps } = useWorkflow();
   const router = useRouter();
 
   // Set role on mount
@@ -30,12 +35,10 @@ export default function AdminDashboardLayout({
     setRole('admin');
   }, [setRole]);
 
-  // Initialize to overview tab
+  // Initialize workflow steps for admin
   useEffect(() => {
-    if (activeTab === 'default' || !activeTab.startsWith('admin-')) {
-      setActiveTab('admin-overview');
-    }
-  }, [activeTab, setActiveTab]);
+    setWorkflowSteps(['overview', 'staff', 'appointments', 'billing', 'settings']);
+  }, [setWorkflowSteps]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -98,64 +101,59 @@ export default function AdminDashboardLayout({
 
       {/* Main Content with Sidebar */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Vertical Sidebar */}
+        {/* Vertical Sidebar - Workflow Steps */}
         <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
-          <div className="p-4 space-y-2">
-            <button
-              onClick={() => setActiveTab('admin-overview')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'admin-overview'
-                  ? 'bg-red-100 text-red-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Activity className="h-5 w-5" />
-              <span>Overview</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('admin-staff')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'admin-staff'
-                  ? 'bg-red-100 text-red-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Users className="h-5 w-5" />
-              <span>Staff Management</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('admin-appointments')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'admin-appointments'
-                  ? 'bg-red-100 text-red-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Calendar className="h-5 w-5" />
-              <span>Appointments</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('admin-billing')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'admin-billing'
-                  ? 'bg-red-100 text-red-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <DollarSign className="h-5 w-5" />
-              <span>Billing</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('admin-settings')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'admin-settings'
-                  ? 'bg-red-100 text-red-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Settings className="h-5 w-5" />
-              <span>Settings</span>
-            </button>
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Admin Workflow</h3>
+            <div className="space-y-1">
+              {[
+                { id: 'overview' as const, label: 'Overview', icon: Activity },
+                { id: 'staff' as const, label: 'Staff Management', icon: Users },
+                { id: 'appointments' as const, label: 'Appointments', icon: Calendar },
+                { id: 'billing' as const, label: 'Billing', icon: DollarSign },
+                { id: 'settings' as const, label: 'Settings', icon: Settings }
+              ].map((step, index) => {
+                const isCurrent = currentStep === step.id;
+                const isCompleted = completedSteps.has(step.id);
+                const canAccess = canAccessStep(step.id);
+                const Icon = step.icon;
+                
+                return (
+                  <div key={step.id} className="relative">
+                    <button
+                      onClick={() => canAccess && setCurrentStep(step.id)}
+                      disabled={!canAccess}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                        isCurrent
+                          ? 'bg-red-100 text-red-700 font-medium'
+                          : isCompleted
+                          ? 'bg-red-50 text-red-700'
+                          : canAccess
+                          ? 'text-gray-600 hover:bg-gray-100'
+                          : 'text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="relative">
+                        {isCompleted ? (
+                          <CheckCircle className="h-5 w-5 text-red-600" />
+                        ) : !canAccess ? (
+                          <Lock className="h-5 w-5" />
+                        ) : (
+                          <Icon className="h-5 w-5" />
+                        )}
+                      </div>
+                      <span>{step.label}</span>
+                      {isCurrent && (
+                        <ChevronRight className="h-4 w-4 ml-auto" />
+                      )}
+                    </button>
+                    {index < 4 && (
+                      <div className="absolute left-7 top-10 w-0.5 h-4 bg-gray-200" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </nav>
 

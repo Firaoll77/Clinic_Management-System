@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
 import {
   Search,
@@ -20,7 +21,8 @@ import {
   Stethoscope,
   Users,
   Receipt,
-  DollarSign
+  DollarSign,
+  Calendar
 } from 'lucide-react';
 
 interface WaitingPatient {
@@ -82,7 +84,7 @@ export default function ReceptionistDashboardPage() {
   const { user } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
   const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
-  const [activeTab, setActiveTab] = useState<'search' | 'register' | 'doctors' | 'billing'>('search');
+  const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<WaitingPatient | null>(null);
   const [waitingPatients, setWaitingPatients] = useState<WaitingPatient[]>([]);
@@ -479,7 +481,7 @@ export default function ReceptionistDashboardPage() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
-      {navTab === 'receptionist-queue' && (
+      {currentStep === 'queue' && (
       <>
       {/* Left Side - Live Queue (50%) */}
       <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
@@ -567,20 +569,20 @@ export default function ReceptionistDashboardPage() {
         {/* Action Tabs */}
         <div className="border-b border-gray-200 bg-white">
           <div className="flex space-x-0">
-            {(['search', 'register', 'doctors', 'billing'] as const).map((tab) => (
+            {(['queue', 'registration', 'appointments', 'billing'] as const).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => setCurrentStep(tab)}
                 className={`flex-1 px-4 py-4 font-medium transition-colors border-b-2 flex items-center justify-center ${
-                  activeTab === tab
+                  currentStep === tab
                     ? 'border-green-500 text-green-600 bg-green-50'
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
-                {tab === 'search' && <Search className="h-5 w-5 mr-2" />}
-                {tab === 'register' && <UserPlus className="h-5 w-5 mr-2" />}
-                {tab === 'doctors' && <Stethoscope className="h-5 w-5 mr-2" />}
-                {tab === 'billing' && <DollarSign className="h-5 w-5 mr-2" />}
+                {tab === 'queue' && <Users className="h-5 w-5 mr-2" />}
+                {tab === 'registration' && <UserPlus className="h-5 w-5 mr-2" />}
+                {tab === 'appointments' && <Calendar className="h-5 w-5 mr-2" />}
+                {tab === 'billing' && <Receipt className="h-5 w-5 mr-2" />}
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
             ))}
@@ -589,7 +591,7 @@ export default function ReceptionistDashboardPage() {
 
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'search' && (
+          {currentStep === 'queue' && (
             <div className="space-y-4">
               {selectedPatient ? (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -744,7 +746,7 @@ export default function ReceptionistDashboardPage() {
             </div>
           )}
 
-          {activeTab === 'register' && (
+          {currentStep === 'registration' as any && (
             <div className="space-y-4">
               {!showPatientForm ? (
                 <button
@@ -886,13 +888,36 @@ export default function ReceptionistDashboardPage() {
                     >
                       Register Patient
                     </button>
+                    <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prevStep = getPreviousStep('registration');
+                          if (prevStep) setCurrentStep(prevStep);
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          completeStep('registration');
+                          const nextStep = getNextStep('registration');
+                          if (nextStep) setCurrentStep(nextStep);
+                        }}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      >
+                        Complete & Continue
+                      </button>
+                    </div>
                   </form>
                 </div>
               )}
             </div>
           )}
 
-          {activeTab === 'doctors' && (
+          {currentStep === 'appointments' as any && (
             <div className="space-y-4">
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="p-4 border-b border-gray-200 bg-gray-50">
@@ -936,10 +961,31 @@ export default function ReceptionistDashboardPage() {
                   )}
                 </div>
               </div>
+              <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    const prevStep = getPreviousStep('appointments');
+                    if (prevStep) setCurrentStep(prevStep);
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => {
+                    completeStep('appointments');
+                    const nextStep = getNextStep('appointments');
+                    if (nextStep) setCurrentStep(nextStep);
+                  }}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  Complete & Continue
+                </button>
+              </div>
             </div>
           )}
 
-          {activeTab === 'billing' && (
+          {currentStep === 'billing' as any && (
             <div className="space-y-4">
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="p-4 border-b border-gray-200 bg-gray-50">
@@ -1009,6 +1055,26 @@ export default function ReceptionistDashboardPage() {
                     ))
                   )}
                 </div>
+              </div>
+              <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    const prevStep = getPreviousStep('billing');
+                    if (prevStep) setCurrentStep(prevStep);
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => {
+                    completeStep('billing');
+                    showSuccess('Reception workflow completed!');
+                  }}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  Complete Workflow
+                </button>
               </div>
             </div>
           )}
@@ -1198,10 +1264,10 @@ export default function ReceptionistDashboardPage() {
       </>
       )}
 
-      {navTab !== 'receptionist-queue' && (
+      {currentStep !== 'queue' && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center text-gray-500">
-            <p className="text-lg font-medium">{navTab.replace('receptionist-', '').charAt(0).toUpperCase() + navTab.replace('receptionist-', '').slice(1)} view coming soon</p>
+            <p className="text-lg font-medium">{currentStep.charAt(0).toUpperCase() + currentStep.slice(1)} view coming soon</p>
           </div>
         </div>
       )}

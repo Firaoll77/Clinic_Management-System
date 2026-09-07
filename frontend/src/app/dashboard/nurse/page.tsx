@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
 import { 
   HeartPulse, 
@@ -70,6 +71,7 @@ export default function NurseDashboardPage() {
   const { user } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
   const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
+  const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
   const [triagePatients, setTriagePatients] = useState<TriagePatient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<TriagePatient | null>(null);
   const [showVitalsForm, setShowVitalsForm] = useState(false);
@@ -343,7 +345,7 @@ export default function NurseDashboardPage() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
-      {navTab === 'nurse-triage' && (
+      {currentStep === 'triage' && (
       <>
       {/* Left Side - Triage Queue (50%) */}
       <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
@@ -604,6 +606,29 @@ export default function NurseDashboardPage() {
                   >
                     Save Vitals
                   </button>
+                  <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const prevStep = getPreviousStep('vitals');
+                        if (prevStep) setCurrentStep(prevStep);
+                      }}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        completeStep('vitals');
+                        const nextStep = getNextStep('vitals');
+                        if (nextStep) setCurrentStep(nextStep);
+                      }}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                    >
+                      Complete & Continue
+                    </button>
+                  </div>
                 </form>
               </div>
             )}
@@ -676,6 +701,28 @@ export default function NurseDashboardPage() {
                   >
                     Save Intake
                   </button>
+                  <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const prevStep = getPreviousStep('intake');
+                        if (prevStep) setCurrentStep(prevStep);
+                      }}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        completeStep('intake');
+                        showSuccess('Nurse workflow completed!');
+                      }}
+                      className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+                    >
+                      Complete Workflow
+                    </button>
+                  </div>
                 </form>
               </div>
             )}
@@ -727,10 +774,10 @@ export default function NurseDashboardPage() {
       </>
       )}
 
-      {navTab !== 'nurse-triage' && (
+      {currentStep !== 'triage' && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center text-gray-500">
-            <p className="text-lg font-medium">{navTab.replace('nurse-', '').charAt(0).toUpperCase() + navTab.replace('nurse-', '').slice(1)} view coming soon</p>
+            <p className="text-lg font-medium">{currentStep.charAt(0).toUpperCase() + currentStep.slice(1)} view coming soon</p>
           </div>
         </div>
       )}

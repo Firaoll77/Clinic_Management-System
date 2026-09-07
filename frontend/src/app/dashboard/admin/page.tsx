@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
 import Link from 'next/link';
 import { 
@@ -85,6 +86,7 @@ type PatientFilter = 'active' | 'archived' | 'all';
 export default function AdminDashboardPage() {
   const { user } = useAuth();
   const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
+  const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
 
   // Active Main Tab
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -619,7 +621,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {navTab === 'admin-overview' && (
+      {currentStep === 'overview' && (
       <>
       {/* Toast Notification Banner */}
       <AnimatePresence>
@@ -1017,6 +1019,29 @@ export default function AdminDashboardPage() {
                 <span className="text-xs text-gray-500">Continuous audit streaming active</span>
               </div>
             </div>
+          </div>
+
+          {/* Workflow Navigation */}
+          <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                const prevStep = getPreviousStep('overview');
+                if (prevStep) setCurrentStep(prevStep);
+              }}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => {
+                completeStep('overview');
+                const nextStep = getNextStep('overview');
+                if (nextStep) setCurrentStep(nextStep);
+              }}
+              className="flex-1 px-4 py-2 bg-[#D93344] text-white rounded-lg hover:bg-[#c02d3c] transition-colors font-medium"
+            >
+              Complete & Continue
+            </button>
           </div>
         </div>
       )}
@@ -2114,10 +2139,10 @@ export default function AdminDashboardPage() {
       </>
       )}
 
-      {navTab !== 'admin-overview' && (
+      {currentStep !== 'overview' && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center text-gray-500">
-            <p className="text-lg font-medium">{navTab.replace('admin-', '').charAt(0).toUpperCase() + navTab.replace('admin-', '').slice(1)} view coming soon</p>
+            <p className="text-lg font-medium">{currentStep.charAt(0).toUpperCase() + currentStep.slice(1)} view coming soon</p>
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useWorkflow } from '@/contexts/WorkflowContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { 
@@ -12,7 +13,9 @@ import {
   Beaker,
   Clock,
   CheckCircle,
-  Activity
+  Activity,
+  ChevronRight,
+  Lock
 } from 'lucide-react';
 
 export default function LaboratoristDashboardLayout({
@@ -22,6 +25,7 @@ export default function LaboratoristDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const { activeTab, setActiveTab, role, setRole } = useNavigation();
+  const { currentStep, setCurrentStep, completedSteps, canAccessStep, getNextStep, getPreviousStep, setWorkflowSteps } = useWorkflow();
   const router = useRouter();
 
   // Set role on mount
@@ -29,12 +33,10 @@ export default function LaboratoristDashboardLayout({
     setRole('laboratorist');
   }, [setRole]);
 
-  // Initialize to pending tab
+  // Initialize workflow steps for laboratorist
   useEffect(() => {
-    if (activeTab === 'default' || !activeTab.startsWith('laboratorist-')) {
-      setActiveTab('laboratorist-pending');
-    }
-  }, [activeTab, setActiveTab]);
+    setWorkflowSteps(['pending', 'in-progress', 'completed']);
+  }, [setWorkflowSteps]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -97,42 +99,57 @@ export default function LaboratoristDashboardLayout({
 
       {/* Main Content with Sidebar */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Vertical Sidebar */}
+        {/* Vertical Sidebar - Workflow Steps */}
         <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
-          <div className="p-4 space-y-2">
-            <button
-              onClick={() => setActiveTab('laboratorist-pending')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'laboratorist-pending'
-                  ? 'bg-orange-100 text-orange-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Clock className="h-5 w-5" />
-              <span>Pending Orders</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('laboratorist-in-progress')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'laboratorist-in-progress'
-                  ? 'bg-orange-100 text-orange-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Activity className="h-5 w-5" />
-              <span>In Progress</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('laboratorist-completed')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'laboratorist-completed'
-                  ? 'bg-orange-100 text-orange-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <CheckCircle className="h-5 w-5" />
-              <span>Completed</span>
-            </button>
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Lab Workflow</h3>
+            <div className="space-y-1">
+              {[
+                { id: 'pending' as const, label: 'Pending Orders', icon: Clock },
+                { id: 'in-progress' as const, label: 'In Progress', icon: Activity },
+                { id: 'completed' as const, label: 'Completed', icon: CheckCircle }
+              ].map((step, index) => {
+                const isCurrent = currentStep === step.id;
+                const isCompleted = completedSteps.has(step.id);
+                const canAccess = canAccessStep(step.id);
+                const Icon = step.icon;
+                
+                return (
+                  <div key={step.id} className="relative">
+                    <button
+                      onClick={() => canAccess && setCurrentStep(step.id)}
+                      disabled={!canAccess}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                        isCurrent
+                          ? 'bg-orange-100 text-orange-700 font-medium'
+                          : isCompleted
+                          ? 'bg-orange-50 text-orange-700'
+                          : canAccess
+                          ? 'text-gray-600 hover:bg-gray-100'
+                          : 'text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="relative">
+                        {isCompleted ? (
+                          <CheckCircle className="h-5 w-5 text-orange-600" />
+                        ) : !canAccess ? (
+                          <Lock className="h-5 w-5" />
+                        ) : (
+                          <Icon className="h-5 w-5" />
+                        )}
+                      </div>
+                      <span>{step.label}</span>
+                      {isCurrent && (
+                        <ChevronRight className="h-4 w-4 ml-auto" />
+                      )}
+                    </button>
+                    {index < 2 && (
+                      <div className="absolute left-7 top-10 w-0.5 h-4 bg-gray-200" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </nav>
 

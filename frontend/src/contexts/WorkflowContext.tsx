@@ -2,7 +2,18 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 
-export type WorkflowStep = 'intake' | 'vitals' | 'encounter' | 'orders' | 'lab-results';
+export type DoctorWorkflowStep = 'intake' | 'vitals' | 'encounter' | 'orders' | 'lab-results';
+export type ReceptionistWorkflowStep = 'queue' | 'registration' | 'appointments' | 'billing';
+export type NurseWorkflowStep = 'triage' | 'vitals' | 'intake';
+export type LaboratoristWorkflowStep = 'pending' | 'in-progress' | 'completed';
+export type AdminWorkflowStep = 'overview' | 'staff' | 'appointments' | 'billing' | 'settings';
+
+export type WorkflowStep = 
+  | DoctorWorkflowStep 
+  | ReceptionistWorkflowStep 
+  | NurseWorkflowStep 
+  | LaboratoristWorkflowStep 
+  | AdminWorkflowStep;
 
 interface WorkflowContextType {
   currentStep: WorkflowStep;
@@ -12,15 +23,24 @@ interface WorkflowContextType {
   canAccessStep: (step: WorkflowStep) => boolean;
   getNextStep: (current: WorkflowStep) => WorkflowStep | null;
   getPreviousStep: (current: WorkflowStep) => WorkflowStep | null;
+  resetWorkflow: () => void;
+  setWorkflowSteps: (steps: WorkflowStep[]) => void;
 }
 
 const WorkflowContext = createContext<WorkflowContextType | undefined>(undefined);
 
-const stepOrder: WorkflowStep[] = ['intake', 'vitals', 'encounter', 'orders', 'lab-results'];
+const defaultWorkflows: Record<string, WorkflowStep[]> = {
+  doctor: ['intake', 'vitals', 'encounter', 'orders', 'lab-results'],
+  receptionist: ['queue', 'registration', 'appointments', 'billing'],
+  nurse: ['triage', 'vitals', 'intake'],
+  laboratorist: ['pending', 'in-progress', 'completed'],
+  admin: ['overview', 'staff', 'appointments', 'billing', 'settings']
+};
 
 export function WorkflowProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('intake');
   const [completedSteps, setCompletedSteps] = useState<Set<WorkflowStep>>(new Set());
+  const [stepOrder, setStepOrder] = useState<WorkflowStep[]>(defaultWorkflows.doctor);
 
   const completeStep = (step: WorkflowStep) => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -28,9 +48,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
 
   const canAccessStep = (step: WorkflowStep): boolean => {
     const stepIndex = stepOrder.indexOf(step);
-    if (stepIndex === 0) return true; // First step is always accessible
+    if (stepIndex === 0) return true;
     
-    // Check if previous step is completed
     const previousStep = stepOrder[stepIndex - 1];
     return completedSteps.has(previousStep);
   };
@@ -51,6 +70,17 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     return null;
   };
 
+  const resetWorkflow = () => {
+    setCompletedSteps(new Set());
+    setCurrentStep(stepOrder[0]);
+  };
+
+  const setWorkflowSteps = (steps: WorkflowStep[]) => {
+    setStepOrder(steps);
+    setCurrentStep(steps[0]);
+    setCompletedSteps(new Set());
+  };
+
   return (
     <WorkflowContext.Provider value={{
       currentStep,
@@ -59,7 +89,9 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       completeStep,
       canAccessStep,
       getNextStep,
-      getPreviousStep
+      getPreviousStep,
+      resetWorkflow,
+      setWorkflowSteps
     }}>
       {children}
     </WorkflowContext.Provider>

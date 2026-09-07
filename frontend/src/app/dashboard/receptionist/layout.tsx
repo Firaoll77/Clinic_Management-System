@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useWorkflow } from '@/contexts/WorkflowContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { 
@@ -13,7 +14,10 @@ import {
   Calendar,
   Receipt,
   Phone,
-  UserPlus
+  UserPlus,
+  ChevronRight,
+  Lock,
+  CheckCircle
 } from 'lucide-react';
 
 export default function ReceptionistDashboardLayout({
@@ -23,6 +27,7 @@ export default function ReceptionistDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const { activeTab, setActiveTab, role, setRole } = useNavigation();
+  const { currentStep, setCurrentStep, completedSteps, canAccessStep, getNextStep, getPreviousStep, setWorkflowSteps } = useWorkflow();
   const router = useRouter();
 
   // Set role on mount
@@ -30,12 +35,10 @@ export default function ReceptionistDashboardLayout({
     setRole('receptionist');
   }, [setRole]);
 
-  // Initialize to queue tab
+  // Initialize workflow steps for receptionist
   useEffect(() => {
-    if (activeTab === 'default' || !activeTab.startsWith('receptionist-')) {
-      setActiveTab('receptionist-queue');
-    }
-  }, [activeTab, setActiveTab]);
+    setWorkflowSteps(['queue', 'registration', 'appointments', 'billing']);
+  }, [setWorkflowSteps]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -98,53 +101,58 @@ export default function ReceptionistDashboardLayout({
 
       {/* Main Content with Sidebar */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Vertical Sidebar */}
+        {/* Vertical Sidebar - Workflow Steps */}
         <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
-          <div className="p-4 space-y-2">
-            <button
-              onClick={() => setActiveTab('receptionist-queue')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'receptionist-queue'
-                  ? 'bg-green-100 text-green-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Users className="h-5 w-5" />
-              <span>Patient Queue</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('receptionist-appointments')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'receptionist-appointments'
-                  ? 'bg-green-100 text-green-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Calendar className="h-5 w-5" />
-              <span>Appointments</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('receptionist-billing')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'receptionist-billing'
-                  ? 'bg-green-100 text-green-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Receipt className="h-5 w-5" />
-              <span>Billing</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('receptionist-register')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'receptionist-register'
-                  ? 'bg-green-100 text-green-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <UserPlus className="h-5 w-5" />
-              <span>Register Patient</span>
-            </button>
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Reception Workflow</h3>
+            <div className="space-y-1">
+              {[
+                { id: 'queue' as const, label: 'Patient Queue', icon: Users },
+                { id: 'registration' as const, label: 'Registration', icon: UserPlus },
+                { id: 'appointments' as const, label: 'Appointments', icon: Calendar },
+                { id: 'billing' as const, label: 'Billing', icon: Receipt }
+              ].map((step, index) => {
+                const isCurrent = currentStep === step.id;
+                const isCompleted = completedSteps.has(step.id);
+                const canAccess = canAccessStep(step.id);
+                const Icon = step.icon;
+                
+                return (
+                  <div key={step.id} className="relative">
+                    <button
+                      onClick={() => canAccess && setCurrentStep(step.id)}
+                      disabled={!canAccess}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                        isCurrent
+                          ? 'bg-green-100 text-green-700 font-medium'
+                          : isCompleted
+                          ? 'bg-green-50 text-green-700'
+                          : canAccess
+                          ? 'text-gray-600 hover:bg-gray-100'
+                          : 'text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="relative">
+                        {isCompleted ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : !canAccess ? (
+                          <Lock className="h-5 w-5" />
+                        ) : (
+                          <Icon className="h-5 w-5" />
+                        )}
+                      </div>
+                      <span>{step.label}</span>
+                      {isCurrent && (
+                        <ChevronRight className="h-4 w-4 ml-auto" />
+                      )}
+                    </button>
+                    {index < 3 && (
+                      <div className="absolute left-7 top-10 w-0.5 h-4 bg-gray-200" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </nav>
 

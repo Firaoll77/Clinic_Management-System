@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
 import {
   Beaker,
@@ -49,6 +50,7 @@ export default function LaboratoristDashboardPage() {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
   const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
+  const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
   const [assignments, setAssignments] = useState<LabAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAvailable, setIsAvailable] = useState(true);
@@ -156,11 +158,14 @@ export default function LaboratoristDashboardPage() {
         return;
       }
 
-      await apiClient.post(`/lab/orders/${selectedAssignmentForResults.labOrderId}/complete`, {});
-
-      showSuccess('Lab results saved and order completed successfully!');
+      showSuccess('Lab result saved successfully');
       setSelectedAssignmentForResults(null);
       fetchAssignments();
+      
+      // Mark pending step as complete and move to in-progress
+      completeStep('pending');
+      const nextStep = getNextStep('pending');
+      if (nextStep) setCurrentStep(nextStep);
     } catch (error) {
       console.error('Error submitting lab result:', error);
       showError('An error occurred while saving lab results');
@@ -201,7 +206,7 @@ export default function LaboratoristDashboardPage() {
 
   return (
     <div className="flex-1 overflow-x-auto p-6">
-      {navTab === 'laboratorist-pending' && (
+      {currentStep === 'pending' && (
       <>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Lab Technician Dashboard</h1>
@@ -399,10 +404,13 @@ export default function LaboratoristDashboardPage() {
               <div className="flex space-x-3 pt-4 border-t">
                 <button
                   type="button"
-                  onClick={() => setSelectedAssignmentForResults(null)}
+                  onClick={() => {
+                    const prevStep = getPreviousStep('pending');
+                    if (prevStep) setCurrentStep(prevStep);
+                  }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium text-sm"
                 >
-                  Cancel
+                  Back
                 </button>
                 <button
                   type="submit"
@@ -410,7 +418,7 @@ export default function LaboratoristDashboardPage() {
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm flex items-center justify-center space-x-2 disabled:opacity-50"
                 >
                   <Beaker className="h-4 w-4" />
-                  <span>{submittingResult ? 'Saving...' : 'Save & Complete Order'}</span>
+                  <span>{submittingResult ? 'Saving...' : 'Save & Continue'}</span>
                 </button>
               </div>
             </form>
@@ -420,10 +428,10 @@ export default function LaboratoristDashboardPage() {
       </>
       )}
 
-      {navTab !== 'laboratorist-pending' && (
+      {currentStep !== 'pending' && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center text-gray-500">
-            <p className="text-lg font-medium">{navTab.replace('laboratorist-', '').charAt(0).toUpperCase() + navTab.replace('laboratorist-', '').slice(1)} view coming soon</p>
+            <p className="text-lg font-medium">{currentStep.charAt(0).toUpperCase() + currentStep.slice(1)} view coming soon</p>
           </div>
         </div>
       )}
