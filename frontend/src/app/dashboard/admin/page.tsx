@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { apiClient } from '@/lib/api';
 import Link from 'next/link';
 import { 
@@ -83,6 +84,7 @@ type PatientFilter = 'active' | 'archived' | 'all';
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
+  const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
 
   // Active Main Tab
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -617,6 +619,8 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
+      {navTab === 'admin-overview' && (
+      <>
       {/* Toast Notification Banner */}
       <AnimatePresence>
         {toast && (
@@ -2107,6 +2111,16 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </AnimatePresence>
+      </>
+      )}
+
+      {navTab !== 'admin-overview' && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <p className="text-lg font-medium">{navTab.replace('admin-', '').charAt(0).toUpperCase() + navTab.replace('admin-', '').slice(1)} view coming soon</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

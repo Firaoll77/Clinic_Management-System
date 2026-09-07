@@ -21,8 +21,20 @@ export default function NurseDashboardLayout({
   children: React.ReactNode;
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
-  const { activeTab, setActiveTab } = useNavigation();
+  const { activeTab, setActiveTab, role, setRole } = useNavigation();
   const router = useRouter();
+
+  // Set role on mount
+  useEffect(() => {
+    setRole('nurse');
+  }, [setRole]);
+
+  // Initialize to triage tab
+  useEffect(() => {
+    if (activeTab === 'default' || !activeTab.startsWith('nurse-')) {
+      setActiveTab('nurse-triage');
+    }
+  }, [activeTab, setActiveTab]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -89,9 +101,9 @@ export default function NurseDashboardLayout({
         <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
           <div className="p-4 space-y-2">
             <button
-              onClick={() => setActiveTab('triage')}
+              onClick={() => setActiveTab('nurse-triage')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'triage'
+                activeTab === 'nurse-triage'
                   ? 'bg-pink-100 text-pink-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -100,9 +112,9 @@ export default function NurseDashboardLayout({
               <span>Triage Queue</span>
             </button>
             <button
-              onClick={() => setActiveTab('vitals')}
+              onClick={() => setActiveTab('nurse-vitals')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'vitals'
+                activeTab === 'nurse-vitals'
                   ? 'bg-pink-100 text-pink-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -111,9 +123,9 @@ export default function NurseDashboardLayout({
               <span>Vitals</span>
             </button>
             <button
-              onClick={() => setActiveTab('intake')}
+              onClick={() => setActiveTab('nurse-intake')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'intake'
+                activeTab === 'nurse-intake'
                   ? 'bg-pink-100 text-pink-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}

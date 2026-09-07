@@ -12,7 +12,8 @@ import {
   Users,
   Calendar,
   Receipt,
-  Phone
+  Phone,
+  UserPlus
 } from 'lucide-react';
 
 export default function ReceptionistDashboardLayout({
@@ -21,8 +22,20 @@ export default function ReceptionistDashboardLayout({
   children: React.ReactNode;
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
-  const { activeTab, setActiveTab } = useNavigation();
+  const { activeTab, setActiveTab, role, setRole } = useNavigation();
   const router = useRouter();
+
+  // Set role on mount
+  useEffect(() => {
+    setRole('receptionist');
+  }, [setRole]);
+
+  // Initialize to queue tab
+  useEffect(() => {
+    if (activeTab === 'default' || !activeTab.startsWith('receptionist-')) {
+      setActiveTab('receptionist-queue');
+    }
+  }, [activeTab, setActiveTab]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -89,9 +102,9 @@ export default function ReceptionistDashboardLayout({
         <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
           <div className="p-4 space-y-2">
             <button
-              onClick={() => setActiveTab('queue')}
+              onClick={() => setActiveTab('receptionist-queue')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'queue'
+                activeTab === 'receptionist-queue'
                   ? 'bg-green-100 text-green-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -100,9 +113,9 @@ export default function ReceptionistDashboardLayout({
               <span>Patient Queue</span>
             </button>
             <button
-              onClick={() => setActiveTab('appointments')}
+              onClick={() => setActiveTab('receptionist-appointments')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'appointments'
+                activeTab === 'receptionist-appointments'
                   ? 'bg-green-100 text-green-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -111,9 +124,9 @@ export default function ReceptionistDashboardLayout({
               <span>Appointments</span>
             </button>
             <button
-              onClick={() => setActiveTab('billing')}
+              onClick={() => setActiveTab('receptionist-billing')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'billing'
+                activeTab === 'receptionist-billing'
                   ? 'bg-green-100 text-green-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -122,14 +135,14 @@ export default function ReceptionistDashboardLayout({
               <span>Billing</span>
             </button>
             <button
-              onClick={() => setActiveTab('register')}
+              onClick={() => setActiveTab('receptionist-register')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'register'
+                activeTab === 'receptionist-register'
                   ? 'bg-green-100 text-green-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <Phone className="h-5 w-5" />
+              <UserPlus className="h-5 w-5" />
               <span>Register Patient</span>
             </button>
           </div>

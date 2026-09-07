@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { apiClient } from '@/lib/api';
 import { 
   HeartPulse, 
@@ -68,6 +69,7 @@ interface Doctor {
 export default function NurseDashboardPage() {
   const { user } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
+  const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
   const [triagePatients, setTriagePatients] = useState<TriagePatient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<TriagePatient | null>(null);
   const [showVitalsForm, setShowVitalsForm] = useState(false);
@@ -341,6 +343,8 @@ export default function NurseDashboardPage() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
+      {navTab === 'nurse-triage' && (
+      <>
       {/* Left Side - Triage Queue (50%) */}
       <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -720,6 +724,16 @@ export default function NurseDashboardPage() {
           </div>
         )}
       </div>
+      </>
+      )}
+
+      {navTab !== 'nurse-triage' && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <p className="text-lg font-medium">{navTab.replace('nurse-', '').charAt(0).toUpperCase() + navTab.replace('nurse-', '').slice(1)} view coming soon</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

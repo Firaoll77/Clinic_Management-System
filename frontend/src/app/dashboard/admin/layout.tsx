@@ -22,8 +22,20 @@ export default function AdminDashboardLayout({
   children: React.ReactNode;
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
-  const { activeTab, setActiveTab } = useNavigation();
+  const { activeTab, setActiveTab, role, setRole } = useNavigation();
   const router = useRouter();
+
+  // Set role on mount
+  useEffect(() => {
+    setRole('admin');
+  }, [setRole]);
+
+  // Initialize to overview tab
+  useEffect(() => {
+    if (activeTab === 'default' || !activeTab.startsWith('admin-')) {
+      setActiveTab('admin-overview');
+    }
+  }, [activeTab, setActiveTab]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -90,9 +102,9 @@ export default function AdminDashboardLayout({
         <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
           <div className="p-4 space-y-2">
             <button
-              onClick={() => setActiveTab('overview')}
+              onClick={() => setActiveTab('admin-overview')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'overview'
+                activeTab === 'admin-overview'
                   ? 'bg-red-100 text-red-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -101,9 +113,9 @@ export default function AdminDashboardLayout({
               <span>Overview</span>
             </button>
             <button
-              onClick={() => setActiveTab('staff')}
+              onClick={() => setActiveTab('admin-staff')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'staff'
+                activeTab === 'admin-staff'
                   ? 'bg-red-100 text-red-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -112,9 +124,9 @@ export default function AdminDashboardLayout({
               <span>Staff Management</span>
             </button>
             <button
-              onClick={() => setActiveTab('appointments')}
+              onClick={() => setActiveTab('admin-appointments')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'appointments'
+                activeTab === 'admin-appointments'
                   ? 'bg-red-100 text-red-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -123,9 +135,9 @@ export default function AdminDashboardLayout({
               <span>Appointments</span>
             </button>
             <button
-              onClick={() => setActiveTab('billing')}
+              onClick={() => setActiveTab('admin-billing')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'billing'
+                activeTab === 'admin-billing'
                   ? 'bg-red-100 text-red-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -134,14 +146,14 @@ export default function AdminDashboardLayout({
               <span>Billing</span>
             </button>
             <button
-              onClick={() => setActiveTab('settings')}
+              onClick={() => setActiveTab('admin-settings')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'settings'
+                activeTab === 'admin-settings'
                   ? 'bg-red-100 text-red-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <Shield className="h-5 w-5" />
+              <Settings className="h-5 w-5" />
               <span>Settings</span>
             </button>
           </div>

@@ -21,8 +21,20 @@ export default function LaboratoristDashboardLayout({
   children: React.ReactNode;
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
-  const { activeTab, setActiveTab } = useNavigation();
+  const { activeTab, setActiveTab, role, setRole } = useNavigation();
   const router = useRouter();
+
+  // Set role on mount
+  useEffect(() => {
+    setRole('laboratorist');
+  }, [setRole]);
+
+  // Initialize to pending tab
+  useEffect(() => {
+    if (activeTab === 'default' || !activeTab.startsWith('laboratorist-')) {
+      setActiveTab('laboratorist-pending');
+    }
+  }, [activeTab, setActiveTab]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -89,9 +101,9 @@ export default function LaboratoristDashboardLayout({
         <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
           <div className="p-4 space-y-2">
             <button
-              onClick={() => setActiveTab('pending')}
+              onClick={() => setActiveTab('laboratorist-pending')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'pending'
+                activeTab === 'laboratorist-pending'
                   ? 'bg-orange-100 text-orange-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -100,9 +112,9 @@ export default function LaboratoristDashboardLayout({
               <span>Pending Orders</span>
             </button>
             <button
-              onClick={() => setActiveTab('in-progress')}
+              onClick={() => setActiveTab('laboratorist-in-progress')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'in-progress'
+                activeTab === 'laboratorist-in-progress'
                   ? 'bg-orange-100 text-orange-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -111,9 +123,9 @@ export default function LaboratoristDashboardLayout({
               <span>In Progress</span>
             </button>
             <button
-              onClick={() => setActiveTab('completed')}
+              onClick={() => setActiveTab('laboratorist-completed')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'completed'
+                activeTab === 'laboratorist-completed'
                   ? 'bg-orange-100 text-orange-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}

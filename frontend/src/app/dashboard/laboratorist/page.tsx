@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { apiClient } from '@/lib/api';
 import {
   Beaker,
@@ -47,6 +48,7 @@ interface LabAssignment {
 export default function LaboratoristDashboardPage() {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
   const [assignments, setAssignments] = useState<LabAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAvailable, setIsAvailable] = useState(true);
@@ -199,6 +201,8 @@ export default function LaboratoristDashboardPage() {
 
   return (
     <div className="flex-1 overflow-x-auto p-6">
+      {navTab === 'laboratorist-pending' && (
+      <>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Lab Technician Dashboard</h1>
         <button
@@ -410,6 +414,16 @@ export default function LaboratoristDashboardPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {navTab !== 'laboratorist-pending' && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <p className="text-lg font-medium">{navTab.replace('laboratorist-', '').charAt(0).toUpperCase() + navTab.replace('laboratorist-', '').slice(1)} view coming soon</p>
           </div>
         </div>
       )}

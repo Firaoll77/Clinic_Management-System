@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 import { apiClient } from '@/lib/api';
 import {
   Search,
@@ -80,6 +81,7 @@ interface NewPatient {
 export default function ReceptionistDashboardPage() {
   const { user } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
+  const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
   const [activeTab, setActiveTab] = useState<'search' | 'register' | 'doctors' | 'billing'>('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<WaitingPatient | null>(null);
@@ -477,6 +479,8 @@ export default function ReceptionistDashboardPage() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
+      {navTab === 'receptionist-queue' && (
+      <>
       {/* Left Side - Live Queue (50%) */}
       <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
@@ -1188,6 +1192,16 @@ export default function ReceptionistDashboardPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {navTab !== 'receptionist-queue' && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <p className="text-lg font-medium">{navTab.replace('receptionist-', '').charAt(0).toUpperCase() + navTab.replace('receptionist-', '').slice(1)} view coming soon</p>
           </div>
         </div>
       )}

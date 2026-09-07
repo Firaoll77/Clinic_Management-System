@@ -394,7 +394,7 @@ export default function DoctorDashboardPage() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
-      {navTab === 'patients' && (
+      {navTab === 'doctor-patients' && (
       <>
       {/* Left Sidebar - Patient Queue (30%) */}
       <div className="w-[30%] border-r border-gray-200 bg-white flex flex-col">
@@ -991,10 +991,10 @@ export default function DoctorDashboardPage() {
       </>
       )}
 
-      {navTab !== 'patients' && (
+      {navTab !== 'doctor-patients' && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center text-gray-500">
-            <p className="text-lg font-medium">{navTab.charAt(0).toUpperCase() + navTab.slice(1)} view coming soon</p>
+            <p className="text-lg font-medium">{navTab.replace('doctor-', '').charAt(0).toUpperCase() + navTab.replace('doctor-', '').slice(1)} view coming soon</p>
           </div>
         </div>
       )}

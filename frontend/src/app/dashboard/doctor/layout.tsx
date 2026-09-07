@@ -23,13 +23,18 @@ export default function DoctorDashboardLayout({
   children: React.ReactNode;
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
-  const { activeTab, setActiveTab } = useNavigation();
+  const { activeTab, setActiveTab, role, setRole } = useNavigation();
   const router = useRouter();
+
+  // Set role on mount
+  useEffect(() => {
+    setRole('doctor');
+  }, [setRole]);
 
   // Initialize to patients tab
   useEffect(() => {
-    if (activeTab === 'default') {
-      setActiveTab('patients');
+    if (activeTab === 'default' || !activeTab.startsWith('doctor-')) {
+      setActiveTab('doctor-patients');
     }
   }, [activeTab, setActiveTab]);
 
@@ -98,9 +103,9 @@ export default function DoctorDashboardLayout({
         <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
           <div className="p-4 space-y-2">
             <button
-              onClick={() => setActiveTab('patients')}
+              onClick={() => setActiveTab('doctor-patients')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'patients'
+                activeTab === 'doctor-patients'
                   ? 'bg-blue-100 text-blue-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -109,9 +114,9 @@ export default function DoctorDashboardLayout({
               <span>Patients</span>
             </button>
             <button
-              onClick={() => setActiveTab('appointments')}
+              onClick={() => setActiveTab('doctor-appointments')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'appointments'
+                activeTab === 'doctor-appointments'
                   ? 'bg-blue-100 text-blue-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -120,9 +125,9 @@ export default function DoctorDashboardLayout({
               <span>Appointments</span>
             </button>
             <button
-              onClick={() => setActiveTab('lab-results')}
+              onClick={() => setActiveTab('doctor-lab-results')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'lab-results'
+                activeTab === 'doctor-lab-results'
                   ? 'bg-blue-100 text-blue-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
@@ -131,14 +136,14 @@ export default function DoctorDashboardLayout({
               <span>Lab Results</span>
             </button>
             <button
-              onClick={() => setActiveTab('prescriptions')}
+              onClick={() => setActiveTab('doctor-prescriptions')}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'prescriptions'
+                activeTab === 'doctor-prescriptions'
                   ? 'bg-blue-100 text-blue-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <FileText className="h-5 w-5" />
+              <Activity className="h-5 w-5" />
               <span>Prescriptions</span>
             </button>
           </div>
