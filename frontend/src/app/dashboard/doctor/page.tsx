@@ -37,6 +37,8 @@ interface Patient {
   lastName: string;
   mrn: string;
   appointmentTime: string;
+  arrivalTime?: string;
+  spentTime?: string;
   reason: string;
   status: 'waiting' | 'in-progress' | 'completed';
   urgency: 'routine' | 'urgent' | 'stat';
@@ -440,10 +442,24 @@ export default function DoctorDashboardPage() {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{patient.firstName} {patient.lastName}</h3>
-                    <p className="text-sm text-gray-600 flex items-center mt-1">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {patient.appointmentTime}
-                    </p>
+                    <div className="flex items-center space-x-3 mt-1">
+                      {patient.arrivalTime && (
+                        <p className="text-sm text-gray-600 flex items-center">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {new Date(patient.arrivalTime).toLocaleDateString()}
+                        </p>
+                      )}
+                      <p className="text-sm text-gray-600 flex items-center">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {patient.appointmentTime}
+                      </p>
+                      {patient.spentTime && (
+                        <p className="text-sm text-gray-600 flex items-center">
+                          <Activity className="h-3 w-3 mr-1" />
+                          {patient.spentTime}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full border ${getUrgencyColor(patient.urgency)}`}>
                     {patient.urgency.toUpperCase()}
