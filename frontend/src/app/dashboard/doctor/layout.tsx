@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useWorkflow } from '@/contexts/WorkflowContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { 
@@ -9,12 +10,13 @@ import {
   HeartPulse,
   User,
   Settings,
-  ChevronLeft,
   Users,
   Calendar,
-  FileText,
   Activity,
-  Beaker
+  Beaker,
+  ChevronRight,
+  Lock,
+  CheckCircle
 } from 'lucide-react';
 
 export default function DoctorDashboardLayout({
@@ -24,6 +26,7 @@ export default function DoctorDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const { activeTab, setActiveTab, role, setRole } = useNavigation();
+  const { currentStep, setCurrentStep, completedSteps, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
   const router = useRouter();
 
   // Set role on mount
@@ -99,53 +102,59 @@ export default function DoctorDashboardLayout({
 
       {/* Main Content with Sidebar */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Vertical Sidebar */}
+        {/* Vertical Sidebar - Workflow Steps */}
         <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
-          <div className="p-4 space-y-2">
-            <button
-              onClick={() => setActiveTab('doctor-patients')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'doctor-patients'
-                  ? 'bg-blue-100 text-blue-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Users className="h-5 w-5" />
-              <span>Patients</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('doctor-appointments')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'doctor-appointments'
-                  ? 'bg-blue-100 text-blue-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Calendar className="h-5 w-5" />
-              <span>Appointments</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('doctor-lab-results')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'doctor-lab-results'
-                  ? 'bg-blue-100 text-blue-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Beaker className="h-5 w-5" />
-              <span>Lab Results</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('doctor-prescriptions')}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'doctor-prescriptions'
-                  ? 'bg-blue-100 text-blue-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Activity className="h-5 w-5" />
-              <span>Prescriptions</span>
-            </button>
+          <div className="p-4">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Patient Workflow</h3>
+            <div className="space-y-1">
+              {[
+                { id: 'intake' as const, label: 'Intake', icon: Users },
+                { id: 'vitals' as const, label: 'Vitals', icon: Activity },
+                { id: 'encounter' as const, label: 'Encounter', icon: HeartPulse },
+                { id: 'orders' as const, label: 'Orders', icon: Beaker },
+                { id: 'lab-results' as const, label: 'Lab Results', icon: CheckCircle }
+              ].map((step, index) => {
+                const isCurrent = currentStep === step.id;
+                const isCompleted = completedSteps.has(step.id);
+                const canAccess = canAccessStep(step.id);
+                const Icon = step.icon;
+                
+                return (
+                  <div key={step.id} className="relative">
+                    <button
+                      onClick={() => canAccess && setCurrentStep(step.id)}
+                      disabled={!canAccess}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                        isCurrent
+                          ? 'bg-blue-100 text-blue-700 font-medium'
+                          : isCompleted
+                          ? 'bg-green-50 text-green-700'
+                          : canAccess
+                          ? 'text-gray-600 hover:bg-gray-100'
+                          : 'text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="relative">
+                        {isCompleted ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : !canAccess ? (
+                          <Lock className="h-5 w-5" />
+                        ) : (
+                          <Icon className="h-5 w-5" />
+                        )}
+                      </div>
+                      <span>{step.label}</span>
+                      {isCurrent && (
+                        <ChevronRight className="h-4 w-4 ml-auto" />
+                      )}
+                    </button>
+                    {index < 4 && (
+                      <div className="absolute left-7 top-10 w-0.5 h-4 bg-gray-200" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </nav>
 

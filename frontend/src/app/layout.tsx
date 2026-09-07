@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { ToastProvider } from "@/contexts/ToastContext";
-import { NavigationProvider } from "@/contexts/NavigationContext";
-import { PageTransition } from "@/components/PageTransition";
+import { AuthProvider } from '@/contexts/AuthContext';
+import { NavigationProvider } from '@/contexts/NavigationContext';
+import { WorkflowProvider } from '@/contexts/WorkflowContext';
+import { ToastProvider } from '@/contexts/ToastContext';
+import { PageTransition } from '@/components/PageTransition';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,11 +25,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col bg-gradient-to-br from-teal-50 via-blue-50 to-indigo-50" suppressHydrationWarning>
         <NavigationProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <PageTransition>{children}</PageTransition>
-            </AuthProvider>
-          </ToastProvider>
+          <WorkflowProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <PageTransition>{children}</PageTransition>
+              </AuthProvider>
+            </ToastProvider>
+          </WorkflowProvider>
         </NavigationProvider>
       </body>
     </html>

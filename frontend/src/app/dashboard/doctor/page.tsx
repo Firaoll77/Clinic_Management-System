@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useNavigation } from '@/contexts/NavigationContext';
+import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
 import { evaluateCdsRules } from '@/lib/cdsRules';
 import { 
@@ -23,6 +24,7 @@ import {
   Scale,
   Pill,
   FlaskConical,
+  Beaker,
   X,
   Save,
   Printer
@@ -75,8 +77,8 @@ export default function DoctorDashboardPage() {
   const { user } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
   const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
+  const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [activeTab, setActiveTab] = useState<'intake' | 'vitals' | 'encounter' | 'orders' | 'lab-results'>('intake');
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
   const [nurseIntake, setNurseIntake] = useState<NurseIntake | null>(null);
@@ -222,6 +224,7 @@ export default function DoctorDashboardPage() {
     setVitals(null);
     setEncounters([]);
     setPatientLabOrders([]);
+    setCurrentStep('intake'); // Reset workflow to first step
     fetchPatientData(patient.patientId);
   };
 
@@ -251,6 +254,10 @@ export default function DoctorDashboardPage() {
       }
 
       showSuccess('Encounter saved successfully!');
+      completeStep('encounter'); // Mark encounter step as completed
+      const nextStep = getNextStep('encounter');
+      if (nextStep) setCurrentStep(nextStep);
+      
       setEncounterForm({
         chiefComplaint: '',
         subjective: '',
@@ -363,6 +370,10 @@ export default function DoctorDashboardPage() {
       }
 
       showSuccess('Lab order created successfully!');
+      completeStep('orders'); // Mark orders step as completed
+      const nextStep = getNextStep('orders');
+      if (nextStep) setCurrentStep(nextStep);
+      
       setLabOrderForm({
         testType: '',
         priority: 'routine',
@@ -490,7 +501,7 @@ export default function DoctorDashboardPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setActiveTab('lab-results')}
+                  onClick={() => setCurrentStep('lab-results')}
                   className="px-3 py-1 bg-amber-600 text-white text-xs font-semibold rounded hover:bg-amber-700 transition-colors"
                 >
                   View Details
@@ -500,7 +511,7 @@ export default function DoctorDashboardPage() {
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              {activeTab === 'intake' && (
+              {currentStep === 'intake' && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <FileText className="h-5 w-5 mr-2 text-blue-600" />
@@ -529,6 +540,18 @@ export default function DoctorDashboardPage() {
                         <p className="p-3 bg-gray-50 rounded-lg text-gray-900">{nurseIntake.notes || 'No additional notes'}</p>
                       </div>
                       <p className="text-xs text-gray-500 mt-4">Recorded: {new Date(nurseIntake.recordedAt).toLocaleString()}</p>
+                      <div className="mt-6 pt-4 border-t border-gray-200">
+                        <button
+                          onClick={() => {
+                            completeStep('intake');
+                            const nextStep = getNextStep('intake');
+                            if (nextStep) setCurrentStep(nextStep);
+                          }}
+                          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        >
+                          Complete Intake & Continue to Vitals
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
@@ -539,13 +562,14 @@ export default function DoctorDashboardPage() {
                 </div>
               )}
 
-              {activeTab === 'vitals' && (
+              {currentStep === 'vitals' && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <HeartPulse className="h-5 w-5 mr-2 text-blue-600" />
                     Patient Vitals
                   </h3>
                   {vitals ? (
+                    <>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="p-4 bg-blue-50 rounded-lg">
                         <div className="flex items-center mb-2">
@@ -604,6 +628,20 @@ export default function DoctorDashboardPage() {
                         <p className="text-xs text-gray-500">breaths/min</p>
                       </div>
                     </div>
+                    <p className="text-xs text-gray-500 mt-4">Recorded: {new Date(vitals.recordedAt).toLocaleString()}</p>
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          completeStep('vitals');
+                          const nextStep = getNextStep('vitals');
+                          if (nextStep) setCurrentStep(nextStep);
+                        }}
+                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      >
+                        Complete Vitals & Continue to Encounter
+                      </button>
+                    </div>
+                    </>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       <HeartPulse className="h-8 w-8 mx-auto mb-2 text-gray-300" />
@@ -613,11 +651,173 @@ export default function DoctorDashboardPage() {
                 </div>
               )}
 
-              {activeTab === 'lab-results' && (
+              {currentStep === 'encounter' && (
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <FlaskConical className="h-5 w-5 mr-2 text-blue-600" />
-                    Patient Lab Results
+                    <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                    Clinical Encounter (SOAP Notes)
+                  </h3>
+                  <form onSubmit={handleEncounterSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Chief Complaint</label>
+                      <input
+                        type="text"
+                        value={encounterForm.chiefComplaint}
+                        onChange={(e) => setEncounterForm({...encounterForm, chiefComplaint: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Subjective</label>
+                      <textarea
+                        value={encounterForm.subjective}
+                        onChange={(e) => setEncounterForm({...encounterForm, subjective: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        rows={3}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Objective</label>
+                      <textarea
+                        value={encounterForm.objective}
+                        onChange={(e) => setEncounterForm({...encounterForm, objective: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        rows={3}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Assessment</label>
+                      <textarea
+                        value={encounterForm.assessment}
+                        onChange={(e) => setEncounterForm({...encounterForm, assessment: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        rows={3}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
+                      <textarea
+                        value={encounterForm.plan}
+                        onChange={(e) => setEncounterForm({...encounterForm, plan: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        rows={3}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ICD-10 Code (optional)</label>
+                      <input
+                        type="text"
+                        value={encounterForm.icd10Code}
+                        onChange={(e) => setEncounterForm({...encounterForm, icd10Code: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prevStep = getPreviousStep('encounter');
+                          if (prevStep) setCurrentStep(prevStep);
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      >
+                        Save Encounter & Continue
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {currentStep === 'orders' && (
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Beaker className="h-5 w-5 mr-2 text-blue-600" />
+                    Lab Orders & Prescriptions
+                  </h3>
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-3">Lab Order</h4>
+                      <form onSubmit={handleLabOrderSubmit} className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Test Type</label>
+                          <input
+                            type="text"
+                            value={labOrderForm.testType}
+                            onChange={(e) => setLabOrderForm({...labOrderForm, testType: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                          <select
+                            value={labOrderForm.priority}
+                            onChange={(e) => setLabOrderForm({...labOrderForm, priority: e.target.value as any})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="routine">Routine</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="stat">STAT</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                          <textarea
+                            value={labOrderForm.notes}
+                            onChange={(e) => setLabOrderForm({...labOrderForm, notes: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            rows={2}
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        >
+                          Create Lab Order
+                        </button>
+                      </form>
+                    </div>
+                    <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          const prevStep = getPreviousStep('orders');
+                          if (prevStep) setCurrentStep(prevStep);
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={() => {
+                          completeStep('orders');
+                          const nextStep = getNextStep('orders');
+                          if (nextStep) setCurrentStep(nextStep);
+                        }}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                      >
+                        Complete Orders & Continue
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 'lab-results' && (
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <CheckCircle className="h-5 w-5 mr-2 text-blue-600" />
+                    Lab Results
                   </h3>
                   {patientLabOrders && patientLabOrders.length > 0 ? (
                     <div className="space-y-6">
@@ -636,7 +836,6 @@ export default function DoctorDashboardPage() {
                               {order.status}
                             </span>
                           </div>
-
                           {order.results && order.results.length > 0 ? (
                             <div className="overflow-x-auto">
                               <table className="min-w-full divide-y divide-gray-200 bg-white rounded-lg overflow-hidden border">
@@ -647,7 +846,6 @@ export default function DoctorDashboardPage() {
                                     <th className="px-4 py-2 text-left">Unit</th>
                                     <th className="px-4 py-2 text-left">Ref. Range</th>
                                     <th className="px-4 py-2 text-left">Flag</th>
-                                    <th className="px-4 py-2 text-left">Timestamp</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 text-sm">
@@ -668,9 +866,6 @@ export default function DoctorDashboardPage() {
                                           {res.flag === 'H' ? 'H (High)' : res.flag === 'L' ? 'L (Low)' : 'N (Normal)'}
                                         </span>
                                       </td>
-                                      <td className="px-4 py-2.5 text-xs text-gray-500">
-                                        {new Date(res.enteredAt).toLocaleString()}
-                                      </td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -684,310 +879,43 @@ export default function DoctorDashboardPage() {
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
-                      <FlaskConical className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <CheckCircle className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                       <p className="text-sm">No lab orders or results found for this patient</p>
                     </div>
                   )}
-                </div>
-              )}
-
-               {activeTab === 'encounter' && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                    <Stethoscope className="h-5 w-5 mr-2 text-blue-600" />
-                    Clinical Encounter
-                  </h3>
-
-                  {/* CDS Recommendations Component (Phase 3) */}
-                  {cdsRecommendations.length > 0 && (
-                    <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-indigo-900 text-sm flex items-center">
-                          <Activity className="h-4 w-4 mr-1.5 text-indigo-600" />
-                          Clinical Decision Support (CDS) Suggestions
-                        </h4>
-                        <span className="text-xs bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded font-medium">
-                          {cdsRecommendations.length} Rule Match{cdsRecommendations.length > 1 ? 'es' : ''}
-                        </span>
-                      </div>
-                      {cdsRecommendations.map((rec) => (
-                        <div key={rec.id} className="bg-white p-3 rounded border border-indigo-100 text-xs text-gray-700 space-y-2">
-                          <div className="font-medium text-gray-900">{rec.title} ({rec.value})</div>
-                          <p className="text-gray-600">{rec.recommendation}</p>
-                          <div className="flex space-x-2 pt-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEncounterForm(prev => ({
-                                  ...prev,
-                                  plan: prev.plan ? `${prev.plan}\n\n• ${rec.suggestedPlanEntry}` : `• ${rec.suggestedPlanEntry}`,
-                                  labResultInterpretation: prev.labResultInterpretation ? `${prev.labResultInterpretation}\n\n• ${rec.title}: ${rec.recommendation}` : `• ${rec.title}: ${rec.recommendation}`
-                                }));
-                              }}
-                              className="px-2.5 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700 font-medium"
-                            >
-                              + Apply CDS to Plan & Interpretation
-                            </button>
-                            {rec.suggestedFollowUpTests.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setLabOrderForm(prev => ({
-                                    ...prev,
-                                    testType: rec.suggestedFollowUpTests[0],
-                                    notes: `Follow-up for ${rec.testName} (${rec.value})`
-                                  }));
-                                  setActiveTab('orders');
-                                }}
-                                className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 font-medium"
-                              >
-                                + Order Follow-up ({rec.suggestedFollowUpTests[0]})
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleEncounterSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Chief Complaint</label>
-                      <textarea
-                        required
-                        value={encounterForm.chiefComplaint}
-                        onChange={(e) => setEncounterForm({...encounterForm, chiefComplaint: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-20"
-                        placeholder="Patient's main concern..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Subjective (HPI)</label>
-                      <textarea
-                        value={encounterForm.subjective}
-                        onChange={(e) => setEncounterForm({...encounterForm, subjective: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
-                        placeholder="Patient's description of symptoms..."
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="block text-sm font-medium text-gray-700">Objective (Exam & Lab Findings)</label>
-                        {patientLabOrders.some(o => o.results && o.results.length > 0) && (
-                          <button
-                            type="button"
-                            onClick={handleAutoPopulateLabSummary}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center"
-                          >
-                            <FlaskConical className="h-3.5 w-3.5 mr-1" />
-                            Auto-populate Lab Summary
-                          </button>
-                        )}
-                      </div>
-                      <textarea
-                        value={encounterForm.objective}
-                        onChange={(e) => setEncounterForm({...encounterForm, objective: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
-                        placeholder="Physical examination & lab summary findings..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Lab Result Interpretation</label>
-                      <textarea
-                        value={encounterForm.labResultInterpretation}
-                        onChange={(e) => setEncounterForm({...encounterForm, labResultInterpretation: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-20"
-                        placeholder="Clinical interpretation of patient's lab results..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Assessment (Diagnosis)</label>
-                      <textarea
-                        value={encounterForm.assessment}
-                        onChange={(e) => setEncounterForm({...encounterForm, assessment: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
-                        placeholder="Clinical assessment..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
-                      <textarea
-                        value={encounterForm.plan}
-                        onChange={(e) => setEncounterForm({...encounterForm, plan: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
-                        placeholder="Treatment plan..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">ICD-10 Code</label>
-                      <input
-                        type="text"
-                        value={encounterForm.icd10Code}
-                        onChange={(e) => setEncounterForm({...encounterForm, icd10Code: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., J06.9"
-                      />
-                    </div>
+                  <div className="flex items-center space-x-3 pt-4 border-t border-gray-200 mt-6">
                     <button
-                      type="submit"
-                      className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2"
+                      onClick={() => {
+                        const prevStep = getPreviousStep('lab-results');
+                        if (prevStep) setCurrentStep(prevStep);
+                      }}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
                     >
-                      <Save className="h-5 w-5" />
-                      <span>Save Encounter</span>
+                      Back
                     </button>
-                    {currentEncounterId && (
-                      <button
-                        type="button"
-                        onClick={handlePrintPrescription}
-                        className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center space-x-2 mt-3"
-                      >
-                        <Printer className="h-5 w-5" />
-                        <span>Print Prescription</span>
-                      </button>
-                    )}
-                  </form>
-                </div>
-              )}
-
-              {activeTab === 'orders' && (
-                <div className="space-y-4">
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <Pill className="h-5 w-5 mr-2 text-blue-600" />
-                      Prescription
-                    </h3>
-                    <form onSubmit={handlePrescriptionSubmit} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Medication</label>
-                        <input
-                          type="text"
-                          required
-                          value={prescriptionForm.medication}
-                          onChange={(e) => setPrescriptionForm({...prescriptionForm, medication: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Medication name"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Dosage</label>
-                          <input
-                            type="text"
-                            required
-                            value={prescriptionForm.dosage}
-                            onChange={(e) => setPrescriptionForm({...prescriptionForm, dosage: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="e.g., 500mg"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
-                          <input
-                            type="text"
-                            required
-                            value={prescriptionForm.frequency}
-                            onChange={(e) => setPrescriptionForm({...prescriptionForm, frequency: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="e.g., twice daily"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
-                        <input
-                          type="text"
-                          required
-                          value={prescriptionForm.duration}
-                          onChange={(e) => setPrescriptionForm({...prescriptionForm, duration: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g., 7 days"
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2"
-                      >
-                        <Pill className="h-5 w-5" />
-                        <span>Create Prescription</span>
-                      </button>
-                    </form>
-                  </div>
-
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <FlaskConical className="h-5 w-5 mr-2 text-blue-600" />
-                      Lab Order
-                    </h3>
-                    <form onSubmit={handleLabOrderSubmit} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Test Type</label>
-                        <input
-                          type="text"
-                          required
-                          value={labOrderForm.testType}
-                          onChange={(e) => setLabOrderForm({...labOrderForm, testType: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g., CBC, Lipid Panel"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                        <select
-                          value={labOrderForm.priority}
-                          onChange={(e) => setLabOrderForm({...labOrderForm, priority: e.target.value as any})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="routine">Routine</option>
-                          <option value="urgent">Urgent</option>
-                          <option value="stat">Stat</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Assign Lab Technician</label>
-                        <select
-                          value={labOrderForm.labTechId}
-                          onChange={(e) => setLabOrderForm({...labOrderForm, labTechId: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">-- Select Lab Technician (Optional) --</option>
-                          {availableLabTechs.map((tech) => (
-                            <option key={tech.id} value={tech.id}>
-                              {tech.fullName || tech.user?.username || 'Lab Tech'}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                        <textarea
-                          value={labOrderForm.notes}
-                          onChange={(e) => setLabOrderForm({...labOrderForm, notes: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-20"
-                          placeholder="Additional instructions..."
-                        />
-                      </div>
-                      <button
-                        type="submit"
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center space-x-2"
-                      >
-                        <FlaskConical className="h-5 w-5" />
-                        <span>Create Lab Order</span>
-                      </button>
-                    </form>
+                    <button
+                      onClick={() => {
+                        completeStep('lab-results');
+                        showSuccess('Patient workflow completed!');
+                      }}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    >
+                      Complete Workflow
+                    </button>
                   </div>
                 </div>
               )}
             </div>
           </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <User className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm">Select a patient to view their chart</p>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <User className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">Select a patient to view their chart</p>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
       </>
       )}
 
