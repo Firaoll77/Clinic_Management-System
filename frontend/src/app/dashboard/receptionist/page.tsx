@@ -566,456 +566,431 @@ export default function ReceptionistDashboardPage() {
 
       {/* Right Side - Action Pad (50%) */}
       <div className="w-1/2 bg-gray-50 flex flex-col">
-        {/* Action Tabs */}
-        <div className="border-b border-gray-200 bg-white">
-          <div className="flex space-x-0">
-            {(['queue', 'registration', 'appointments', 'billing'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setCurrentStep(tab)}
-                className={`flex-1 px-4 py-4 font-medium transition-colors border-b-2 flex items-center justify-center ${
-                  currentStep === tab
-                    ? 'border-green-500 text-green-600 bg-green-50'
-                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                {tab === 'queue' && <Users className="h-5 w-5 mr-2" />}
-                {tab === 'registration' && <UserPlus className="h-5 w-5 mr-2" />}
-                {tab === 'appointments' && <Calendar className="h-5 w-5 mr-2" />}
-                {tab === 'billing' && <Receipt className="h-5 w-5 mr-2" />}
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {currentStep === 'queue' && (
-            <div className="space-y-4">
-              {selectedPatient ? (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Patient Details</h3>
-                    <button
-                      onClick={() => setSelectedPatient(null)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-green-100 p-2 rounded-full">
-                        <User className="h-4 w-4 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{selectedPatient.name}</p>
-                        <p className="text-sm text-gray-600">MRN: {selectedPatient.mrn}</p>
-                        {selectedPatient.isNewPatient && (
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">New Patient</span>
-                        )}
-                        {selectedPatient.hasHistory && (
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">Returning Patient</span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-500">MRN</p>
-                        <p className="font-medium">{selectedPatient.mrn}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Status</p>
-                        <p className="font-medium">{getVisitStatusLabel(selectedPatient.visitStatus)}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Phone</p>
-                        <p className="font-medium">{selectedPatient.phone}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-500">Arrived</p>
-                        <p className="font-medium">{new Date(selectedPatient.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Assign Nurse (Optional)</label>
-                      <select
-                        value={selectedNurse || ''}
-                        onChange={(e) => setSelectedNurse(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      >
-                        <option value="">No specific nurse (any available)</option>
-                        {nurses.map(nurse => (
-                          <option key={nurse.id} value={nurse.id}>{nurse.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => showInfo('Full patient record view - to be implemented')}
-                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        View Full Record
-                      </button>
-                      <button
-                        onClick={() => {
-                          const targetNurseId = selectedNurse || (nurses.length > 0 ? nurses[0].id : undefined);
-                          handleCheckIn(selectedPatient.id, targetNurseId);
-                        }}
-                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Send to Triage
-                      </button>
-                      <button
-                        onClick={() => fetchEncounterFees(selectedPatient.encounterId || selectedPatient.id)}
-                        className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
-                      >
-                        <Receipt className="h-4 w-4 mr-2" />
-                        View Fees
-                      </button>
-                    </div>
-                    {selectedPatient.visitStatus === 'BILLING' && (
-                      <div className="mt-3">
-                        <button
-                          onClick={() => handleDischargePatient(selectedPatient.encounterId || selectedPatient.id, selectedPatient.id)}
-                          className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center"
-                        >
-                          <User className="h-4 w-4 mr-2" />
-                          Discharge Patient
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="p-4 border-b border-gray-200 bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900">Patient Database</h3>
-                      <span className="text-sm text-gray-500">{filteredAllPatients.length} patients</span>
-                    </div>
-                  </div>
-                  <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-                    {patientsLoading ? (
-                      <div className="p-8 text-center text-gray-500">Loading patients...</div>
-                    ) : filteredAllPatients.length === 0 ? (
-                      <div className="p-8 text-center text-gray-500">No patients found</div>
-                    ) : (
-                      filteredAllPatients.slice(0, 10).map((patient) => (
-                        <div
-                          key={patient.id}
-                          onClick={() => setSelectedPatient({
-                            id: patient.id,
-                            name: `${patient.firstName} ${patient.lastName}`,
-                            mrn: patient.mrn,
-                            phone: patient.phone,
-                            visitStatus: 'TRIAGE',
-                            createdAt: new Date().toISOString(),
-                            isNewPatient: patient.isNewPatient,
-                            hasHistory: !patient.isNewPatient
-                          })}
-                          className="p-4 hover:bg-gray-50 cursor-pointer"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="bg-green-100 p-2 rounded-full">
-                                <User className="h-4 w-4 text-green-600" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-900">{patient.firstName} {patient.lastName}</p>
-                                <p className="text-sm text-gray-600">MRN: {patient.mrn}</p>
-                                {patient.isNewPatient && (
-                                  <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">New</span>
-                                )}
-                              </div>
-                            </div>
-                            <ChevronRight className="h-5 w-5 text-gray-400" />
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {currentStep === 'registration' as any && (
-            <div className="space-y-4">
-              {!showPatientForm ? (
+          {selectedPatient ? (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900">Patient Details</h3>
                 <button
-                  onClick={() => setShowPatientForm(true)}
-                  className="w-full bg-white rounded-lg border border-gray-200 p-6 flex items-center justify-center space-x-2 hover:bg-green-50 transition-colors"
+                  onClick={() => setSelectedPatient(null)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  <Plus className="h-5 w-5 text-green-600" />
-                  <span className="font-medium text-gray-900">Register New Patient</span>
+                  <X className="h-5 w-5" />
                 </button>
-              ) : (
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900 flex items-center">
-                      <UserPlus className="h-5 w-5 mr-2 text-green-600" />
-                      New Patient Registration
-                    </h3>
-                    <button
-                      onClick={() => setShowPatientForm(false)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-green-100 p-2 rounded-full">
+                    <User className="h-4 w-4 text-green-600" />
                   </div>
-                  
-                  <form onSubmit={handlePatientRegister} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                        <input 
-                          type="text" 
-                          required
-                          value={newPatient.firstName}
-                          onChange={(e) => setNewPatient({...newPatient, firstName: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                        <input 
-                          type="text" 
-                          required
-                          value={newPatient.lastName}
-                          onChange={(e) => setNewPatient({...newPatient, lastName: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                      <input 
-                        type="date" 
-                        required
-                        value={newPatient.dob}
-                        onChange={(e) => setNewPatient({...newPatient, dob: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                      <select 
-                        required
-                        value={newPatient.gender}
-                        onChange={(e) => setNewPatient({...newPatient, gender: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      >
-                        <option value="">Select gender...</option>
-                        <option value="MALE">Male</option>
-                        <option value="FEMALE">Female</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                      <input 
-                        type="tel" 
-                        required
-                        value={newPatient.phone}
-                        onChange={(e) => setNewPatient({...newPatient, phone: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                      <input 
-                        type="email" 
-                        value={newPatient.email}
-                        onChange={(e) => setNewPatient({...newPatient, email: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                      <textarea
-                        value={newPatient.address}
-                        onChange={(e) => setNewPatient({...newPatient, address: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent h-20"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">National ID</label>
-                        <input
-                          type="text"
-                          value={newPatient.nationalId}
-                          onChange={(e) => setNewPatient({...newPatient, nationalId: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Blood Group</label>
-                        <select
-                          value={newPatient.bloodGroup}
-                          onChange={(e) => setNewPatient({...newPatient, bloodGroup: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        >
-                          <option value="">Select blood group...</option>
-                          <option value="A+">A+</option>
-                          <option value="A-">A-</option>
-                          <option value="B+">B+</option>
-                          <option value="B-">B-</option>
-                          <option value="AB+">AB+</option>
-                          <option value="AB-">AB-</option>
-                          <option value="O+">O+</option>
-                          <option value="O-">O-</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
-                      <input
-                        type="tel"
-                        value={newPatient.emergencyContact}
-                        onChange={(e) => setNewPatient({...newPatient, emergencyContact: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                    </div>
-                    <button 
-                      type="submit"
-                      className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                    >
-                      Register Patient
-                    </button>
-                  </form>
-                </div>
-              )}
-            </div>
-          )}
-
-          {currentStep === 'appointments' as any && (
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900 flex items-center">
-                      <Stethoscope className="h-5 w-5 mr-2 text-green-600" />
-                      Available Doctors
-                    </h3>
-                    <span className="text-sm text-gray-500">{doctors.length} doctors present</span>
+                  <div>
+                    <p className="font-medium text-gray-900">{selectedPatient.name}</p>
+                    <p className="text-sm text-gray-600">MRN: {selectedPatient.mrn}</p>
+                    {selectedPatient.isNewPatient && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">New Patient</span>
+                    )}
+                    {selectedPatient.hasHistory && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">Returning Patient</span>
+                    )}
                   </div>
                 </div>
-                <div className="divide-y divide-gray-100">
-                  {doctorsLoading ? (
-                    <div className="p-8 text-center text-gray-500">Loading doctors...</div>
-                  ) : doctors.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">No doctors available</div>
-                  ) : (
-                    doctors.map((doctor) => (
-                      <div key={doctor.id} className="p-4 hover:bg-gray-50">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className={`p-2 rounded-full ${doctor.isAvailable ? 'bg-green-100' : 'bg-red-100'}`}>
-                              <Stethoscope className={`h-4 w-4 ${doctor.isAvailable ? 'text-green-600' : 'text-red-600'}`} />
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{doctor.name}</p>
-                              <p className="text-sm text-gray-600">{doctor.specialization}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <span className={`inline-block px-2 py-1 rounded-full text-xs ${doctor.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              {doctor.isAvailable ? 'Available' : 'Busy'}
-                            </span>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {doctor.currentPatients}/{doctor.maxPatients} patients
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">MRN</p>
+                    <p className="font-medium">{selectedPatient.mrn}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Status</p>
+                    <p className="font-medium">{getVisitStatusLabel(selectedPatient.visitStatus)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Phone</p>
+                    <p className="font-medium">{selectedPatient.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Arrived</p>
+                    <p className="font-medium">{new Date(selectedPatient.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {currentStep === 'billing' as any && (
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900 flex items-center">
-                      <DollarSign className="h-5 w-5 mr-2 text-green-600" />
-                      Patient Invoices
-                    </h3>
-                    <span className="text-sm text-gray-500">{invoices.length} invoices</span>
+              
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Assign Nurse (Optional)</label>
+                  <select
+                    value={selectedNurse || ''}
+                    onChange={(e) => setSelectedNurse(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">No specific nurse (any available)</option>
+                    {nurses.map(nurse => (
+                      <option key={nurse.id} value={nurse.id}>{nurse.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => showInfo('Full patient record view - to be implemented')}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    View Full Record
+                  </button>
+                  <button
+                    onClick={() => {
+                      const targetNurseId = selectedNurse || (nurses.length > 0 ? nurses[0].id : undefined);
+                      handleCheckIn(selectedPatient.id, targetNurseId);
+                    }}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Send to Triage
+                  </button>
+                  <button
+                    onClick={() => fetchEncounterFees(selectedPatient.encounterId || selectedPatient.id)}
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
+                  >
+                    <Receipt className="h-4 w-4 mr-2" />
+                    View Fees
+                  </button>
+                </div>
+                {selectedPatient.visitStatus === 'BILLING' && (
+                  <div className="mt-3">
+                    <button
+                      onClick={() => handleDischargePatient(selectedPatient.encounterId || selectedPatient.id, selectedPatient.id)}
+                      className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Discharge Patient
+                    </button>
                   </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="p-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900">Patient Database</h3>
+                  <span className="text-sm text-gray-500">{filteredAllPatients.length} patients</span>
                 </div>
-                <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-                  {invoices.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">
-                      <Receipt className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                      <p>No invoices found</p>
-                    </div>
-                  ) : (
-                    invoices.map((invoice) => (
-                      <div key={invoice.id} className="p-4 hover:bg-gray-50">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className={`p-2 rounded-full ${
-                              invoice.status === 'PAID' ? 'bg-green-100' : 
-                              invoice.status === 'ISSUED' ? 'bg-blue-100' : 'bg-yellow-100'
-                            }`}>
-                              <Receipt className={`h-4 w-4 ${
-                                invoice.status === 'PAID' ? 'text-green-600' : 
-                                invoice.status === 'ISSUED' ? 'text-blue-600' : 'text-yellow-600'
-                              }`} />
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{invoice.invoiceNo}</p>
-                              <p className="text-sm text-gray-600">{invoice.patient?.firstName} {invoice.patient?.lastName}</p>
-                              <p className="text-xs text-gray-500">{new Date(invoice.createdAt).toLocaleDateString()}</p>
-                            </div>
+              </div>
+              <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                {patientsLoading ? (
+                  <div className="p-8 text-center text-gray-500">Loading patients...</div>
+                ) : filteredAllPatients.length === 0 ? (
+                  <div className="p-8 text-center text-gray-500">No patients found</div>
+                ) : (
+                  filteredAllPatients.slice(0, 10).map((patient) => (
+                    <div
+                      key={patient.id}
+                      onClick={() => setSelectedPatient({
+                        id: patient.id,
+                        name: `${patient.firstName} ${patient.lastName}`,
+                        mrn: patient.mrn,
+                        phone: patient.phone,
+                        visitStatus: 'TRIAGE',
+                        createdAt: new Date().toISOString(),
+                        isNewPatient: patient.isNewPatient,
+                        hasHistory: !patient.isNewPatient
+                      })}
+                      className="p-4 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-green-100 p-2 rounded-full">
+                            <User className="h-4 w-4 text-green-600" />
                           </div>
-                          <div className="text-right">
-                            <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                              invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 
-                              invoice.status === 'ISSUED' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {invoice.status}
-                            </span>
-                            <p className="text-sm font-semibold text-gray-900 mt-1">
-                              ETB {Number(invoice.total).toFixed(2)}
-                            </p>
+                          <div>
+                            <p className="font-medium text-gray-900">{patient.firstName} {patient.lastName}</p>
+                            <p className="text-sm text-gray-600">MRN: {patient.mrn}</p>
+                            {patient.isNewPatient && (
+                              <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">New</span>
+                            )}
                           </div>
                         </div>
-                        <div className="mt-3 flex space-x-2">
-                          <button
-                            onClick={() => handleViewInvoice(invoice.id)}
-                            className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                          >
-                            View Invoice
-                          </button>
-                          {invoice.status !== 'PAID' && (
-                            <button
-                              onClick={() => handleMarkAsPaid(invoice.id)}
-                              className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                            >
-                              Mark Paid
-                            </button>
-                          )}
-                        </div>
+                        <ChevronRight className="h-5 w-5 text-gray-400" />
                       </div>
-                    ))
-                  )}
-                </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
         </div>
       </div>
+      </>
+      )}
+
+      {currentStep === 'registration' as any && (
+        <div className="w-full bg-gray-50 flex flex-col p-6">
+          {!showPatientForm ? (
+            <button
+              onClick={() => setShowPatientForm(true)}
+              className="w-full bg-white rounded-lg border border-gray-200 p-6 flex items-center justify-center space-x-2 hover:bg-green-50 transition-colors"
+            >
+              <Plus className="h-5 w-5 text-green-600" />
+              <span className="font-medium text-gray-900">Register New Patient</span>
+            </button>
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900 flex items-center">
+                  <UserPlus className="h-5 w-5 mr-2 text-green-600" />
+                  New Patient Registration
+                </h3>
+                <button
+                  onClick={() => setShowPatientForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <form onSubmit={handlePatientRegister} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={newPatient.firstName}
+                      onChange={(e) => setNewPatient({...newPatient, firstName: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={newPatient.lastName}
+                      onChange={(e) => setNewPatient({...newPatient, lastName: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={newPatient.dob}
+                    onChange={(e) => setNewPatient({...newPatient, dob: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                  <select 
+                    required
+                    value={newPatient.gender}
+                    onChange={(e) => setNewPatient({...newPatient, gender: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">Select gender...</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                  <input 
+                    type="tel" 
+                    required
+                    value={newPatient.phone}
+                    onChange={(e) => setNewPatient({...newPatient, phone: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input 
+                    type="email" 
+                    value={newPatient.email}
+                    onChange={(e) => setNewPatient({...newPatient, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                  <textarea
+                    value={newPatient.address}
+                    onChange={(e) => setNewPatient({...newPatient, address: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent h-20"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">National ID</label>
+                    <input
+                      type="text"
+                      value={newPatient.nationalId}
+                      onChange={(e) => setNewPatient({...newPatient, nationalId: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Blood Group</label>
+                    <select
+                      value={newPatient.bloodGroup}
+                      onChange={(e) => setNewPatient({...newPatient, bloodGroup: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="">Select blood group...</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
+                  <input
+                    type="tel"
+                    value={newPatient.emergencyContact}
+                    onChange={(e) => setNewPatient({...newPatient, emergencyContact: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  Register Patient
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+      )}
+
+      {currentStep === 'appointments' as any && (
+        <div className="w-full bg-gray-50 flex flex-col p-6">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900 flex items-center">
+                  <Stethoscope className="h-5 w-5 mr-2 text-green-600" />
+                  Available Doctors
+                </h3>
+                <span className="text-sm text-gray-500">{doctors.length} doctors present</span>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {doctorsLoading ? (
+                <div className="p-8 text-center text-gray-500">Loading doctors...</div>
+              ) : doctors.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">No doctors available</div>
+              ) : (
+                doctors.map((doctor) => (
+                  <div key={doctor.id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-full ${doctor.isAvailable ? 'bg-green-100' : 'bg-red-100'}`}>
+                          <Stethoscope className={`h-4 w-4 ${doctor.isAvailable ? 'text-green-600' : 'text-red-600'}`} />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{doctor.name}</p>
+                          <p className="text-sm text-gray-600">{doctor.specialization}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-block px-2 py-1 rounded-full text-xs ${doctor.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {doctor.isAvailable ? 'Available' : 'Busy'}
+                        </span>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {doctor.currentPatients}/{doctor.maxPatients} patients
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {currentStep === 'billing' as any && (
+        <div className="w-full bg-gray-50 flex flex-col p-6">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900 flex items-center">
+                  <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+                  Patient Invoices
+                </h3>
+                <span className="text-sm text-gray-500">{invoices.length} invoices</span>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+              {invoices.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <Receipt className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                  <p>No invoices found</p>
+                </div>
+              ) : (
+                invoices.map((invoice) => (
+                  <div key={invoice.id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`p-2 rounded-full ${
+                          invoice.status === 'PAID' ? 'bg-green-100' : 
+                          invoice.status === 'ISSUED' ? 'bg-blue-100' : 'bg-yellow-100'
+                        }`}>
+                          <Receipt className={`h-4 w-4 ${
+                            invoice.status === 'PAID' ? 'text-green-600' : 
+                            invoice.status === 'ISSUED' ? 'text-blue-600' : 'text-yellow-600'
+                          }`} />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{invoice.invoiceNo}</p>
+                          <p className="text-sm text-gray-600">{invoice.patient?.firstName} {invoice.patient?.lastName}</p>
+                          <p className="text-xs text-gray-500">{new Date(invoice.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-block px-2 py-1 rounded-full text-xs ${
+                          invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 
+                          invoice.status === 'ISSUED' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {invoice.status}
+                        </span>
+                        <p className="text-sm font-semibold text-gray-900 mt-1">
+                          ETB {Number(invoice.total).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex space-x-2">
+                      <button
+                        onClick={() => handleViewInvoice(invoice.id)}
+                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        View Invoice
+                      </button>
+                      {invoice.status !== 'PAID' && (
+                        <button
+                          onClick={() => handleMarkAsPaid(invoice.id)}
+                          className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                        >
+                          Mark Paid
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fees Modal */}
       {showFees && (
@@ -1194,16 +1169,6 @@ export default function ReceptionistDashboardPage() {
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      )}
-      </>
-      )}
-
-      {currentStep !== 'queue' && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <p className="text-lg font-medium">{currentStep.charAt(0).toUpperCase() + currentStep.slice(1)} view coming soon</p>
           </div>
         </div>
       )}
