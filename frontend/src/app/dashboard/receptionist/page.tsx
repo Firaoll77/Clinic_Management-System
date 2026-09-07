@@ -888,29 +888,6 @@ export default function ReceptionistDashboardPage() {
                     >
                       Register Patient
                     </button>
-                    <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const prevStep = getPreviousStep('registration');
-                          if (prevStep) setCurrentStep(prevStep);
-                        }}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                      >
-                        Back
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          completeStep('registration');
-                          const nextStep = getNextStep('registration');
-                          if (nextStep) setCurrentStep(nextStep);
-                        }}
-                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                      >
-                        Complete & Continue
-                      </button>
-                    </div>
                   </form>
                 </div>
               )}
@@ -960,27 +937,6 @@ export default function ReceptionistDashboardPage() {
                     ))
                   )}
                 </div>
-              </div>
-              <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    const prevStep = getPreviousStep('appointments');
-                    if (prevStep) setCurrentStep(prevStep);
-                  }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={() => {
-                    completeStep('appointments');
-                    const nextStep = getNextStep('appointments');
-                    if (nextStep) setCurrentStep(nextStep);
-                  }}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                  Complete & Continue
-                </button>
               </div>
             </div>
           )}
@@ -1055,26 +1011,6 @@ export default function ReceptionistDashboardPage() {
                     ))
                   )}
                 </div>
-              </div>
-              <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    const prevStep = getPreviousStep('billing');
-                    if (prevStep) setCurrentStep(prevStep);
-                  }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={() => {
-                    completeStep('billing');
-                    showSuccess('Reception workflow completed!');
-                  }}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                  Complete Workflow
-                </button>
               </div>
             </div>
           )}
