@@ -15,9 +15,7 @@ import {
   Calendar,
   Shield,
   DollarSign,
-  ChevronRight,
-  Lock,
-  CheckCircle
+  ChevronRight
 } from 'lucide-react';
 
 export default function AdminDashboardLayout({
@@ -27,7 +25,7 @@ export default function AdminDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const { activeTab, setActiveTab, role, setRole } = useNavigation();
-  const { currentStep, setCurrentStep, completedSteps, canAccessStep, getNextStep, getPreviousStep, setWorkflowSteps } = useWorkflow();
+  const { currentStep, setCurrentStep, setWorkflowSteps } = useWorkflow();
   const router = useRouter();
 
   // Set role on mount
@@ -35,7 +33,7 @@ export default function AdminDashboardLayout({
     setRole('admin');
   }, [setRole]);
 
-  // Initialize workflow steps for admin
+  // Initialize workflow steps for admin (for navigation tracking only)
   useEffect(() => {
     setWorkflowSteps(['overview', 'staff', 'appointments', 'billing', 'settings']);
   }, [setWorkflowSteps]);
@@ -101,10 +99,10 @@ export default function AdminDashboardLayout({
 
       {/* Main Content with Sidebar */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Vertical Sidebar - Workflow Steps */}
+        {/* Vertical Sidebar - Flexible Navigation */}
         <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
           <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Admin Workflow</h3>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Admin Navigation</h3>
             <div className="space-y-1">
               {[
                 { id: 'overview' as const, label: 'Overview', icon: Activity },
@@ -112,44 +110,26 @@ export default function AdminDashboardLayout({
                 { id: 'appointments' as const, label: 'Appointments', icon: Calendar },
                 { id: 'billing' as const, label: 'Billing', icon: DollarSign },
                 { id: 'settings' as const, label: 'Settings', icon: Settings }
-              ].map((step, index) => {
+              ].map((step) => {
                 const isCurrent = currentStep === step.id;
-                const isCompleted = completedSteps.has(step.id);
-                const canAccess = canAccessStep(step.id);
                 const Icon = step.icon;
                 
                 return (
                   <div key={step.id} className="relative">
                     <button
-                      onClick={() => canAccess && setCurrentStep(step.id)}
-                      disabled={!canAccess}
+                      onClick={() => setCurrentStep(step.id)}
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                         isCurrent
                           ? 'bg-red-100 text-red-700 font-medium'
-                          : isCompleted
-                          ? 'bg-red-50 text-red-700'
-                          : canAccess
-                          ? 'text-gray-600 hover:bg-gray-100'
-                          : 'text-gray-400 cursor-not-allowed'
+                          : 'text-gray-600 hover:bg-gray-100'
                       }`}
                     >
-                      <div className="relative">
-                        {isCompleted ? (
-                          <CheckCircle className="h-5 w-5 text-red-600" />
-                        ) : !canAccess ? (
-                          <Lock className="h-5 w-5" />
-                        ) : (
-                          <Icon className="h-5 w-5" />
-                        )}
-                      </div>
+                      <Icon className="h-5 w-5" />
                       <span>{step.label}</span>
                       {isCurrent && (
                         <ChevronRight className="h-4 w-4 ml-auto" />
                       )}
                     </button>
-                    {index < 4 && (
-                      <div className="absolute left-7 top-10 w-0.5 h-4 bg-gray-200" />
-                    )}
                   </div>
                 );
               })}

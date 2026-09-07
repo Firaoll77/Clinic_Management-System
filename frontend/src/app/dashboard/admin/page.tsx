@@ -1020,29 +1020,6 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           </div>
-
-          {/* Workflow Navigation */}
-          <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
-            <button
-              onClick={() => {
-                const prevStep = getPreviousStep('overview');
-                if (prevStep) setCurrentStep(prevStep);
-              }}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-            >
-              Back
-            </button>
-            <button
-              onClick={() => {
-                completeStep('overview');
-                const nextStep = getNextStep('overview');
-                if (nextStep) setCurrentStep(nextStep);
-              }}
-              className="flex-1 px-4 py-2 bg-[#D93344] text-white rounded-lg hover:bg-[#c02d3c] transition-colors font-medium"
-            >
-              Complete & Continue
-            </button>
-          </div>
         </div>
       )}
 
