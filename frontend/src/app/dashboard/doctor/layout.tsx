@@ -26,13 +26,18 @@ export default function DoctorDashboardLayout({
 }) {
   const { isAuthenticated, loading, logout, user } = useAuth();
   const { activeTab, setActiveTab, role, setRole } = useNavigation();
-  const { currentStep, setCurrentStep, completedSteps, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
+  const { currentStep, setCurrentStep, completedSteps, canAccessStep, getNextStep, getPreviousStep, setWorkflowSteps } = useWorkflow();
   const router = useRouter();
 
   // Set role on mount
   useEffect(() => {
     setRole('doctor');
   }, [setRole]);
+
+  // Initialize workflow steps for doctor
+  useEffect(() => {
+    setWorkflowSteps(['intake', 'vitals', 'encounter', 'orders', 'lab-results']);
+  }, [setWorkflowSteps]);
 
   // Initialize to patients tab
   useEffect(() => {

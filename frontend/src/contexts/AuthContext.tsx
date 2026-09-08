@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { apiClient } from '@/lib/api';
 
 interface User {
@@ -32,6 +32,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    apiClient.clearToken();
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+  }, []);
+
+  const fetchUserInfo = useCallback(async () => {
+    try {
+      const response = await apiClient.get<{ user: User }>('/auth/me');
+      if (response.data && response.data.user) {
+        setUser(response.data.user);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user info:', error);
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  }, [logout]);
+
   useEffect(() => {
     // Check for existing token on mount
     const storedToken = localStorage.getItem('accessToken');
@@ -43,24 +65,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [fetchUserInfo]);
 
-  const fetchUserInfo = async () => {
-    try {
-      const response = await apiClient.get<{ user: User }>('/auth/me');
-      if (response.data && response.data.user) {
-        setUser(response.data.user);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user info:', error);
-      // If token is invalid, clear it
-      logout();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = async (username: string, password: string) => {
+  const login = useCallback(async (username: string, password: string) => {
     try {
       const response = await apiClient.post<{
         user: User;
@@ -72,8 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (response.data) {
-        const { user, tokens } = response.data;
-        setUser(user);
+        const { user: loggedInUser, tokens } = response.data;
+        setUser(loggedInUser);
         setToken(tokens.accessToken);
         apiClient.setToken(tokens.accessToken);
         localStorage.setItem('accessToken', tokens.accessToken);
@@ -88,24 +95,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error: error instanceof Error ? error.message : 'Network error',
       };
     }
-  };
+  }, []);
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    apiClient.clearToken();
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-  };
-
-  const value: AuthContextType = {
+  const value = useMemo<AuthContextType>(() => ({
     user,
     token,
     login,
     logout,
     loading,
     isAuthenticated: !!user,
-  };
+  }), [user, token, login, logout, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
