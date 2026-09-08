@@ -8,7 +8,8 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      NEXT_PUBLIC_API_URL: /api
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
+      INTERNAL_API_URL: ${INTERNAL_API_URL:-http://clinic_api:4000}
     ports:
       - "3000:3000"
     volumes:

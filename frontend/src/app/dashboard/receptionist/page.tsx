@@ -407,22 +407,6 @@ export default function ReceptionistDashboardPage() {
     );
   };
 
-  const handleCreateInvoice = async (encounterId: string, patientId: string) => {
-    try {
-      const response = await apiClient.post('/billing/invoices', {
-        encounterId,
-        patientId,
-      });
-      if (response.data) {
-        showSuccess('Invoice created successfully!');
-        fetchInvoices();
-      }
-    } catch (error) {
-      console.error('Failed to create invoice:', error);
-      showError('Failed to create invoice. Please try again.');
-    }
-  };
-
   const handleMarkAsPaid = async (invoiceId: string) => {
     try {
       const response = await apiClient.patch(`/billing/invoices/${invoiceId}/mark-paid`);
@@ -451,7 +435,7 @@ export default function ReceptionistDashboardPage() {
     }
   };
 
-  const handleDischargePatient = async (encounterId: string, patientId: string) => {
+  const handleDischargePatient = async (encounterId: string) => {
     try {
       const response = await apiClient.patch(`/encounters/${encounterId}/discharge`, {
         dischargeNotes: 'Discharged after payment'
@@ -658,7 +642,7 @@ export default function ReceptionistDashboardPage() {
                 {selectedPatient.visitStatus === 'BILLING' && (
                   <div className="mt-3">
                     <button
-                      onClick={() => handleDischargePatient(selectedPatient.encounterId || selectedPatient.id, selectedPatient.id)}
+                      onClick={() => handleDischargePatient(selectedPatient.encounterId || selectedPatient.id)}
                       className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center"
                     >
                       <User className="h-4 w-4 mr-2" />
@@ -723,8 +707,8 @@ export default function ReceptionistDashboardPage() {
       </>
       )}
 
-      {currentStep === 'registration' as any && (
-        <div className="w-full bg-gray-50 flex flex-col p-6">
+      {currentStep === 'registration' && (
+        <div className="w-full bg-gray-50 flex flex-col p-6 overflow-y-auto">
           {!showPatientForm ? (
             <button
               onClick={() => setShowPatientForm(true)}
@@ -871,8 +855,8 @@ export default function ReceptionistDashboardPage() {
         </div>
       )}
 
-      {currentStep === 'appointments' as any && (
-        <div className="w-full bg-gray-50 flex flex-col p-6">
+      {currentStep === 'appointments' && (
+        <div className="w-full bg-gray-50 flex flex-col p-6 overflow-y-auto">
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="p-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
@@ -918,8 +902,8 @@ export default function ReceptionistDashboardPage() {
         </div>
       )}
 
-      {currentStep === 'billing' as any && (
-        <div className="w-full bg-gray-50 flex flex-col p-6">
+      {currentStep === 'billing' && (
+        <div className="w-full bg-gray-50 flex flex-col p-6 overflow-y-auto">
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="p-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">

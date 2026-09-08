@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useWorkflow } from '@/contexts/WorkflowContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   LogOut, 
   HeartPulse,
@@ -26,6 +26,7 @@ export default function ReceptionistDashboardLayout({
   const { activeTab, setActiveTab, role, setRole } = useNavigation();
   const { currentStep, setCurrentStep, setWorkflowSteps } = useWorkflow();
   const router = useRouter();
+  const [workflowInitialized, setWorkflowInitialized] = useState(false);
 
   // Set role on mount
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function ReceptionistDashboardLayout({
   // Initialize workflow steps for receptionist (for navigation tracking only)
   useEffect(() => {
     setWorkflowSteps(['queue', 'registration', 'appointments', 'billing']);
+    setWorkflowInitialized(true);
   }, [setWorkflowSteps]);
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function ReceptionistDashboardLayout({
     }
   }, [isAuthenticated, loading, router, user?.role]);
 
-  if (loading) {
+  if (loading || !workflowInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-medical">
         <div className="text-center">

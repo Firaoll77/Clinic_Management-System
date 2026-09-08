@@ -15,7 +15,9 @@ import {
   Calendar,
   Shield,
   DollarSign,
-  ChevronRight
+  ChevronRight,
+  FolderArchive,
+  Terminal
 } from 'lucide-react';
 
 export default function AdminDashboardLayout({
@@ -35,7 +37,7 @@ export default function AdminDashboardLayout({
 
   // Initialize workflow steps for admin (for navigation tracking only)
   useEffect(() => {
-    setWorkflowSteps(['overview', 'staff', 'appointments', 'billing', 'settings']);
+    setWorkflowSteps(['overview', 'staff', 'patients', 'appointments', 'billing', 'audit', 'settings']);
   }, [setWorkflowSteps]);
 
   useEffect(() => {
@@ -107,8 +109,10 @@ export default function AdminDashboardLayout({
               {[
                 { id: 'overview' as const, label: 'Overview', icon: Activity },
                 { id: 'staff' as const, label: 'Staff Management', icon: Users },
+                { id: 'patients' as const, label: 'Patient Records', icon: FolderArchive },
                 { id: 'appointments' as const, label: 'Appointments', icon: Calendar },
-                { id: 'billing' as const, label: 'Billing', icon: DollarSign },
+                { id: 'billing' as const, label: 'Billing & Fees', icon: DollarSign },
+                { id: 'audit' as const, label: 'Audit Logs', icon: Terminal },
                 { id: 'settings' as const, label: 'Settings', icon: Settings }
               ].map((step) => {
                 const isCurrent = currentStep === step.id;

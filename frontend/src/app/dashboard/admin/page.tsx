@@ -40,7 +40,11 @@ import {
   SlidersHorizontal,
   FolderArchive,
   Layers,
-  Terminal
+  Terminal,
+  DollarSign,
+  Receipt,
+  Settings,
+  Check
 } from 'lucide-react';
 
 interface StaffProfile {
@@ -78,7 +82,7 @@ interface PatientRecord {
   createdAt: string;
 }
 
-type TabType = 'overview' | 'staff' | 'patients' | 'audit';
+type TabType = 'overview' | 'staff' | 'patients' | 'appointments' | 'billing' | 'audit' | 'settings';
 type RoleFilter = 'ALL' | 'DOCTOR' | 'NURSE' | 'ACCOUNTANT' | 'LAB_TECH' | 'RECEPTIONIST' | 'PHARMACIST' | 'ADMIN';
 type StatusFilter = 'all' | 'active' | 'inactive';
 type PatientFilter = 'active' | 'archived' | 'all';
@@ -88,8 +92,31 @@ export default function AdminDashboardPage() {
   const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
   const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
 
-  // Active Main Tab
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  // Active Main Tab synced with Workflow currentStep
+  const validTabs: TabType[] = ['overview', 'staff', 'patients', 'appointments', 'billing', 'audit', 'settings'];
+  const activeTab: TabType = validTabs.includes(currentStep as TabType) ? (currentStep as TabType) : 'overview';
+
+  const setActiveTab = (tab: TabType) => {
+    setCurrentStep(tab as any);
+  };
+
+  // Appointments State
+  const [appointmentsList, setAppointmentsList] = useState<any[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [appointmentStatusFilter, setAppointmentStatusFilter] = useState('ALL');
+
+  // Billing & Fees State
+  const [feeConfigs, setFeeConfigs] = useState<any[]>([
+    { feeType: 'CONSULTATION', name: 'General Doctor Consultation', description: 'Standard physician check-up fee', amount: 50 },
+    { feeType: 'URGENT_CONSULTATION', name: 'Urgent / Priority Consultation', description: 'Immediate doctor review fee', amount: 80 },
+    { feeType: 'CBC_LAB_TEST', name: 'Complete Blood Count (CBC)', description: 'Full hematology panel and smear', amount: 45 },
+    { feeType: 'TRIAGE_FEE', name: 'Nurse Triage & Vitals Check', description: 'Initial nursing assessment fee', amount: 20 },
+  ]);
+  const [feeConfigsLoading, setFeeConfigsLoading] = useState(false);
+  const [editingFeeType, setEditingFeeType] = useState<string | null>(null);
+  const [editingFeeAmount, setEditingFeeAmount] = useState<number>(0);
+  const [adminInvoices, setAdminInvoices] = useState<any[]>([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
 
   // Stats State
   const [stats, setStats] = useState({
@@ -315,11 +342,76 @@ export default function AdminDashboardPage() {
     }
   }, [patientSearch, patientFilterTab]);
 
+  const fetchAppointments = useCallback(async () => {
+    setAppointmentsLoading(true);
+    try {
+      const response = await apiClient.get<{ appointments: any[] }>('/appointments');
+      if (response.data?.appointments) {
+        setAppointmentsList(response.data.appointments);
+      }
+    } catch (err) {
+      console.error('Failed to fetch appointments:', err);
+    } finally {
+      setAppointmentsLoading(false);
+    }
+  }, []);
+
+  const fetchFeeConfigs = useCallback(async () => {
+    setFeeConfigsLoading(true);
+    try {
+      const response = await apiClient.get<{ fees: any[] }>('/billing/fee-configurations');
+      if (response.data?.fees && response.data.fees.length > 0) {
+        setFeeConfigs(response.data.fees);
+      }
+    } catch (err) {
+      console.error('Failed to fetch fee configs:', err);
+    } finally {
+      setFeeConfigsLoading(false);
+    }
+  }, []);
+
+  const fetchAdminInvoices = useCallback(async () => {
+    setInvoicesLoading(true);
+    try {
+      const response = await apiClient.get<{ invoices: any[] }>('/billing/invoices');
+      if (response.data?.invoices) {
+        setAdminInvoices(response.data.invoices);
+      }
+    } catch (err) {
+      console.error('Failed to fetch invoices:', err);
+    } finally {
+      setInvoicesLoading(false);
+    }
+  }, []);
+
+  const handleUpdateFee = async (feeType: string, name: string, description: string, amount: number) => {
+    try {
+      const response = await apiClient.post<{ message: string; fee: any }>('/billing/fee-configurations', {
+        feeType,
+        name,
+        description,
+        amount
+      });
+      if (response.error) {
+        showToast(response.error, 'error');
+        return;
+      }
+      showToast(`Fee for ${name} updated to $${amount.toFixed(2)}`, 'success');
+      setEditingFeeType(null);
+      fetchFeeConfigs();
+    } catch (err: any) {
+      showToast('Failed to update fee configuration', 'error');
+    }
+  };
+
   useEffect(() => {
     fetchDashboardStats();
     fetchStaff();
     fetchPatients();
     fetchAuditLogs();
+    fetchAppointments();
+    fetchFeeConfigs();
+    fetchAdminInvoices();
     
     // Set up real-time polling for dashboard stats
     const statsInterval = setInterval(() => {
@@ -347,7 +439,7 @@ export default function AdminDashboardPage() {
       clearInterval(patientsInterval);
       clearInterval(auditInterval);
     };
-  }, [fetchDashboardStats, fetchStaff, fetchPatients, fetchAuditLogs]);
+  }, [fetchDashboardStats, fetchStaff, fetchPatients, fetchAuditLogs, fetchAppointments, fetchFeeConfigs, fetchAdminInvoices]);
 
   // Trigger search on filter changes
   useEffect(() => {
@@ -621,8 +713,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {currentStep === 'overview' && (
-      <>
       {/* Toast Notification Banner */}
       <AnimatePresence>
         {toast && (
@@ -651,7 +741,7 @@ export default function AdminDashboardPage() {
 
       {/* Command Center Navigation Tabs */}
       <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-200 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center space-x-1 sm:space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2 flex-wrap">
           <button
             onClick={() => setActiveTab('overview')}
             className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
@@ -661,7 +751,7 @@ export default function AdminDashboardPage() {
             }`}
           >
             <Layers className="h-4 w-4" />
-            <span>Operational Overview</span>
+            <span>Overview</span>
           </button>
 
           <button
@@ -673,7 +763,7 @@ export default function AdminDashboardPage() {
             }`}
           >
             <Users className="h-4 w-4" />
-            <span>Real-Time Staff Control</span>
+            <span>Staff</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
               activeTab === 'staff' ? 'bg-white/20 text-white' : 'bg-red-100 text-red-700'
             }`}>
@@ -690,14 +780,38 @@ export default function AdminDashboardPage() {
             }`}
           >
             <FolderArchive className="h-4 w-4" />
-            <span>Patient Archive & Records</span>
+            <span>Patients</span>
             {patientCounts.archived > 0 && (
               <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                 activeTab === 'patients' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
               }`}>
-                {patientCounts.archived} archived
+                {patientCounts.archived}
               </span>
             )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('appointments')}
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
+              activeTab === 'appointments'
+                ? 'bg-[#D93344] text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Calendar className="h-4 w-4" />
+            <span>Appointments</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('billing')}
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
+              activeTab === 'billing'
+                ? 'bg-[#D93344] text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <DollarSign className="h-4 w-4" />
+            <span>Billing & Fees</span>
           </button>
 
           <button
@@ -709,7 +823,19 @@ export default function AdminDashboardPage() {
             }`}
           >
             <Terminal className="h-4 w-4" />
-            <span>System Audit Feed</span>
+            <span>Audit</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
+              activeTab === 'settings'
+                ? 'bg-[#D93344] text-white shadow-md'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            <Settings className="h-4 w-4" />
+            <span>Settings</span>
           </button>
         </div>
 
@@ -1622,6 +1748,407 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ========================================================================= */}
+      {/* TAB 5: APPOINTMENTS OPERATIONS */}
+      {/* ========================================================================= */}
+      {activeTab === 'appointments' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-extrabold text-gray-900 flex items-center">
+                <Calendar className="h-7 w-7 mr-3 text-[#D93344]" />
+                Clinic Appointment Operations
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Monitor doctor schedules, patient visit consultations, and booking queues across all clinic departments.
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={fetchAppointments}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors flex items-center space-x-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${appointmentsLoading ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Status Filter Tabs */}
+          <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center space-x-2">
+              {['ALL', 'SCHEDULED', 'COMPLETED', 'CANCELLED'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setAppointmentStatusFilter(status)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                    appointmentStatusFilter === status
+                      ? 'bg-[#D93344] text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs text-gray-500 font-medium">
+              Showing {appointmentsList.filter(a => appointmentStatusFilter === 'ALL' || a.status === appointmentStatusFilter).length} appointments
+            </span>
+          </div>
+
+          {/* Appointments Table */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            {appointmentsLoading ? (
+              <div className="p-12 text-center text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D93344] mx-auto mb-3"></div>
+                <p className="text-sm font-medium">Loading clinic appointments...</p>
+              </div>
+            ) : appointmentsList.filter(a => appointmentStatusFilter === 'ALL' || a.status === appointmentStatusFilter).length === 0 ? (
+              <div className="p-12 text-center text-gray-500">
+                <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p className="text-base font-semibold text-gray-800">No appointments recorded</p>
+                <p className="text-sm text-gray-500 mt-1">Patients will appear here when scheduled by reception or attending doctors.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50/80 border-b border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      <th className="px-6 py-4">Patient</th>
+                      <th className="px-6 py-4">Doctor</th>
+                      <th className="px-6 py-4">Date & Time</th>
+                      <th className="px-6 py-4">Type / Reason</th>
+                      <th className="px-6 py-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-sm">
+                    {appointmentsList
+                      .filter(a => appointmentStatusFilter === 'ALL' || a.status === appointmentStatusFilter)
+                      .map((apt) => (
+                        <tr key={apt.id} className="hover:bg-red-50/30 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="font-semibold text-gray-900">
+                              {apt.patient ? `${apt.patient.firstName} ${apt.patient.lastName}` : 'Patient'}
+                            </div>
+                            <div className="text-xs text-gray-500 font-mono">
+                              MRN: {apt.patient?.mrn || 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="font-medium text-gray-800">
+                              {apt.doctor?.staffProfile?.fullName || apt.doctor?.username || 'Attending Physician'}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {apt.doctor?.staffProfile?.specialization || 'General Practice'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="font-medium text-gray-900">
+                              {new Date(apt.dateTime || apt.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(apt.dateTime || apt.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-gray-600">
+                            {apt.reason || apt.type || 'Consultation'}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                              apt.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                              apt.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                              apt.status === 'CANCELLED' ? 'bg-red-100 text-red-800 border border-red-200' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {apt.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 6: BILLING & FEE CONFIGURATIONS */}
+      {/* ========================================================================= */}
+      {activeTab === 'billing' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-extrabold text-gray-900 flex items-center">
+                <DollarSign className="h-7 w-7 mr-3 text-[#D93344]" />
+                Clinic Financial & Billing Control
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Configure standard service pricing, review patient invoice settlements, and track revenue collection.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                fetchFeeConfigs();
+                fetchAdminInvoices();
+              }}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors flex items-center space-x-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${invoicesLoading || feeConfigsLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh Ledger</span>
+            </button>
+          </div>
+
+          {/* Financial Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-gray-500 uppercase">Total Invoices</span>
+                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                  <Receipt className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-extrabold text-gray-900">{adminInvoices.length}</p>
+              <span className="text-xs text-gray-500 mt-1 block">Issued by reception</span>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-gray-500 uppercase">Paid Settlements</span>
+                <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                  <CheckCircle className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-extrabold text-emerald-600">
+                {adminInvoices.filter(i => i.status === 'PAID').length}
+              </p>
+              <span className="text-xs text-emerald-700 font-medium mt-1 block">Fully settled</span>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-gray-500 uppercase">Pending Payments</span>
+                <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
+                  <Clock className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-extrabold text-amber-600">
+                {adminInvoices.filter(i => i.status !== 'PAID').length}
+              </p>
+              <span className="text-xs text-amber-700 font-medium mt-1 block">Awaiting checkout</span>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-gray-500 uppercase">Revenue Collected</span>
+                <div className="p-2 bg-red-100 text-[#D93344] rounded-lg">
+                  <DollarSign className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-2xl font-extrabold text-gray-900">
+                ${adminInvoices.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + (Number(curr.total) || 0), 0).toFixed(2)}
+              </p>
+              <span className="text-xs text-gray-500 mt-1 block">Settled cash & cards</span>
+            </div>
+          </div>
+
+          {/* Standard Service Fee Pricing (Admin Configurable) */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Standard Service Pricing Table</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Admin-controlled pricing applied automatically during patient checkout</p>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {feeConfigs.map((fee) => (
+                <div key={fee.feeType} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                  <div>
+                    <h4 className="font-bold text-gray-900 text-base">{fee.name}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">{fee.description}</p>
+                    <span className="inline-block mt-2 px-2 py-0.5 bg-gray-100 text-gray-600 font-mono text-xs rounded">
+                      {fee.feeType}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    {editingFeeType === fee.feeType ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={editingFeeAmount}
+                            onChange={(e) => setEditingFeeAmount(Number(e.target.value))}
+                            className="w-28 pl-7 pr-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#D93344]"
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleUpdateFee(fee.feeType, fee.name, fee.description, editingFeeAmount)}
+                          className="px-3.5 py-2 bg-[#D93344] hover:bg-[#c02d3c] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingFeeType(null)}
+                          className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold rounded-xl transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-4">
+                        <span className="text-2xl font-black text-gray-900">${Number(fee.amount).toFixed(2)}</span>
+                        <button
+                          onClick={() => {
+                            setEditingFeeType(fee.feeType);
+                            setEditingFeeAmount(Number(fee.amount));
+                          }}
+                          className="px-3 py-1.5 border border-gray-200 hover:border-[#D93344] text-[#D93344] text-xs font-semibold rounded-lg transition-colors flex items-center space-x-1"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                          <span>Edit</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Invoices Ledger */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Recent Invoice Register</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Live billing records created during checkout</p>
+              </div>
+              <span className="text-xs text-gray-500 font-medium">{adminInvoices.length} entries</span>
+            </div>
+            {adminInvoices.length === 0 ? (
+              <div className="p-12 text-center text-gray-500">
+                <Receipt className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm font-medium">No billing transactions recorded yet</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto max-h-96">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50/80 border-b border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider sticky top-0">
+                      <th className="px-6 py-3">Invoice #</th>
+                      <th className="px-6 py-3">Patient</th>
+                      <th className="px-6 py-3">Date</th>
+                      <th className="px-6 py-3">Amount</th>
+                      <th className="px-6 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-sm">
+                    {adminInvoices.map((inv) => (
+                      <tr key={inv.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-3 font-mono font-bold text-gray-900">{inv.invoiceNo}</td>
+                        <td className="px-6 py-3 text-gray-800">{inv.patient?.firstName} {inv.patient?.lastName}</td>
+                        <td className="px-6 py-3 text-gray-500 text-xs">{new Date(inv.createdAt).toLocaleDateString()}</td>
+                        <td className="px-6 py-3 font-bold text-gray-900">${Number(inv.total).toFixed(2)}</td>
+                        <td className="px-6 py-3">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {inv.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 7: SYSTEM & CLINIC SETTINGS */}
+      {/* ========================================================================= */}
+      {activeTab === 'settings' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <h2 className="text-2xl font-extrabold text-gray-900 flex items-center">
+              <Settings className="h-7 w-7 mr-3 text-[#D93344]" />
+              Clinic System Configuration & Environment
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Healthcare infrastructure, security configurations, and active deployment parameters.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* System Status Card */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+              <h3 className="font-bold text-gray-900 text-base flex items-center">
+                <Activity className="h-5 w-5 mr-2 text-[#D93344]" />
+                Infrastructure & Connectivity
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">API Gateway</span>
+                  <span className="font-mono text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">http://localhost:4000/api</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">Frontend Web Host</span>
+                  <span className="font-mono text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">http://localhost:3000 (Next.js 16)</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">Database Engine</span>
+                  <span className="font-mono text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">PostgreSQL 16 (Healthy)</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">Current Operator</span>
+                  <span className="font-semibold text-gray-800">{user?.username} ({user?.role})</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-500">Workflow Mode</span>
+                  <span className="font-semibold text-gray-800">Walk-In Triage & Consultation Pipeline</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Security Policies Card */}
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+              <h3 className="font-bold text-gray-900 text-base flex items-center">
+                <Shield className="h-5 w-5 mr-2 text-[#D93344]" />
+                Security & Access Policies
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">Token Algorithm</span>
+                  <span className="font-semibold text-gray-800">HS256 JWT</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">Access Token Lifetime</span>
+                  <span className="font-semibold text-gray-800">15 minutes</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">Refresh Token Lifetime</span>
+                  <span className="font-semibold text-gray-800">7 days</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500">Prisma Audit Interceptors</span>
+                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">Active & Logging</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-gray-500">Password Hashing</span>
+                  <span className="font-semibold text-gray-800">Bcrypt (Salt rounds 10)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* MODAL 1: ADD STAFF MEMBER */}
       {/* ========================================================================= */}
       <AnimatePresence>
@@ -2113,16 +2640,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </AnimatePresence>
-      </>
-      )}
-
-      {currentStep !== 'overview' && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <p className="text-lg font-medium">{currentStep.charAt(0).toUpperCase() + currentStep.slice(1)} view coming soon</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

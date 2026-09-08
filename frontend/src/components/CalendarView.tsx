@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   ChevronLeft, 
@@ -8,8 +8,7 @@ import {
   Calendar as CalendarIcon,
   Clock,
   User,
-  Plus,
-  Filter
+  Plus
 } from 'lucide-react';
 
 interface Appointment {
@@ -43,7 +42,6 @@ export default function CalendarView({
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -135,7 +133,6 @@ export default function CalendarView({
   };
 
   const handleDateClick = (date: Date) => {
-    setSelectedDate(date);
     if (onDateSelect) {
       onDateSelect(date);
     }
@@ -247,7 +244,6 @@ export default function CalendarView({
 // Month View Component
 function MonthView({ 
   currentDate, 
-  appointments, 
   onDateClick, 
   onAppointmentClick, 
   onNewAppointment,
@@ -342,7 +338,6 @@ function MonthView({
 // Week View Component
 function WeekView({ 
   currentDate, 
-  appointments, 
   onDateClick, 
   onAppointmentClick, 
   onNewAppointment,
@@ -444,7 +439,6 @@ function WeekView({
 // Day View Component
 function DayView({ 
   currentDate, 
-  appointments, 
   onAppointmentClick, 
   onNewAppointment,
   getStatusColor,
@@ -453,7 +447,6 @@ function DayView({
   const dayAppointments = getAppointmentsForDate(currentDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const isToday = currentDate.getTime() === today.getTime();
 
   // Generate time slots from 8 AM to 6 PM
   const timeSlots = [];

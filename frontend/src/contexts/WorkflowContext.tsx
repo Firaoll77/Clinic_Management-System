@@ -1,12 +1,12 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 
 export type DoctorWorkflowStep = 'intake' | 'vitals' | 'encounter' | 'orders' | 'lab-results';
 export type ReceptionistWorkflowStep = 'queue' | 'registration' | 'appointments' | 'billing';
 export type NurseWorkflowStep = 'triage' | 'vitals' | 'intake';
 export type LaboratoristWorkflowStep = 'pending' | 'in-progress' | 'completed';
-export type AdminWorkflowStep = 'overview' | 'staff' | 'appointments' | 'billing' | 'settings';
+export type AdminWorkflowStep = 'overview' | 'staff' | 'patients' | 'appointments' | 'billing' | 'audit' | 'settings';
 
 export type WorkflowStep = 
   | DoctorWorkflowStep 
@@ -34,65 +34,85 @@ const defaultWorkflows: Record<string, WorkflowStep[]> = {
   receptionist: ['queue', 'registration', 'appointments', 'billing'],
   nurse: ['triage', 'vitals', 'intake'],
   laboratorist: ['pending', 'in-progress', 'completed'],
-  admin: ['overview', 'staff', 'appointments', 'billing', 'settings']
+  admin: ['overview', 'staff', 'patients', 'appointments', 'billing', 'audit', 'settings']
 };
 
 export function WorkflowProvider({ children }: { children: ReactNode }) {
-  const [currentStep, setCurrentStep] = useState<WorkflowStep>('intake');
+  const [currentStep, setCurrentStepState] = useState<WorkflowStep>('intake');
   const [completedSteps, setCompletedSteps] = useState<Set<WorkflowStep>>(new Set());
   const [stepOrder, setStepOrder] = useState<WorkflowStep[]>(defaultWorkflows.doctor);
 
-  const completeStep = (step: WorkflowStep) => {
-    setCompletedSteps(prev => new Set([...prev, step]));
-  };
+  const setCurrentStep = useCallback((step: WorkflowStep) => {
+    setCurrentStepState(step);
+  }, []);
 
-  const canAccessStep = (step: WorkflowStep): boolean => {
+  const completeStep = useCallback((step: WorkflowStep) => {
+    setCompletedSteps(prev => new Set([...prev, step]));
+  }, []);
+
+  const canAccessStep = useCallback((step: WorkflowStep): boolean => {
     const stepIndex = stepOrder.indexOf(step);
-    if (stepIndex === 0) return true;
+    if (stepIndex <= 0) return true;
     
     const previousStep = stepOrder[stepIndex - 1];
     return completedSteps.has(previousStep);
-  };
+  }, [stepOrder, completedSteps]);
 
-  const getNextStep = (current: WorkflowStep): WorkflowStep | null => {
+  const getNextStep = useCallback((current: WorkflowStep): WorkflowStep | null => {
     const currentIndex = stepOrder.indexOf(current);
     if (currentIndex < stepOrder.length - 1) {
       return stepOrder[currentIndex + 1];
     }
     return null;
-  };
+  }, [stepOrder]);
 
-  const getPreviousStep = (current: WorkflowStep): WorkflowStep | null => {
+  const getPreviousStep = useCallback((current: WorkflowStep): WorkflowStep | null => {
     const currentIndex = stepOrder.indexOf(current);
     if (currentIndex > 0) {
       return stepOrder[currentIndex - 1];
     }
     return null;
-  };
+  }, [stepOrder]);
 
-  const resetWorkflow = () => {
+  const resetWorkflow = useCallback(() => {
     setCompletedSteps(new Set());
-    setCurrentStep(stepOrder[0]);
-  };
+    setCurrentStepState(stepOrder[0]);
+  }, [stepOrder]);
 
-  const setWorkflowSteps = (steps: WorkflowStep[]) => {
-    setStepOrder(steps);
-    setCurrentStep(steps[0]);
-    setCompletedSteps(new Set());
-  };
+  const setWorkflowSteps = useCallback((steps: WorkflowStep[]) => {
+    setStepOrder(prevSteps => {
+      const isSame =
+        prevSteps.length === steps.length &&
+        prevSteps.every((s, i) => s === steps[i]);
+      return isSame ? prevSteps : steps;
+    });
+    setCurrentStepState(prev => (steps.includes(prev) ? prev : steps[0]));
+  }, []);
+
+  const value = useMemo(() => ({
+    currentStep,
+    setCurrentStep,
+    completedSteps,
+    completeStep,
+    canAccessStep,
+    getNextStep,
+    getPreviousStep,
+    resetWorkflow,
+    setWorkflowSteps
+  }), [
+    currentStep,
+    setCurrentStep,
+    completedSteps,
+    completeStep,
+    canAccessStep,
+    getNextStep,
+    getPreviousStep,
+    resetWorkflow,
+    setWorkflowSteps
+  ]);
 
   return (
-    <WorkflowContext.Provider value={{
-      currentStep,
-      setCurrentStep,
-      completedSteps,
-      completeStep,
-      canAccessStep,
-      getNextStep,
-      getPreviousStep,
-      resetWorkflow,
-      setWorkflowSteps
-    }}>
+    <WorkflowContext.Provider value={value}>
       {children}
     </WorkflowContext.Provider>
   );
