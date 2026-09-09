@@ -152,9 +152,11 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
  */
 router.get('/doctor-patients', authenticate, async (req: Request, res: Response) => {
   try {
-    const doctorId = req.user?.userId;
+    const userId = req.user?.userId;
+    const staffProfile = userId ? await prisma.staffProfile.findUnique({ where: { userId } }) : null;
+    const doctorId = staffProfile?.id || userId;
     
-    // Get patients in DOCTOR_CONSULT status
+    // Get patients in WAITING_FOR_DOCTOR / DOCTOR_CONSULT status
     const consultationPatients = await VisitRoutingService.getDoctorConsultationPatients(doctorId);
     
     // Get patients with LAB_READY status (results ready for review)

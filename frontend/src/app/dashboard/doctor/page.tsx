@@ -27,11 +27,15 @@ import {
   Beaker,
   X,
   Save,
-  Printer
+  Printer,
+  RefreshCw,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 
 interface Patient {
   id: string;
+  assignmentId?: string;
   patientId: string;
   firstName: string;
   lastName: string;
@@ -42,6 +46,7 @@ interface Patient {
   reason: string;
   status: 'waiting' | 'in-progress' | 'completed';
   urgency: 'routine' | 'urgent' | 'stat';
+  encounterId?: string;
 }
 
 interface Vitals {
@@ -117,10 +122,54 @@ export default function DoctorDashboardPage() {
 
   const [availableLabTechs, setAvailableLabTechs] = useState<any[]>([]);
 
+  const [isAvailable, setIsAvailable] = useState<boolean>(true);
+
   useEffect(() => {
     fetchDoctorPatients();
     fetchAvailableLabTechs();
+    fetchDoctorAvailability();
+
+    // Auto-poll doctor patient queue every 10 seconds so patients sent by nurse appear immediately
+    const interval = setInterval(() => {
+      fetchDoctorPatients(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
+
+  const fetchDoctorAvailability = async () => {
+    try {
+      const response = await apiClient.get<{ users: any[] }>('/users');
+      if (response.data) {
+        const currentUser = response.data.users.find((u: any) => u.id === user?.id);
+        if (currentUser && currentUser.staffProfile) {
+          setIsAvailable(currentUser.staffProfile.isAvailable !== false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch doctor availability:', error);
+    }
+  };
+
+  const handleToggleAvailability = async () => {
+    try {
+      const newAvailability = !isAvailable;
+      const response = await apiClient.post('/assignments/staff/toggle-availability', {
+        isAvailable: newAvailability
+      });
+
+      if (response.error) {
+        showError(`Failed to toggle availability: ${response.error}`);
+        return;
+      }
+
+      setIsAvailable(newAvailability);
+      showSuccess(`Availability set to ${newAvailability ? 'Available' : 'Unavailable'}!`);
+    } catch (error) {
+      console.error('Toggle availability error:', error);
+      showError('Failed to toggle availability.');
+    }
+  };
 
   const fetchAvailableLabTechs = async () => {
     try {
@@ -133,30 +182,47 @@ export default function DoctorDashboardPage() {
     }
   };
 
-  const fetchDoctorPatients = async () => {
-    setLoading(true);
+  const fetchDoctorPatients = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await apiClient.get<{ assignments: any[] }>('/assignments/doctor/my-assignments');
-      if (response.data) {
-        const allPatients = response.data.assignments.map((a: any) => ({
-          id: a.id,
-          assignmentId: a.id,
-          patientId: a.encounter.patient.id,
-          firstName: a.encounter.patient.firstName,
-          lastName: a.encounter.patient.lastName,
-          mrn: a.encounter.patient.mrn,
-          appointmentTime: new Date(a.assignedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          status: (a.status === 'PENDING' ? 'waiting' : a.status === 'ACCEPTED' ? 'in-progress' : 'completed') as 'waiting' | 'in-progress' | 'completed',
-          urgency: 'routine' as const,
-          reason: 'Nurse Examination Complete',
-          encounterId: a.encounterId
-        }));
+      if (response.data && Array.isArray(response.data.assignments)) {
+        const allPatients = response.data.assignments
+          .filter((a: any) => a && a.encounter && a.encounter.patient)
+          .map((a: any) => ({
+            id: a.id,
+            assignmentId: a.id,
+            patientId: a.encounter.patient.id,
+            firstName: a.encounter.patient.firstName,
+            lastName: a.encounter.patient.lastName,
+            mrn: a.encounter.patient.mrn || 'N/A',
+            appointmentTime: a.assignedAt ? new Date(a.assignedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now',
+            status: (a.status === 'PENDING' ? 'waiting' : a.status === 'ACCEPTED' ? 'in-progress' : 'completed') as 'waiting' | 'in-progress' | 'completed',
+            urgency: 'routine' as const,
+            reason: a.encounter.chiefComplaint || 'Nurse Examination Complete',
+            encounterId: a.encounterId
+          }));
         setPatients(allPatients);
       }
     } catch (error) {
       console.error('Failed to fetch doctor assignments:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
+    }
+  };
+
+  const handleAcceptPatient = async (assignmentId: string) => {
+    try {
+      const response = await apiClient.post(`/assignments/doctor/assignment/${assignmentId}/respond`, {
+        action: 'accept'
+      });
+      if (response.data) {
+        showSuccess('Patient accepted into consultation!');
+        fetchDoctorPatients(true);
+      }
+    } catch (error) {
+      console.error('Failed to accept patient:', error);
+      showError('Failed to accept patient');
     }
   };
 
@@ -228,6 +294,11 @@ export default function DoctorDashboardPage() {
     setPatientLabOrders([]);
     setCurrentStep('intake'); // Reset workflow to first step
     fetchPatientData(patient.patientId);
+
+    // If patient is pending, automatically accept into consultation
+    if (patient.status === 'waiting' && patient.assignmentId) {
+      handleAcceptPatient(patient.assignmentId);
+    }
   };
 
   const handleEncounterSubmit = async (e: React.FormEvent) => {
@@ -412,20 +483,51 @@ export default function DoctorDashboardPage() {
       {/* Left Sidebar - Patient Queue (30%) */}
       <div className="w-[30%] border-r border-gray-200 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-cyan-50">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Calendar className="h-5 w-5 mr-2 text-blue-600" />
-            Today's Patients
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">{patients.length} appointments</p>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+              <Calendar className="h-5 w-5 mr-2 text-blue-600" />
+              Today's Patients
+            </h2>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => fetchDoctorPatients(false)}
+                title="Refresh patient queue"
+                className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-gray-200 shadow-none hover:shadow-sm"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
+              </button>
+              <button
+                onClick={handleToggleAvailability}
+                title={isAvailable ? 'Status: Available (Click to change)' : 'Status: Unavailable (Click to change)'}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
+                  isAvailable ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {isAvailable ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
+                <span>{isAvailable ? 'Available' : 'Unavailable'}</span>
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-xs text-gray-600">
+            <span>{patients.length} assigned patient{patients.length === 1 ? '' : 's'}</span>
+            <span className="flex items-center text-green-600 font-medium">
+              <span className="h-2 w-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
+              Live Sync
+            </span>
+          </div>
         </div>
         
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading patients...</div>
+            <div className="text-center py-8 text-gray-500 flex flex-col items-center">
+              <RefreshCw className="h-6 w-6 animate-spin text-blue-500 mb-2" />
+              <span>Loading patients...</span>
+            </div>
           ) : patients.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm">No patients scheduled</p>
+              <p className="text-sm font-medium">No patients waiting</p>
+              <p className="text-xs text-gray-400 mt-1">Patients assigned by triage nurse will appear here</p>
             </div>
           ) : (
             patients.map((patient) => (
@@ -461,12 +563,36 @@ export default function DoctorDashboardPage() {
                       )}
                     </div>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full border ${getUrgencyColor(patient.urgency)}`}>
-                    {patient.urgency.toUpperCase()}
-                  </span>
+                  <div className="flex flex-col items-end space-y-1">
+                    <span className={`text-xs px-2 py-0.5 rounded-full border ${getUrgencyColor(patient.urgency)}`}>
+                      {patient.urgency.toUpperCase()}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      patient.status === 'waiting'
+                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                        : patient.status === 'in-progress'
+                        ? 'bg-green-100 text-green-800 border border-green-200'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {patient.status === 'waiting' ? '● New Arrival' : '● In Consult'}
+                    </span>
+                  </div>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{patient.reason}</p>
-                <p className="text-xs text-gray-500">MRN: {patient.mrn}</p>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>MRN: {patient.mrn}</span>
+                  {patient.status === 'waiting' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePatientSelect(patient);
+                      }}
+                      className="px-2 py-0.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                    >
+                      Start Consult
+                    </button>
+                  )}
+                </div>
               </motion.div>
             ))
           )}

@@ -15,7 +15,7 @@ export class VisitRoutingService {
   static async getDoctorConsultationPatients(doctorId?: string) {
     return await prisma.encounter.findMany({
       where: {
-        visitStatus: VisitStatus.DOCTOR_CONSULT,
+        visitStatus: { in: [VisitStatus.WAITING_FOR_DOCTOR, VisitStatus.DOCTOR_CONSULT] },
         ...(doctorId && { doctorId: doctorId }) // Filter by specific doctor if provided
       },
       select: {
@@ -409,7 +409,7 @@ export class VisitRoutingService {
     return await prisma.encounter.findMany({
       where: {
         visitStatus: {
-          in: [VisitStatus.TRIAGE, VisitStatus.DOCTOR_CONSULT, VisitStatus.LAB_PENDING, VisitStatus.LAB_READY, VisitStatus.BILLING]
+          in: [VisitStatus.TRIAGE, VisitStatus.WAITING_FOR_DOCTOR, VisitStatus.DOCTOR_CONSULT, VisitStatus.LAB_PENDING, VisitStatus.LAB_READY, VisitStatus.BILLING]
         },
       },
       select: {
@@ -419,8 +419,15 @@ export class VisitRoutingService {
         patient: {
           select: {
             id: true,
+            mrn: true,
             firstName: true,
             lastName: true,
+            phone: true,
+            dob: true,
+            gender: true,
+            bloodGroup: true,
+            emergencyContact: true,
+            lastActivityAt: true,
           },
         },
         invoices: {

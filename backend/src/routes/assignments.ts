@@ -117,41 +117,80 @@ router.get('/nurses/available', async (req, res) => {
   }
 });
 
-// Get available doctors
-router.get('/doctors/available', async (req, res) => {
+// Assign doctor to patient/encounter directly (Receptionist / Nurse / Staff action)
+router.post('/doctor/assign', async (req, res) => {
   try {
-    const currentDay = new Date().getDay();
-    const currentTime = new Date().toTimeString().slice(0, 5); // HH:MM format
+    const { encounterId, doctorId } = req.body;
+    const userId = req.user?.userId;
 
-    // Simplified check - just check isAvailable = true
-    const availableDoctors = await prisma.staffProfile.findMany({
-      where: {
-        user: {
-          role: 'DOCTOR',
-          isActive: true,
-        },
-        isAvailable: true,
+    if (!encounterId || !doctorId) {
+      return res.status(400).json({ error: 'encounterId and doctorId are required' });
+    }
+
+    const encounter = await prisma.encounter.findUnique({
+      where: { id: encounterId },
+      include: { patient: true },
+    });
+
+    if (!encounter) {
+      return res.status(404).json({ error: 'Encounter not found' });
+    }
+
+    // Resolve doctor by staffProfile.id or userId
+    let doctor = await prisma.staffProfile.findUnique({
+      where: { id: doctorId },
+      include: { user: true },
+    });
+
+    if (!doctor) {
+      doctor = await prisma.staffProfile.findUnique({
+        where: { userId: doctorId },
+        include: { user: true },
+      });
+    }
+
+    if (!doctor || doctor.user.role !== 'DOCTOR') {
+      return res.status(400).json({ error: 'Doctor not found or not active' });
+    }
+
+    // Ensure doctor is marked available
+    if (!doctor.isAvailable) {
+      await prisma.staffProfile.update({
+        where: { id: doctor.id },
+        data: { isAvailable: true },
+      });
+    }
+
+    // Create doctor assignment
+    const assignment = await prisma.doctorAssignment.create({
+      data: {
+        encounterId,
+        doctorId: doctor.id,
+        assignedBy: userId || '',
+        status: 'PENDING',
       },
       include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-          },
-        },
-        doctorAvailability: {
-          where: {
-            weekday: currentDay,
+        encounter: {
+          include: {
+            patient: true,
           },
         },
       },
     });
 
-    res.json({ doctors: availableDoctors });
+    // Update encounter status
+    await prisma.encounter.update({
+      where: { id: encounterId },
+      data: {
+        doctorId: doctor.id,
+        visitStatus: 'WAITING_FOR_DOCTOR',
+      },
+    });
+
+    res.json({ assignment });
   } catch (error) {
-    console.error('Error fetching available doctors:', error);
-    res.status(500).json({ error: 'Failed to fetch available doctors' });
+    console.error('Error assigning doctor:', error);
+    res.status(500).json({ error: 'Failed to assign doctor' });
   }
 });
 
@@ -476,40 +515,67 @@ router.post('/nurse/examination/complete', async (req, res) => {
       where: { userId },
     });
 
-    if (!staffProfile) {
-      return res.status(404).json({ error: 'Staff profile not found' });
-    }
-
-    // Check if doctor is available
-    const doctor = await prisma.staffProfile.findUnique({
+    // Find doctor: resolve by staffProfile.id OR userId
+    let doctor = await prisma.staffProfile.findUnique({
       where: { id: doctorId },
       include: { user: true },
     });
 
-    if (!doctor || !doctor.isAvailable || doctor.user.role !== 'DOCTOR') {
+    if (!doctor) {
+      doctor = await prisma.staffProfile.findUnique({
+        where: { userId: doctorId },
+        include: { user: true },
+      });
+    }
+
+    if (!doctor || doctor.user.role !== 'DOCTOR' || !doctor.user.isActive) {
       return res.status(400).json({ error: 'Doctor is not available or not found' });
+    }
+
+    // Ensure doctor is marked available
+    if (!doctor.isAvailable) {
+      await prisma.staffProfile.update({
+        where: { id: doctor.id },
+        data: { isAvailable: true },
+      });
     }
 
     // Update encounter with examination data
     await prisma.encounter.update({
       where: { id: encounterId },
       data: {
-        subjective,
-        objective,
-        doctorId,
+        subjective: subjective || undefined,
+        objective: objective || undefined,
+        doctorId: doctor.id,
         visitStatus: 'WAITING_FOR_DOCTOR',
       },
     });
 
-    // Save vitals if provided
-    if (vitals) {
-      await prisma.vital.create({
-        data: {
-          encounterId,
-          ...vitals,
-          recordedBy: userId,
-        },
-      });
+    // Save vitals if valid numbers provided
+    if (vitals && typeof vitals === 'object') {
+      const sanitizedVitals: any = {};
+      if (typeof vitals.temperatureC === 'number' && !isNaN(vitals.temperatureC)) sanitizedVitals.temperatureC = vitals.temperatureC;
+      if (typeof vitals.systolic === 'number' && !isNaN(vitals.systolic)) sanitizedVitals.systolic = vitals.systolic;
+      if (typeof vitals.diastolic === 'number' && !isNaN(vitals.diastolic)) sanitizedVitals.diastolic = vitals.diastolic;
+      if (typeof vitals.pulse === 'number' && !isNaN(vitals.pulse)) sanitizedVitals.pulse = vitals.pulse;
+      if (typeof vitals.respRate === 'number' && !isNaN(vitals.respRate)) sanitizedVitals.respRate = vitals.respRate;
+      if (typeof vitals.spo2 === 'number' && !isNaN(vitals.spo2)) sanitizedVitals.spo2 = vitals.spo2;
+      if (typeof vitals.weightKg === 'number' && !isNaN(vitals.weightKg)) sanitizedVitals.weightKg = vitals.weightKg;
+      if (typeof vitals.heightCm === 'number' && !isNaN(vitals.heightCm)) sanitizedVitals.heightCm = vitals.heightCm;
+
+      if (Object.keys(sanitizedVitals).length > 0) {
+        try {
+          await prisma.vital.create({
+            data: {
+              encounterId,
+              ...sanitizedVitals,
+              recordedBy: userId || 'system',
+            },
+          });
+        } catch (vErr) {
+          console.error('Failed to save vitals during route to doctor:', vErr);
+        }
+      }
     }
 
     // Log nurse examination fee
@@ -524,24 +590,34 @@ router.post('/nurse/examination/complete', async (req, res) => {
     }
 
     // Complete nurse assignment
-    await prisma.nurseAssignment.updateMany({
-      where: {
-        encounterId,
-        nurseId: staffProfile.id,
-        status: 'ACCEPTED',
-      },
-      data: {
-        status: 'COMPLETED',
-        completedAt: new Date(),
-      },
-    });
+    if (staffProfile) {
+      await prisma.nurseAssignment.updateMany({
+        where: {
+          encounterId,
+          nurseId: staffProfile.id,
+          status: { in: ['PENDING', 'ACCEPTED'] },
+        },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
+        },
+      });
+    }
 
     // Create doctor assignment
     const doctorAssignment = await prisma.doctorAssignment.create({
       data: {
         encounterId,
-        doctorId,
+        doctorId: doctor.id,
         assignedBy: userId || '',
+        status: 'PENDING',
+      },
+      include: {
+        encounter: {
+          include: {
+            patient: true,
+          },
+        },
       },
     });
 
@@ -556,18 +632,38 @@ router.post('/nurse/examination/complete', async (req, res) => {
 router.get('/doctor/my-assignments', async (req, res) => {
   try {
     const userId = req.user?.userId;
-    const staffProfile = await prisma.staffProfile.findUnique({
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    let staffProfile = await prisma.staffProfile.findUnique({
       where: { userId },
     });
 
     if (!staffProfile) {
-      return res.status(404).json({ error: 'Staff profile not found' });
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && user.role === 'DOCTOR') {
+        staffProfile = await prisma.staffProfile.create({
+          data: {
+            userId: user.id,
+            fullName: user.username,
+            specialization: 'General Practice',
+            isAvailable: true,
+          },
+        });
+      }
     }
 
+    const doctorIds = [userId];
+    if (staffProfile) {
+      doctorIds.push(staffProfile.id);
+    }
+
+    // 1. Fetch all doctor assignments that are PENDING or ACCEPTED
     const assignments = await prisma.doctorAssignment.findMany({
       where: {
-        doctorId: staffProfile.id,
-        status: 'PENDING',
+        doctorId: { in: doctorIds },
+        status: { in: ['PENDING', 'ACCEPTED'] },
       },
       include: {
         encounter: {
@@ -591,7 +687,55 @@ router.get('/doctor/my-assignments', async (req, res) => {
       },
     });
 
-    res.json({ assignments });
+    // 2. Also fetch any active encounters assigned directly to this doctor
+    // that don't have a doctorAssignment record yet
+    const assignedEncounterIds = new Set(assignments.map(a => a.encounterId));
+
+    const directEncounters = await prisma.encounter.findMany({
+      where: {
+        doctorId: { in: doctorIds },
+        visitStatus: { in: ['WAITING_FOR_DOCTOR', 'DOCTOR_CONSULT', 'LAB_READY'] },
+        id: { notIn: Array.from(assignedEncounterIds) },
+      },
+      include: {
+        patient: true,
+        vitals: true,
+        nurseAssignments: {
+          include: {
+            encounter: {
+              include: {
+                patient: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Synthesize assignments for direct encounters
+    const directAssignments = directEncounters.map(encounter => ({
+      id: `enc-${encounter.id}`,
+      encounterId: encounter.id,
+      doctorId: staffProfile ? staffProfile.id : userId,
+      assignedBy: 'System',
+      assignedAt: encounter.createdAt,
+      acceptedAt: encounter.visitStatus === 'DOCTOR_CONSULT' ? encounter.createdAt : null,
+      rejectedAt: null,
+      rejectionReason: null,
+      completedAt: null,
+      status: encounter.visitStatus === 'DOCTOR_CONSULT' ? 'ACCEPTED' : 'PENDING',
+      createdAt: encounter.createdAt,
+      updatedAt: encounter.updatedAt,
+      encounter,
+    }));
+
+    const allAssignments = [...assignments, ...directAssignments];
+    const validAssignments = allAssignments.filter(a => a.encounter && a.encounter.patient);
+
+    res.json({ assignments: validAssignments });
   } catch (error) {
     console.error('Error fetching doctor assignments:', error);
     res.status(500).json({ error: 'Failed to fetch assignments' });
@@ -605,27 +749,46 @@ router.post('/doctor/assignment/:id/respond', async (req, res) => {
     const { action, rejectionReason } = req.body; // action: 'accept' or 'reject'
     const userId = req.user?.userId;
 
-    const assignment = await prisma.doctorAssignment.findUnique({
-      where: { id },
-      include: { encounter: true },
-    });
+    let encounterId: string | null = null;
 
-    if (!assignment) {
-      return res.status(404).json({ error: 'Assignment not found' });
-    }
-
-    if (action === 'accept') {
-      await prisma.doctorAssignment.update({
+    if (id.startsWith('enc-')) {
+      encounterId = id.replace('enc-', '');
+    } else {
+      const assignment = await prisma.doctorAssignment.findUnique({
         where: { id },
-        data: {
-          status: 'ACCEPTED',
-          acceptedAt: new Date(),
-        },
+        include: { encounter: true },
       });
 
+      if (!assignment) {
+        return res.status(404).json({ error: 'Assignment not found' });
+      }
+
+      encounterId = assignment.encounterId;
+
+      if (action === 'accept') {
+        await prisma.doctorAssignment.update({
+          where: { id },
+          data: {
+            status: 'ACCEPTED',
+            acceptedAt: new Date(),
+          },
+        });
+      } else if (action === 'reject') {
+        await prisma.doctorAssignment.update({
+          where: { id },
+          data: {
+            status: 'REJECTED',
+            rejectedAt: new Date(),
+            rejectionReason,
+          },
+        });
+      }
+    }
+
+    if (action === 'accept' && encounterId) {
       // Update encounter status
       await prisma.encounter.update({
-        where: { id: assignment.encounterId },
+        where: { id: encounterId },
         data: {
           visitStatus: 'DOCTOR_CONSULT',
         },
@@ -634,26 +797,17 @@ router.post('/doctor/assignment/:id/respond', async (req, res) => {
       // Log doctor consultation fee
       try {
         await FeeService.logEncounterFee(
-          assignment.encounterId,
+          encounterId,
           FeeType.DOCTOR_CONSULTATION,
           userId || 'system'
         );
       } catch (feeError) {
         console.error('Failed to log doctor consultation fee:', feeError);
       }
-    } else if (action === 'reject') {
-      await prisma.doctorAssignment.update({
-        where: { id },
-        data: {
-          status: 'REJECTED',
-          rejectedAt: new Date(),
-          rejectionReason,
-        },
-      });
-
+    } else if (action === 'reject' && encounterId) {
       // Reset encounter status
       await prisma.encounter.update({
-        where: { id: assignment.encounterId },
+        where: { id: encounterId },
         data: {
           doctorId: null,
           visitStatus: 'WAITING_FOR_DOCTOR',

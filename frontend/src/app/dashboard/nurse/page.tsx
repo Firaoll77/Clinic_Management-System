@@ -270,21 +270,26 @@ export default function NurseDashboardPage() {
     if (!selectedPatient || !selectedDoctor) return;
 
     try {
+      const vitalsPayload: any = {};
+      if (vitalsData.temperature && !isNaN(parseFloat(vitalsData.temperature))) vitalsPayload.temperatureC = parseFloat(vitalsData.temperature);
+      if (vitalsData.bloodPressureSystolic && !isNaN(parseInt(vitalsData.bloodPressureSystolic))) vitalsPayload.systolic = parseInt(vitalsData.bloodPressureSystolic);
+      if (vitalsData.bloodPressureDiastolic && !isNaN(parseInt(vitalsData.bloodPressureDiastolic))) vitalsPayload.diastolic = parseInt(vitalsData.bloodPressureDiastolic);
+      if (vitalsData.heartRate && !isNaN(parseInt(vitalsData.heartRate))) vitalsPayload.pulse = parseInt(vitalsData.heartRate);
+      if (vitalsData.respiratoryRate && !isNaN(parseInt(vitalsData.respiratoryRate))) vitalsPayload.respRate = parseInt(vitalsData.respiratoryRate);
+      if (vitalsData.spo2 && !isNaN(parseInt(vitalsData.spo2))) vitalsPayload.spo2 = parseInt(vitalsData.spo2);
+      if (vitalsData.weight && !isNaN(parseFloat(vitalsData.weight))) vitalsPayload.weightKg = parseFloat(vitalsData.weight);
+      if (vitalsData.height && !isNaN(parseFloat(vitalsData.height))) vitalsPayload.heightCm = parseFloat(vitalsData.height);
+
+      const objectiveNotes = Object.keys(vitalsPayload).length > 0
+        ? `Vitals recorded: BP ${vitalsData.bloodPressureSystolic || '-'}/${vitalsData.bloodPressureDiastolic || '-'}, HR ${vitalsData.heartRate || '-'}, Temp ${vitalsData.temperature || '-'}°C, SpO2 ${vitalsData.spo2 || '-'}%, Weight ${vitalsData.weight || '-'}kg, Height ${vitalsData.height || '-'}cm`
+        : 'Triage examination completed';
+
       const response = await apiClient.post('/assignments/nurse/examination/complete', {
         encounterId: selectedPatient.encounterId,
         doctorId: selectedDoctor,
         subjective: `Chief Complaint: ${intakeData.chiefComplaint}\nCurrent Medications: ${intakeData.currentMedications}\nAllergies: ${intakeData.allergies}\nMedical History: ${intakeData.medicalHistory}`,
-        objective: `Vitals recorded: BP ${vitalsData.bloodPressureSystolic}/${vitalsData.bloodPressureDiastolic}, HR ${vitalsData.heartRate}, Temp ${vitalsData.temperature}°C, SpO2 ${vitalsData.spo2}%, Weight ${vitalsData.weight}kg, Height ${vitalsData.height}cm`,
-        vitals: {
-          temperatureC: parseFloat(vitalsData.temperature),
-          systolic: parseInt(vitalsData.bloodPressureSystolic),
-          diastolic: parseInt(vitalsData.bloodPressureDiastolic),
-          pulse: parseInt(vitalsData.heartRate),
-          respRate: parseInt(vitalsData.respiratoryRate),
-          spo2: parseInt(vitalsData.spo2),
-          weightKg: parseFloat(vitalsData.weight),
-          heightCm: parseFloat(vitalsData.height),
-        }
+        objective: objectiveNotes,
+        vitals: Object.keys(vitalsPayload).length > 0 ? vitalsPayload : undefined
       });
 
       if (response.error) {
@@ -316,6 +321,7 @@ export default function NurseDashboardPage() {
         notes: ''
       });
       showSuccess(`Patient successfully sent to Dr. ${doctorName}!`);
+      fetchTriagePatients(); // Refresh the triage list immediately
     } catch (error) {
       console.error('Route to doctor error:', error);
       showError('Failed to route patient to doctor. Please try again.');

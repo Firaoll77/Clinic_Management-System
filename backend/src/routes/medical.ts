@@ -258,12 +258,30 @@ router.patch('/patients/encounter/assign-doctor', authenticate, async (req: Requ
       });
     }
 
+    // Resolve doctor staff profile if available
+    let resolvedDoctorId = doctorId;
+    const staff = await prisma.staffProfile.findUnique({ where: { id: doctorId } }) 
+      || await prisma.staffProfile.findUnique({ where: { userId: doctorId } });
+    if (staff) {
+      resolvedDoctorId = staff.id;
+    }
+
     // Update encounter with doctor and new status
     const updatedEncounter = await prisma.encounter.update({
       where: { id: encounter.id },
       data: {
-        doctorId,
-        visitStatus: visitStatus || 'DOCTOR_CONSULT',
+        doctorId: resolvedDoctorId,
+        visitStatus: visitStatus || 'WAITING_FOR_DOCTOR',
+      },
+    });
+
+    // Create doctor assignment
+    await prisma.doctorAssignment.create({
+      data: {
+        encounterId: encounter.id,
+        doctorId: resolvedDoctorId,
+        assignedBy: userId || '',
+        status: 'PENDING',
       },
     });
 

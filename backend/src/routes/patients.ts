@@ -280,26 +280,63 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
     const { id } = req.params;
     const patientId = Array.isArray(id) ? id[0] : id;
 
-    const patient = await prisma.patient.findUnique({
-      where: { id: patientId },
+    const patient = await prisma.patient.findFirst({
+      where: {
+        OR: [
+          { id: patientId },
+          { mrn: patientId },
+        ],
+      },
       include: {
         allergies: true,
         appointments: {
-          where: {
-            status: { in: ['SCHEDULED', 'CHECKED_IN', 'IN_PROGRESS'] },
-          },
           orderBy: {
-            scheduledAt: 'asc',
+            scheduledAt: 'desc',
           },
-          take: 5,
+          take: 20,
         },
         encounters: {
           orderBy: {
             createdAt: 'desc',
           },
-          take: 5,
+          take: 25,
           include: {
-            vitals: true,
+            vitals: {
+              orderBy: {
+                recordedAt: 'desc',
+              },
+            },
+            labOrders: {
+              orderBy: {
+                orderedAt: 'desc',
+              },
+              include: {
+                results: {
+                  include: {
+                    labTest: true,
+                  },
+                },
+              },
+            },
+            encounterFees: {
+              orderBy: {
+                loggedAt: 'desc',
+              },
+            },
+          },
+        },
+        invoices: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 25,
+          include: {
+            items: true,
+            payments: {
+              orderBy: {
+                receivedAt: 'desc',
+              },
+            },
           },
         },
       },
