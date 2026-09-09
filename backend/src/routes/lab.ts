@@ -129,8 +129,9 @@ router.post('/orders', authenticate, async (req: Request, res: Response) => {
     }
 
     const { encounterId, patientId, doctorId, priority, notes, testIds } = req.body;
+    const resolvedDoctorId = doctorId || req.user?.userId;
 
-    if (!encounterId || !patientId || !doctorId) {
+    if (!encounterId || !patientId || !resolvedDoctorId) {
       return res.status(400).json({
         error: 'Missing required fields',
         message: 'encounterId, patientId, and doctorId are required',
@@ -140,7 +141,7 @@ router.post('/orders', authenticate, async (req: Request, res: Response) => {
     const labOrder = await LabService.createLabOrder({
       encounterId,
       patientId,
-      doctorId,
+      doctorId: resolvedDoctorId,
       priority: priority || 'ROUTINE',
       notes
     });

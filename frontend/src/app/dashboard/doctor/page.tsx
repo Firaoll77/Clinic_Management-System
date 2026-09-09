@@ -475,7 +475,7 @@ export default function DoctorDashboardPage() {
       const response = await apiClient.post<{ labOrder: { id: string } }>('/lab/orders', {
         encounterId: (selectedPatient as any).encounterId || selectedPatient.id,
         patientId: selectedPatient.patientId,
-        doctorId: user?.staffProfile?.id || '',
+        doctorId: user?.staffProfile?.id || user?.id || '',
         testType: labOrderForm.testType,
         priority: labOrderForm.priority,
         notes: labOrderForm.notes

@@ -145,6 +145,7 @@ const BASE_URL = getBaseUrl();
 
 class ApiClient {
   private token: string | null = null;
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -160,11 +161,64 @@ class ApiClient {
     this.token = null;
   }
 
+  private async refreshAccessToken(): Promise<string | null> {
+    if (typeof window === 'undefined') return null;
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return null;
+
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.refreshPromise = (async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!res.ok) {
+          this.clearToken();
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          return null;
+        }
+
+        const data = await res.json();
+        const newAccessToken = data?.tokens?.accessToken;
+        const newRefreshToken = data?.tokens?.refreshToken;
+
+        if (newAccessToken) {
+          this.setToken(newAccessToken);
+          localStorage.setItem('accessToken', newAccessToken);
+          if (newRefreshToken) {
+            localStorage.setItem('refreshToken', newRefreshToken);
+          }
+          return newAccessToken;
+        }
+        return null;
+      } catch (err) {
+        console.error('Failed to silently refresh token:', err);
+        return null;
+      } finally {
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
+  }
+
   private async request<T>(
     method: 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT',
     endpoint: string,
-    data?: any
+    data?: any,
+    isRetry = false
   ): Promise<{ data: T | null; error: string | null }> {
+    if (typeof window !== 'undefined' && !this.token) {
+      this.token = localStorage.getItem('accessToken');
+    }
+
     const url = `${BASE_URL}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -185,6 +239,19 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
+
+      // Automatically attempt silent refresh on 401 Unauthorized
+      if (
+        response.status === 401 &&
+        !isRetry &&
+        !endpoint.includes('/auth/login') &&
+        !endpoint.includes('/auth/refresh')
+      ) {
+        const newToken = await this.refreshAccessToken();
+        if (newToken) {
+          return this.request<T>(method, endpoint, data, true);
+        }
+      }
 
       let responseData: any = null;
       const contentType = response.headers.get('content-type');
