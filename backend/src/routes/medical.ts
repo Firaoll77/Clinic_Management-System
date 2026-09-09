@@ -405,6 +405,99 @@ router.get('/encounters/:id', authenticate, async (req: Request, res: Response) 
 });
 
 /**
+ * POST /api/medical/patients/:patientId/encounters
+ * Create or update encounter for a specific patient
+ */
+router.post('/patients/:patientId/encounters', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const { 
+      appointmentId, 
+      doctorId, 
+      chiefComplaint, 
+      subjective, 
+      objective, 
+      assessment, 
+      plan, 
+      icd10Code,
+      labResultInterpretation 
+    } = req.body;
+
+    const actualPatientId = Array.isArray(patientId) ? patientId[0] : patientId;
+    
+    // Resolve doctor ID from payload, staffProfile or user
+    let resolvedDoctorId = doctorId;
+    if (!resolvedDoctorId && req.user?.userId) {
+      const staff = await prisma.staffProfile.findUnique({
+        where: { userId: req.user.userId },
+      });
+      resolvedDoctorId = staff ? staff.id : req.user.userId;
+    }
+
+    // Check if there's an active encounter in progress for this patient
+    const activeEncounter = await prisma.encounter.findFirst({
+      where: {
+        patientId: actualPatientId,
+        visitStatus: { in: ['WAITING_FOR_DOCTOR', 'DOCTOR_CONSULT', 'TRIAGE'] },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    let encounter;
+    if (activeEncounter) {
+      encounter = await prisma.encounter.update({
+        where: { id: activeEncounter.id },
+        data: {
+          chiefComplaint: chiefComplaint || undefined,
+          subjective: subjective || undefined,
+          objective: objective || undefined,
+          assessment: assessment || undefined,
+          plan: plan || undefined,
+          icd10Code: icd10Code || undefined,
+          labResultInterpretation: labResultInterpretation || undefined,
+          doctorId: resolvedDoctorId || undefined,
+          visitStatus: 'DOCTOR_CONSULT',
+        },
+      });
+    } else {
+      encounter = await prisma.encounter.create({
+        data: {
+          appointmentId: appointmentId || undefined,
+          patientId: actualPatientId,
+          doctorId: resolvedDoctorId,
+          chiefComplaint: chiefComplaint || undefined,
+          subjective: subjective || undefined,
+          objective: objective || undefined,
+          assessment: assessment || undefined,
+          plan: plan || undefined,
+          icd10Code: icd10Code || undefined,
+          labResultInterpretation: labResultInterpretation || undefined,
+          visitStatus: 'DOCTOR_CONSULT',
+        },
+      });
+    }
+
+    // Update patient last activity
+    await prisma.patient.update({
+      where: { id: actualPatientId },
+      data: { lastActivityAt: new Date() },
+    });
+
+    res.status(200).json({
+      message: 'Encounter saved successfully',
+      encounter,
+      id: encounter.id,
+    });
+  } catch (error) {
+    console.error('Save patient encounter error:', error);
+    res.status(500).json({
+      error: 'Failed to save encounter',
+      message: 'An error occurred while saving the encounter',
+    });
+  }
+});
+
+/**
  * POST /api/medical/encounters
  * Create a new encounter
  */

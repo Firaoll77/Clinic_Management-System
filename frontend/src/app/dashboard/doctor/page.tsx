@@ -348,15 +348,29 @@ export default function DoctorDashboardPage() {
     if (!selectedPatient) return;
 
     try {
-      const response = await apiClient.post(`/medical/patients/${selectedPatient.patientId}/encounters`, {
-        chiefComplaint: encounterForm.chiefComplaint,
-        subjective: encounterForm.subjective,
-        objective: encounterForm.objective,
-        assessment: encounterForm.assessment,
-        plan: encounterForm.plan,
-        icd10Code: encounterForm.icd10Code || undefined,
-        labResultInterpretation: encounterForm.labResultInterpretation || undefined
-      });
+      const targetEncounterId = selectedPatient.encounterId || currentEncounterId;
+      let response: any;
+      if (targetEncounterId) {
+        response = await apiClient.patch(`/medical/encounters/${targetEncounterId}`, {
+          chiefComplaint: encounterForm.chiefComplaint,
+          subjective: encounterForm.subjective,
+          objective: encounterForm.objective,
+          assessment: encounterForm.assessment,
+          plan: encounterForm.plan,
+          icd10Code: encounterForm.icd10Code || undefined,
+          labResultInterpretation: encounterForm.labResultInterpretation || undefined
+        });
+      } else {
+        response = await apiClient.post(`/medical/patients/${selectedPatient.patientId}/encounters`, {
+          chiefComplaint: encounterForm.chiefComplaint,
+          subjective: encounterForm.subjective,
+          objective: encounterForm.objective,
+          assessment: encounterForm.assessment,
+          plan: encounterForm.plan,
+          icd10Code: encounterForm.icd10Code || undefined,
+          labResultInterpretation: encounterForm.labResultInterpretation || undefined
+        });
+      }
 
       if (response.error) {
         showError(`Failed to save encounter: ${response.error}`);
@@ -364,8 +378,9 @@ export default function DoctorDashboardPage() {
       }
 
       // Save encounter ID for prescription printing
-      if (response.data && typeof response.data === 'object' && 'id' in response.data) {
-        setCurrentEncounterId(response.data.id as string);
+      const savedId = targetEncounterId || (response.data && typeof response.data === 'object' && ('id' in response.data ? response.data.id : response.data.encounter?.id));
+      if (savedId) {
+        setCurrentEncounterId(savedId as string);
       }
 
       showSuccess('Encounter saved successfully!');
