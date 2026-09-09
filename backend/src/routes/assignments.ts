@@ -508,7 +508,18 @@ router.get('/lab-tech/my-assignments', async (req, res) => {
 // Complete nurse examination and assign to doctor
 router.post('/nurse/examination/complete', async (req, res) => {
   try {
-    const { encounterId, doctorId, subjective, objective, vitals } = req.body;
+    const {
+      encounterId,
+      doctorId,
+      chiefComplaint,
+      currentMedications,
+      allergies,
+      medicalHistory,
+      notes,
+      subjective,
+      objective,
+      vitals,
+    } = req.body;
     const userId = req.user?.userId;
 
     const staffProfile = await prisma.staffProfile.findUnique({
@@ -540,16 +551,83 @@ router.post('/nurse/examination/complete', async (req, res) => {
       });
     }
 
+    // Fetch existing encounter to preserve prior intake data if not supplied
+    const existingEncounter = await prisma.encounter.findUnique({
+      where: { id: encounterId },
+      include: { patient: true },
+    });
+
+    // Build structured subjective
+    const parts: string[] = [];
+    if (chiefComplaint && String(chiefComplaint).trim()) parts.push(`Chief Complaint: ${String(chiefComplaint).trim()}`);
+    if (currentMedications && String(currentMedications).trim()) parts.push(`Current Medications: ${String(currentMedications).trim()}`);
+    if (allergies && String(allergies).trim()) parts.push(`Allergies: ${String(allergies).trim()}`);
+    if (medicalHistory && String(medicalHistory).trim()) parts.push(`Medical History: ${String(medicalHistory).trim()}`);
+    if (notes && String(notes).trim()) parts.push(`Nurse Notes: ${String(notes).trim()}`);
+
+    let finalSubjective: string | undefined;
+    if (parts.length > 0) {
+      finalSubjective = parts.join('\n');
+    } else if (subjective && typeof subjective === 'string') {
+      const stripped = subjective
+        .replace(/Chief Complaint:/gi, '')
+        .replace(/Current Medications:/gi, '')
+        .replace(/Allergies:/gi, '')
+        .replace(/Medical History:/gi, '')
+        .replace(/Nurse Notes:/gi, '')
+        .trim();
+      if (stripped.length > 0) {
+        finalSubjective = subjective.trim();
+      }
+    }
+
+    // Fall back to existing encounter subjective if incoming payload didn't provide new content
+    if (!finalSubjective && existingEncounter?.subjective) {
+      finalSubjective = existingEncounter.subjective;
+    }
+
+    const finalChiefComplaint = (chiefComplaint && String(chiefComplaint).trim()) || existingEncounter?.chiefComplaint || undefined;
+    const finalPlan = (notes && String(notes).trim()) || existingEncounter?.plan || undefined;
+
     // Update encounter with examination data
     await prisma.encounter.update({
       where: { id: encounterId },
       data: {
-        subjective: subjective || undefined,
+        chiefComplaint: finalChiefComplaint,
+        subjective: finalSubjective,
         objective: objective || undefined,
+        plan: finalPlan,
         doctorId: doctor.id,
         visitStatus: 'WAITING_FOR_DOCTOR',
       },
     });
+
+    // Also record allergies in PatientAllergy if provided and non-empty
+    if (allergies && String(allergies).trim() && !String(allergies).toLowerCase().includes('none') && existingEncounter?.patientId) {
+      try {
+        const allergyList = String(allergies).split(/[,;\n]+/).map((s: string) => s.trim()).filter(Boolean);
+        for (const substance of allergyList) {
+          const existingAllergy = await prisma.patientAllergy.findFirst({
+            where: {
+              patientId: existingEncounter.patientId,
+              substance: { equals: substance, mode: 'insensitive' },
+            },
+          });
+          if (!existingAllergy) {
+            await prisma.patientAllergy.create({
+              data: {
+                patientId: existingEncounter.patientId,
+                substance,
+                severity: 'Reported',
+                notes: 'Recorded during nurse intake',
+              },
+            });
+          }
+        }
+      } catch (aErr) {
+        console.error('Failed to save patient allergies:', aErr);
+      }
+    }
 
     // Save vitals if valid numbers provided
     if (vitals && typeof vitals === 'object') {

@@ -233,14 +233,77 @@ export default function NurseDashboardPage() {
     }
   };
 
+  const handleSelectPatient = async (patient: TriagePatient) => {
+    setSelectedPatient(patient);
+    setIntakeData({
+      chiefComplaint: patient.chiefComplaint || '',
+      currentMedications: '',
+      allergies: '',
+      medicalHistory: '',
+      notes: ''
+    });
+
+    try {
+      const encRes = await apiClient.get<{ encounter: any }>(`/medical/encounters/${patient.encounterId}`);
+      if (encRes.data && encRes.data.encounter) {
+        const enc = encRes.data.encounter;
+        const sub = enc.subjective || '';
+
+        const extractField = (text: string, label: string) => {
+          const regex = new RegExp(`${label}:\\s*([\\s\\S]*?)(?=(?:Chief Complaint|Current Medications|Allergies|Medical History|Nurse Notes):|$)`, 'i');
+          const m = text.match(regex);
+          return m && m[1] ? m[1].trim() : '';
+        };
+
+        const cc = extractField(sub, 'Chief Complaint') || enc.chiefComplaint || patient.chiefComplaint || '';
+        const meds = extractField(sub, 'Current Medications');
+        const allg = extractField(sub, 'Allergies') || (enc.patient?.allergies?.map((a: any) => a.substance).join(', ')) || '';
+        const hist = extractField(sub, 'Medical History');
+        const nNotes = extractField(sub, 'Nurse Notes') || enc.plan || '';
+
+        setIntakeData({
+          chiefComplaint: cc,
+          currentMedications: meds,
+          allergies: allg,
+          medicalHistory: hist,
+          notes: nNotes
+        });
+
+        if (enc.vitals && enc.vitals.length > 0) {
+          const v = enc.vitals[0];
+          setVitalsData({
+            bloodPressureSystolic: v.systolic ? String(v.systolic) : '',
+            bloodPressureDiastolic: v.diastolic ? String(v.diastolic) : '',
+            heartRate: v.pulse ? String(v.pulse) : '',
+            temperature: v.temperatureC ? String(v.temperatureC) : '',
+            spo2: v.spo2 ? String(v.spo2) : '',
+            weight: v.weightKg ? String(v.weightKg) : '',
+            height: v.heightCm ? String(v.heightCm) : '',
+            respiratoryRate: v.respRate ? String(v.respRate) : ''
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to pre-fetch encounter details for nurse:', err);
+    }
+  };
+
   const handleIntakeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPatient) return;
 
     try {
+      const formattedSubjective = [
+        intakeData.chiefComplaint ? `Chief Complaint: ${intakeData.chiefComplaint.trim()}` : '',
+        intakeData.currentMedications ? `Current Medications: ${intakeData.currentMedications.trim()}` : '',
+        intakeData.allergies ? `Allergies: ${intakeData.allergies.trim()}` : '',
+        intakeData.medicalHistory ? `Medical History: ${intakeData.medicalHistory.trim()}` : '',
+        intakeData.notes ? `Nurse Notes: ${intakeData.notes.trim()}` : '',
+      ].filter(Boolean).join('\n');
+
       const response = await apiClient.patch(`/medical/encounters/${selectedPatient.encounterId}`, {
         chiefComplaint: intakeData.chiefComplaint,
-        subjective: `Current Medications: ${intakeData.currentMedications}\nAllergies: ${intakeData.allergies}\nMedical History: ${intakeData.medicalHistory}`,
+        subjective: formattedSubjective,
         objective: '',
         assessment: '',
         plan: intakeData.notes
@@ -252,13 +315,7 @@ export default function NurseDashboardPage() {
       }
 
       setShowIntakeForm(false);
-      setIntakeData({
-        chiefComplaint: '',
-        currentMedications: '',
-        allergies: '',
-        medicalHistory: '',
-        notes: ''
-      });
+      // Retain intakeData in state so routing to doctor won't overwrite with empty fields
       showSuccess('Intake recorded successfully!');
     } catch (error) {
       console.error('Intake recording error:', error);
@@ -284,10 +341,23 @@ export default function NurseDashboardPage() {
         ? `Vitals recorded: BP ${vitalsData.bloodPressureSystolic || '-'}/${vitalsData.bloodPressureDiastolic || '-'}, HR ${vitalsData.heartRate || '-'}, Temp ${vitalsData.temperature || '-'}°C, SpO2 ${vitalsData.spo2 || '-'}%, Weight ${vitalsData.weight || '-'}kg, Height ${vitalsData.height || '-'}cm`
         : 'Triage examination completed';
 
+      const formattedSubjective = [
+        intakeData.chiefComplaint ? `Chief Complaint: ${intakeData.chiefComplaint.trim()}` : '',
+        intakeData.currentMedications ? `Current Medications: ${intakeData.currentMedications.trim()}` : '',
+        intakeData.allergies ? `Allergies: ${intakeData.allergies.trim()}` : '',
+        intakeData.medicalHistory ? `Medical History: ${intakeData.medicalHistory.trim()}` : '',
+        intakeData.notes ? `Nurse Notes: ${intakeData.notes.trim()}` : '',
+      ].filter(Boolean).join('\n');
+
       const response = await apiClient.post('/assignments/nurse/examination/complete', {
         encounterId: selectedPatient.encounterId,
         doctorId: selectedDoctor,
-        subjective: `Chief Complaint: ${intakeData.chiefComplaint}\nCurrent Medications: ${intakeData.currentMedications}\nAllergies: ${intakeData.allergies}\nMedical History: ${intakeData.medicalHistory}`,
+        chiefComplaint: intakeData.chiefComplaint?.trim() || undefined,
+        currentMedications: intakeData.currentMedications?.trim() || undefined,
+        allergies: intakeData.allergies?.trim() || undefined,
+        medicalHistory: intakeData.medicalHistory?.trim() || undefined,
+        notes: intakeData.notes?.trim() || undefined,
+        subjective: formattedSubjective || undefined,
         objective: objectiveNotes,
         vitals: Object.keys(vitalsPayload).length > 0 ? vitalsPayload : undefined
       });
@@ -417,7 +487,7 @@ export default function NurseDashboardPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
                 className="p-4 border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer"
-                onClick={() => setSelectedPatient(patient)}
+                onClick={() => handleSelectPatient(patient)}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">

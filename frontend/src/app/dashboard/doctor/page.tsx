@@ -226,28 +226,54 @@ export default function DoctorDashboardPage() {
     }
   };
 
-  const fetchPatientData = async (patientId: string) => {
+  const fetchPatientData = async (patientId: string, preferredEncounterId?: string) => {
     try {
       // Fetch encounters (includes nurse intake)
       const encounterResponse = await apiClient.get<{ encounters: any[] }>(`/medical/patients/${patientId}/encounters`);
+      let currentEncounter: any = null;
+
       if (encounterResponse.data && encounterResponse.data.encounters.length > 0) {
-        const latestEncounter = encounterResponse.data.encounters[0];
-        
-        // Parse subjective data for nurse intake information
-        const subjective = latestEncounter.subjective || '';
-        const chiefComplaintMatch = subjective.match(/Chief Complaint: (.+)/);
-        const medicationsMatch = subjective.match(/Current Medications: (.+)/);
-        const allergiesMatch = subjective.match(/Allergies: (.+)/);
-        const historyMatch = subjective.match(/Medical History: (.+)/);
-        
+        currentEncounter = (preferredEncounterId
+          ? encounterResponse.data.encounters.find((e: any) => e.id === preferredEncounterId)
+          : null) || encounterResponse.data.encounters[0];
+
+        // Robust parser for subjective fields supporting multiline / variable spacing
+        const extractField = (text: string, label: string): string => {
+          if (!text) return '';
+          const regex = new RegExp(
+            `${label}:\\s*([\\s\\S]*?)(?=(?:Chief Complaint|Current Medications|Allergies|Medical History|Nurse Notes):|$)`,
+            'i'
+          );
+          const m = text.match(regex);
+          return m && m[1] ? m[1].trim() : '';
+        };
+
+        const subjective = currentEncounter.subjective || '';
+        const chiefComplaint = extractField(subjective, 'Chief Complaint') || currentEncounter.chiefComplaint || '';
+        const currentMedications = extractField(subjective, 'Current Medications');
+        const allergies = extractField(subjective, 'Allergies') || 
+          (currentEncounter.patient?.allergies && currentEncounter.patient.allergies.length > 0
+            ? currentEncounter.patient.allergies.map((a: any) => a.substance).join(', ')
+            : '');
+        const medicalHistory = extractField(subjective, 'Medical History');
+        const notes = extractField(subjective, 'Nurse Notes') || currentEncounter.plan || '';
+
         setNurseIntake({
-          chiefComplaint: chiefComplaintMatch?.[1] || latestEncounter.chiefComplaint || '',
-          currentMedications: medicationsMatch?.[1] || '',
-          allergies: allergiesMatch?.[1] || '',
-          medicalHistory: historyMatch?.[1] || '',
-          notes: latestEncounter.plan || '',
-          recordedAt: latestEncounter.createdAt
+          chiefComplaint,
+          currentMedications,
+          allergies,
+          medicalHistory,
+          notes,
+          recordedAt: currentEncounter.createdAt
         });
+
+        // Pre-fill encounterForm with chief complaint and intake info
+        setEncounterForm((prev: any) => ({
+          ...prev,
+          chiefComplaint: chiefComplaint || prev.chiefComplaint,
+          subjective: subjective || prev.subjective,
+        }));
+
         setEncounters(encounterResponse.data.encounters.map((e: any) => ({
           id: e.id,
           chiefComplaint: e.chiefComplaint,
@@ -260,20 +286,35 @@ export default function DoctorDashboardPage() {
         })));
       }
 
-      // Fetch vitals
-      const vitalsResponse = await apiClient.get<{ vitals: any[] }>(`/medical/patients/${patientId}/vitals`);
-      if (vitalsResponse.data && vitalsResponse.data.vitals.length > 0) {
-        const latestVitals = vitalsResponse.data.vitals[0];
+      // Check if currentEncounter has vitals
+      if (currentEncounter?.vitals && currentEncounter.vitals.length > 0) {
+        const lv = currentEncounter.vitals[0];
         setVitals({
-          bloodPressure: latestVitals.bloodPressure,
-          heartRate: latestVitals.heartRate,
-          temperature: latestVitals.temperature,
-          spo2: latestVitals.spo2,
-          weight: latestVitals.weight,
-          height: latestVitals.height,
-          respiratoryRate: latestVitals.respiratoryRate,
-          recordedAt: latestVitals.recordedAt
+          bloodPressure: lv.systolic && lv.diastolic ? `${lv.systolic}/${lv.diastolic}` : lv.bloodPressure || 'N/A',
+          heartRate: lv.pulse || lv.heartRate || 'N/A',
+          temperature: lv.temperatureC || lv.temperature || 'N/A',
+          spo2: lv.spo2 || 'N/A',
+          weight: lv.weightKg || lv.weight || 'N/A',
+          height: lv.heightCm || lv.height || 'N/A',
+          respiratoryRate: lv.respRate || lv.respiratoryRate || 'N/A',
+          recordedAt: lv.recordedAt
         });
+      } else {
+        // Fallback: fetch vitals
+        const vitalsResponse = await apiClient.get<{ vitals: any[] }>(`/medical/patients/${patientId}/vitals`);
+        if (vitalsResponse.data && vitalsResponse.data.vitals.length > 0) {
+          const latestVitals = vitalsResponse.data.vitals[0];
+          setVitals({
+            bloodPressure: latestVitals.bloodPressure,
+            heartRate: latestVitals.heartRate,
+            temperature: latestVitals.temperature,
+            spo2: latestVitals.spo2,
+            weight: latestVitals.weight,
+            height: latestVitals.height,
+            respiratoryRate: latestVitals.respiratoryRate,
+            recordedAt: latestVitals.recordedAt
+          });
+        }
       }
 
       // Fetch patient lab history & results
@@ -288,12 +329,13 @@ export default function DoctorDashboardPage() {
 
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
+    setCurrentEncounterId(patient.encounterId || null);
     setNurseIntake(null);
     setVitals(null);
     setEncounters([]);
     setPatientLabOrders([]);
     setCurrentStep('intake'); // Reset workflow to first step
-    fetchPatientData(patient.patientId);
+    fetchPatientData(patient.patientId, patient.encounterId);
 
     // If patient is pending, automatically accept into consultation
     if (patient.status === 'waiting' && patient.assignmentId) {

@@ -317,6 +317,11 @@ router.get('/patients/:patientId/encounters', authenticate, async (req: Request,
     const encounters = await prisma.encounter.findMany({
       where: { patientId: Array.isArray(patientId) ? patientId[0] : patientId },
       include: {
+        patient: {
+          include: {
+            allergies: true,
+          },
+        },
         appointment: {
           include: {
             patient: {
