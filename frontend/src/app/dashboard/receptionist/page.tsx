@@ -34,6 +34,7 @@ import {
   Printer,
   RefreshCw,
   ShieldAlert,
+  Upload,
 } from 'lucide-react';
 
 interface WaitingPatient {
@@ -90,6 +91,7 @@ interface NewPatient {
   nationalId: string;
   bloodGroup: string;
   emergencyContact: string;
+  attachments?: File[];
 }
 
 export default function ReceptionistDashboardPage() {
@@ -935,7 +937,7 @@ export default function ReceptionistDashboardPage() {
                     </label>
                     {newPatient.attachments && newPatient.attachments.length > 0 && (
                       <div className="mt-2 space-y-1">
-                        {newPatient.attachments.map((file, index) => (
+                        {newPatient.attachments.map((file: File, index: number) => (
                           <div key={index} className="text-xs text-gray-600 flex items-center justify-between bg-gray-100 p-2 rounded">
                             <span className="truncate">{file.name}</span>
                             <span className="text-gray-500">{(file.size / 1024).toFixed(1)} KB</span>

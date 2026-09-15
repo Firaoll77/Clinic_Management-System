@@ -67,7 +67,7 @@ export default function MedicalRecordsPage() {
   const fetchEncounters = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/medical/encounters/recent');
+      const response = await apiClient.get<{ encounters: Encounter[] }>('/medical/encounters/recent');
       if (response.data && response.data.encounters) {
         setEncounters(response.data.encounters);
       }
@@ -81,7 +81,7 @@ export default function MedicalRecordsPage() {
   const fetchPatientEncounters = async (patientId: string) => {
     setLoading(true);
     try {
-      const response = await apiClient.get(`/medical/patients/${patientId}/encounters`);
+      const response = await apiClient.get<{ encounters: Encounter[] }>(`/medical/patients/${patientId}/encounters`);
       if (response.data && response.data.encounters) {
         setEncounters(response.data.encounters);
         setSelectedPatient(patientId);
