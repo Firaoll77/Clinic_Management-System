@@ -228,3 +228,185 @@ export class DoctorAvailabilityService {
     }
   }
 }
+
+/**
+ * Nurse Availability Service
+ * Manages nurse scheduling and availability
+ */
+export class NurseAvailabilityService {
+  /**
+   * Create nurse availability schedule
+   */
+  static async createAvailability(availabilityData: {
+    nurseId: string;
+    weekday: number; // 0-6 (Sunday-Saturday)
+    startTime: string; // HH:MM format
+    endTime: string; // HH:MM format
+    effectiveFrom: Date;
+    effectiveTo?: Date;
+  }) {
+    try {
+      const availability = await prisma.nurseAvailability.create({
+        data: availabilityData
+      });
+
+      return availability;
+    } catch (error) {
+      console.error('Error creating nurse availability:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get nurse availability for a specific date
+   */
+  static async getAvailabilityForDate(nurseId: string, date: Date) {
+    try {
+      const weekday = date.getDay();
+      
+      const availabilities = await prisma.nurseAvailability.findMany({
+        where: {
+          nurseId: nurseId,
+          weekday: weekday,
+          effectiveFrom: { lte: date },
+          OR: [
+            { effectiveTo: null },
+            { effectiveTo: { gte: date } }
+          ]
+        },
+        orderBy: {
+          startTime: 'asc'
+        }
+      });
+
+      return availabilities;
+    } catch (error) {
+      console.error('Error getting nurse availability:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get available nurses for a specific date/time
+   */
+  static async getAvailableNurses(date: Date) {
+    try {
+      const weekday = date.getDay();
+      
+      const availabilities = await prisma.nurseAvailability.findMany({
+        where: {
+          weekday: weekday,
+          effectiveFrom: { lte: date },
+          OR: [
+            { effectiveTo: null },
+            { effectiveTo: { gte: date } }
+          ]
+        },
+        include: {
+          nurse: {
+            include: {
+              user: true
+            }
+          }
+        },
+        orderBy: {
+          startTime: 'asc'
+        }
+      });
+
+      return availabilities;
+    } catch (error) {
+      console.error('Error getting available nurses:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all nurse availabilities
+   */
+  static async getAllNurseAvailabilities(nurseId: string) {
+    try {
+      const availabilities = await prisma.nurseAvailability.findMany({
+        where: { nurseId: nurseId },
+        include: {
+          nurse: true
+        },
+        orderBy: [
+          { weekday: 'asc' },
+          { startTime: 'asc' }
+        ]
+      });
+
+      return availabilities;
+    } catch (error) {
+      console.error('Error getting all nurse availabilities:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update nurse availability
+   */
+  static async updateAvailability(availabilityId: string, updateData: {
+    weekday?: number;
+    startTime?: string;
+    endTime?: string;
+    effectiveFrom?: Date;
+    effectiveTo?: Date;
+  }) {
+    try {
+      const availability = await prisma.nurseAvailability.update({
+        where: { id: availabilityId },
+        data: updateData
+      });
+
+      return availability;
+    } catch (error) {
+      console.error('Error updating nurse availability:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete nurse availability
+   */
+  static async deleteAvailability(availabilityId: string) {
+    try {
+      await prisma.nurseAvailability.delete({
+        where: { id: availabilityId }
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting nurse availability:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get weekly availability overview for a nurse
+   */
+  static async getWeeklyAvailability(nurseId: string, weekStart: Date) {
+    try {
+      const weeklyAvailability = [];
+
+      for (let i = 0; i < 7; i++) {
+        const currentDay = new Date(weekStart);
+        currentDay.setDate(currentDay.getDate() + i);
+        
+        const dayAvailabilities = await this.getAvailabilityForDate(nurseId, currentDay);
+
+        weeklyAvailability.push({
+          date: currentDay,
+          weekday: currentDay.getDay(),
+          availabilities: dayAvailabilities
+        });
+      }
+
+      return weeklyAvailability;
+    } catch (error) {
+      console.error('Error getting nurse weekly availability:', error);
+      throw error;
+    }
+  }
+}

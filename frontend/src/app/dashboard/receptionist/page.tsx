@@ -7,6 +7,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
+import { formatCurrency } from '@/lib/currency';
 import {
   Search,
   UserPlus,
@@ -128,7 +129,8 @@ export default function ReceptionistDashboardPage() {
     gender: '',
     nationalId: '',
     bloodGroup: '',
-    emergencyContact: ''
+    emergencyContact: '',
+    attachments: []
   });
 
   const [showPatientForm, setShowPatientForm] = useState(false);
@@ -380,6 +382,23 @@ export default function ReceptionistDashboardPage() {
           showError(`Patient registered but failed to send to triage: ${encounterResponse.error}`);
         } else {
           showSuccess('Patient registered and sent to triage queue!');
+          
+          // Upload attachments if any
+          const encounterId = (encounterResponse.data as any)?.encounter?.id;
+          if (encounterId && newPatient.attachments && newPatient.attachments.length > 0) {
+            for (const file of newPatient.attachments) {
+              const formData = new FormData();
+              formData.append('file', file);
+              formData.append('encounterId', encounterId);
+              
+              try {
+                await apiClient.upload('/attachments/upload', formData);
+              } catch (uploadError) {
+                console.error('Failed to upload attachment:', uploadError);
+                showError(`Failed to upload ${file.name}`);
+              }
+            }
+          }
         }
       } else {
         showSuccess('Patient registered successfully!');
@@ -396,7 +415,8 @@ export default function ReceptionistDashboardPage() {
         gender: '',
         nationalId: '',
         bloodGroup: '',
-        emergencyContact: ''
+        emergencyContact: '',
+        attachments: []
       });
       fetchAllPatients(); // Refresh patient list
     } catch (error) {
@@ -889,6 +909,43 @@ export default function ReceptionistDashboardPage() {
                   </div>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Attachments (Optional)</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        setNewPatient({...newPatient, attachments: files});
+                      }}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600">
+                        {newPatient.attachments && newPatient.attachments.length > 0 
+                          ? `${newPatient.attachments.length} file(s) selected` 
+                          : 'Click to upload files'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        PDF, JPG, PNG, DOC, DOCX (max 10MB each)
+                      </p>
+                    </label>
+                    {newPatient.attachments && newPatient.attachments.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {newPatient.attachments.map((file, index) => (
+                          <div key={index} className="text-xs text-gray-600 flex items-center justify-between bg-gray-100 p-2 rounded">
+                            <span className="truncate">{file.name}</span>
+                            <span className="text-gray-500">{(file.size / 1024).toFixed(1)} KB</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
                   <input
                     type="tel"
@@ -1002,7 +1059,7 @@ export default function ReceptionistDashboardPage() {
                           {invoice.status}
                         </span>
                         <p className="text-sm font-semibold text-gray-900 mt-1">
-                          ETB {Number(invoice.total).toFixed(2)}
+                          {formatCurrency(invoice.total)}
                         </p>
                       </div>
                     </div>
@@ -1062,8 +1119,7 @@ export default function ReceptionistDashboardPage() {
                         <p className="text-sm text-gray-500">{new Date(fee.loggedAt).toLocaleString()}</p>
                       </div>
                       <div className="flex items-center">
-                        <span className="text-gray-400 mr-1">ETB</span>
-                        <span className="font-semibold text-gray-900">{Number(fee.amount).toFixed(2)}</span>
+                        <span className="font-semibold text-gray-900">{formatCurrency(fee.amount)}</span>
                       </div>
                     </div>
                   ))}
@@ -1075,8 +1131,7 @@ export default function ReceptionistDashboardPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-900">Total</span>
                     <div className="flex items-center">
-                      <span className="text-gray-400 mr-1">ETB</span>
-                      <span className="text-2xl font-bold text-purple-600">{totalFees.toFixed(2)}</span>
+                      <span className="text-2xl font-bold text-purple-600">{formatCurrency(totalFees)}</span>
                     </div>
                   </div>
                 </div>
@@ -1143,11 +1198,10 @@ export default function ReceptionistDashboardPage() {
                       <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <div>
                           <p className="font-medium text-gray-900">{item.description}</p>
-                          <p className="text-sm text-gray-500">Qty: {item.quantity} × ETB {Number(item.unitPrice).toFixed(2)}</p>
+                          <p className="text-sm text-gray-500">Qty: {item.quantity} × {formatCurrency(item.unitPrice)}</p>
                         </div>
                         <div className="flex items-center">
-                          <span className="text-gray-400 mr-1">ETB</span>
-                          <span className="font-semibold text-gray-900">{Number(item.lineTotal).toFixed(2)}</span>
+                          <span className="font-semibold text-gray-900">{formatCurrency(item.lineTotal)}</span>
                         </div>
                       </div>
                     ))}
@@ -1157,22 +1211,22 @@ export default function ReceptionistDashboardPage() {
                 <div className="border-t border-gray-200 pt-4 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">ETB {Number(selectedInvoice.subtotal).toFixed(2)}</span>
+                    <span className="font-medium">{formatCurrency(selectedInvoice.subtotal)}</span>
                   </div>
                   {selectedInvoice.discountAmount && (
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Discount</span>
-                      <span className="font-medium text-red-600">-ETB {Number(selectedInvoice.discountAmount).toFixed(2)}</span>
+                      <span className="font-medium text-red-600">-{formatCurrency(selectedInvoice.discountAmount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center text-lg font-bold">
                     <span className="text-gray-900">Total</span>
-                    <span className="text-green-600">ETB {Number(selectedInvoice.total).toFixed(2)}</span>
+                    <span className="text-green-600">{formatCurrency(selectedInvoice.total)}</span>
                   </div>
                   {selectedInvoice.balance > 0 && (
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Balance Due</span>
-                      <span className="font-medium text-red-600">ETB {Number(selectedInvoice.balance).toFixed(2)}</span>
+                      <span className="font-medium text-red-600">{formatCurrency(selectedInvoice.balance)}</span>
                     </div>
                   )}
                 </div>
@@ -1188,8 +1242,7 @@ export default function ReceptionistDashboardPage() {
                             <p className="text-sm text-gray-500">{new Date(payment.receivedAt).toLocaleString()}</p>
                           </div>
                           <div className="flex items-center">
-                            <span className="text-gray-400 mr-1">ETB</span>
-                            <span className="font-semibold text-green-600">{Number(payment.amount).toFixed(2)}</span>
+                            <span className="font-semibold text-green-600">{formatCurrency(payment.amount)}</span>
                           </div>
                         </div>
                       ))}
@@ -1352,13 +1405,13 @@ export default function ReceptionistDashboardPage() {
                         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                           <p className="text-xs text-gray-500 font-medium">Total Invoiced</p>
                           <p className="text-xl font-bold text-emerald-600 mt-1">
-                            ETB {fullRecordPatient.invoices?.reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0).toFixed(2)}
+                            {formatCurrency(fullRecordPatient.invoices?.reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0))}
                           </p>
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                           <p className="text-xs text-gray-500 font-medium">Outstanding Balance</p>
                           <p className="text-xl font-bold text-amber-600 mt-1">
-                            ETB {fullRecordPatient.invoices?.reduce((sum: number, inv: any) => sum + Number(inv.balance || 0), 0).toFixed(2)}
+                            {formatCurrency(fullRecordPatient.invoices?.reduce((sum: number, inv: any) => sum + Number(inv.balance || 0), 0))}
                           </p>
                         </div>
                       </div>
@@ -1692,9 +1745,9 @@ export default function ReceptionistDashboardPage() {
                               </div>
                               <div className="text-right">
                                 <span className="text-xs text-gray-500 block">Total</span>
-                                <span className="text-base font-bold text-emerald-700">ETB {Number(inv.total).toFixed(2)}</span>
+                                <span className="text-base font-bold text-emerald-700">{formatCurrency(inv.total)}</span>
                                 {inv.balance > 0 && (
-                                  <span className="text-xs font-semibold text-rose-600 block">Due: ETB {Number(inv.balance).toFixed(2)}</span>
+                                  <span className="text-xs font-semibold text-rose-600 block">Due: {formatCurrency(inv.balance)}</span>
                                 )}
                               </div>
                             </div>
@@ -1705,7 +1758,7 @@ export default function ReceptionistDashboardPage() {
                                 {inv.items.map((it: any) => (
                                   <div key={it.id} className="flex justify-between py-1 border-b border-gray-50">
                                     <span className="text-gray-700">{it.description} (x{it.quantity})</span>
-                                    <span className="font-semibold text-gray-900">ETB {Number(it.lineTotal).toFixed(2)}</span>
+                                    <span className="font-semibold text-gray-900">{formatCurrency(it.lineTotal)}</span>
                                   </div>
                                 ))}
                               </div>
@@ -1718,7 +1771,7 @@ export default function ReceptionistDashboardPage() {
                                 {inv.payments.map((p: any) => (
                                   <div key={p.id} className="flex justify-between text-emerald-900">
                                     <span>{p.method} on {new Date(p.receivedAt).toLocaleDateString()}</span>
-                                    <span className="font-bold">ETB {Number(p.amount).toFixed(2)}</span>
+                                    <span className="font-bold">{formatCurrency(p.amount)}</span>
                                   </div>
                                 ))}
                               </div>

@@ -11,7 +11,7 @@ const router = Router();
  */
 router.post('/', authenticate, async (req: Request, res: Response) => {
   try {
-    const allowedRoles = ['DOCTOR', 'NURSE', 'ADMIN'];
+    const allowedRoles = ['DOCTOR', 'NURSE', 'ADMIN', 'RECEPTIONIST'];
     if (!allowedRoles.includes(req.user?.role || '')) {
       return res.status(403).json({
         error: 'Forbidden',
@@ -19,18 +19,19 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       });
     }
 
-    const { patientId, doctorId, appointmentId, visitStatus, chiefComplaint } = req.body;
+    const { patientId, doctorId, nurseId, appointmentId, visitStatus, chiefComplaint } = req.body;
 
-    if (!patientId || !doctorId || !chiefComplaint) {
+    if (!patientId || !chiefComplaint) {
       return res.status(400).json({
         error: 'Missing required fields',
-        message: 'patientId, doctorId, and chiefComplaint are required',
+        message: 'patientId and chiefComplaint are required',
       });
     }
 
     const encounter = await EncounterService.createEncounter({
       patientId,
       doctorId,
+      nurseId,
       appointmentId,
       visitStatus: visitStatus || 'TRIAGE',
       chiefComplaint

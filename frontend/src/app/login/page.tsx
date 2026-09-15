@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Lock,
   HeartPulse,
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const quickFillCredentials = (role: string) => {
     const credentials: Record<string, { username: string; password: string }> = {
@@ -43,7 +44,13 @@ export default function LoginPage() {
     const result = await login(username, password);
 
     if (result.success) {
-      router.push('/dashboard');
+      // Check if there's a redirect URL
+      const redirectUrl = searchParams.get('redirect');
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else {
+        router.push('/dashboard');
+      }
     } else {
       setError(result.error || 'Login failed');
     }
@@ -245,7 +252,7 @@ export default function LoginPage() {
           transition={{ duration: 0.5, delay: 0.7 }}
           className="text-center text-sm text-gray-600 mt-6"
         >
-          © 2024 Clinic Management System. All rights reserved.
+          © 2026 Clinic Management System. All rights reserved.
         </motion.p>
       </motion.div>
     </div>

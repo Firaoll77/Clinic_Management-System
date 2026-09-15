@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { BillingAutomationService } from './billingAutomation';
 
 /**
  * Laboratory Service
@@ -12,10 +13,10 @@ export class LabService {
   static async createLabTest(testData: {
     name: string;
     code: string;
-    category: string;
+    department: string;
     description?: string;
     sampleType: string;
-    normalRange?: string;
+    referenceRange?: string;
     unit?: string;
     price: number;
   }) {
@@ -24,9 +25,9 @@ export class LabService {
         data: {
           name: testData.name,
           code: testData.code,
-          department: testData.category,
+          department: testData.department,
           price: testData.price,
-          referenceRange: testData.normalRange,
+          referenceRange: testData.referenceRange,
           unit: testData.unit
         }
       });
@@ -41,11 +42,11 @@ export class LabService {
   /**
    * Get all lab tests
    */
-  static async getLabTests(category?: string) {
+  static async getLabTests(department?: string) {
     try {
       const labTests = await prisma.labTest.findMany({
         where: {
-          ...(category && { department: category })
+          ...(department && { department: department })
         },
         orderBy: {
           name: 'asc'
@@ -68,6 +69,7 @@ export class LabService {
     doctorId: string;
     priority: string;
     notes?: string;
+    testIds?: string[];
   }) {
     try {
       const labOrder = await prisma.labOrder.create({
@@ -77,6 +79,23 @@ export class LabService {
           orderedBy: orderData.doctorId
         }
       });
+
+      // If test IDs are provided, create lab results immediately for billing
+      if (orderData.testIds && orderData.testIds.length > 0) {
+        for (const testId of orderData.testIds) {
+          await prisma.labResult.create({
+            data: {
+              labOrderId: labOrder.id,
+              labTestId: testId,
+              value: 'PENDING',
+              enteredBy: orderData.doctorId
+            }
+          });
+        }
+
+        // Trigger automatic billing for lab order
+        await BillingAutomationService.processLabOrderBilling(labOrder.id, orderData.encounterId);
+      }
 
       // Get patient for notification
       const patient = await prisma.patient.findUnique({
@@ -167,6 +186,10 @@ export class LabService {
           data: { status: 'COMPLETED' }
         });
       }
+
+      // Use VisitRoutingService for consistent status transitions
+      const { VisitRoutingService } = require('./visitRouting');
+      await VisitRoutingService.completeLabOrder(resultData.labOrderId, resultData.performedBy);
 
       // Create notification for doctor
       if (labOrder) {

@@ -5,17 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function DashboardPage() {
-  const { isAuthenticated, loading, user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-    
     // Redirect to role-specific dashboard
-    if (!loading && isAuthenticated && user?.role) {
+    if (user?.role) {
       const roleRoutes: Record<string, string> = {
         'DOCTOR': '/dashboard/doctor',
         'RECEPTIONIST': '/dashboard/receptionist',
@@ -29,7 +24,7 @@ export default function DashboardPage() {
         router.replace(targetRoute);
       }
     }
-  }, [isAuthenticated, loading, router, user?.role]);
+  }, [user?.role, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 via-blue-50 to-indigo-50">

@@ -541,35 +541,56 @@ npm test
 # Frontend tests
 cd frontend
 npm test
+
+# Run tests with coverage
+cd backend && npm run test:coverage
+cd frontend && npm run test:coverage
+
+# Watch mode for development
+cd backend && npm run test:watch
+cd frontend && npm run test:watch
 ```
 
 ### Test Coverage
 
 The system includes comprehensive test coverage for:
-- API endpoints
-- Service layer logic
-- Authentication and authorization
-- Data validation
-- Error handling
-- Visit routing logic
+- **Backend**: API endpoints, validation functions, authentication logic
+- **Frontend**: React components, context providers, user interactions
+- **Integration**: End-to-end workflow testing
+- **CI/CD**: Automated testing on every push and pull request
 
 ## 🚀 Deployment
 
-### Production Deployment
+For detailed deployment instructions, see [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-1. **Environment Variables**: Set production environment variables
-2. **Database**: Configure production database
-3. **Build**: Build frontend and backend
-4. **Docker**: Use Docker Compose for production deployment
-5. **SSL/TLS**: Configure SSL certificates
-6. **Monitoring**: Set up application monitoring
-7. **Backups**: Configure automated database backups
+### Quick Start
 
-### Docker Compose Production
-
+#### Development
 ```bash
+docker-compose up
+```
+
+#### Production
+```bash
+# Copy production environment file
+cp .env.example .env
+
+# Edit .env with production values
+
+# Start production services
 docker-compose -f docker-compose.prod.yml up -d
 ```
+
+### CI/CD Pipeline
+
+The system includes a complete GitHub Actions CI/CD pipeline that:
+- Runs automated tests on every push
+- Performs linting and type checking
+- Deploys frontend to Vercel
+- Deploys backend via Docker to production server
+- Only deploys on main branch after all checks pass
+
+See `.github/workflows/ci-cd.yml` for pipeline configuration.
 
 ## 📝 License
 

@@ -1,12 +1,102 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
-import { authenticate } from '../middleware/auth';
+import { authenticate, authorize } from '../middleware/auth';
 import { FeeService } from '../lib/feeService';
 import { FeeType } from '../lib/feeService';
 import { BillingAutomationService } from '../lib/billingAutomation';
 import { VisitRoutingService } from '../lib/visitRouting';
 
 const router = Router();
+
+/**
+ * GET /api/medical/encounters/recent
+ * Get recent encounters for medical records viewing
+ * Roles: DOCTOR, ADMIN
+ */
+router.get('/encounters/recent', authenticate, authorize('DOCTOR', 'ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const encounters = await prisma.encounter.findMany({
+      where: {
+        visitStatus: { in: ['DOCTOR_CONSULT', 'COMPLETED', 'BILLING'] }
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            mrn: true,
+            firstName: true,
+            lastName: true,
+            dob: true,
+            gender: true,
+            bloodGroup: true,
+          }
+        },
+        vitals: {
+          orderBy: { recordedAt: 'desc' },
+          take: 1
+        },
+        labOrders: {
+          include: {
+            results: {
+              include: {
+                labTest: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
+
+    res.json({ encounters });
+  } catch (error) {
+    console.error('Get recent encounters error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch recent encounters',
+      message: 'An error occurred while fetching recent encounters'
+    });
+  }
+});
+
+/**
+ * GET /api/medical/patients/:patientId/encounters
+ * Get all encounters for a specific patient
+ * Roles: DOCTOR, ADMIN
+ */
+router.get('/patients/:patientId/encounters', authenticate, authorize('DOCTOR', 'ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const patientIdValue = Array.isArray(patientId) ? patientId[0] : patientId;
+
+    const encounters = await prisma.encounter.findMany({
+      where: { patientId: patientIdValue },
+      include: {
+        vitals: {
+          orderBy: { recordedAt: 'desc' }
+        },
+        labOrders: {
+          include: {
+            results: {
+              include: {
+                labTest: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({ encounters });
+  } catch (error) {
+    console.error('Get patient encounters error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch patient encounters',
+      message: 'An error occurred while fetching patient encounters'
+    });
+  }
+});
 
 /**
  * GET /api/medical/prescription/:encounterId

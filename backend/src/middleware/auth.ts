@@ -10,20 +10,36 @@ declare global {
 }
 
 /**
+ * Get token from either cookie or Authorization header
+ */
+function getToken(req: Request): string | null {
+  // Try cookie first
+  const token = req.cookies.accessToken;
+  if (token) return token;
+
+  // Fallback to Authorization header
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+
+  return null;
+}
+
+/**
  * Authentication middleware - verifies JWT token
  */
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
-    const authHeader = req.headers.authorization;
+    const token = getToken(req);
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       return res.status(401).json({
         error: 'Authentication required',
-        message: 'No valid authorization header found',
+        message: 'No valid token found',
       });
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const payload = verifyAccessToken(token);
 
     req.user = payload;
@@ -64,10 +80,9 @@ export function authorize(...allowedRoles: string[]) {
  */
 export function optionalAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const authHeader = req.headers.authorization;
+    const token = getToken(req);
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+    if (token) {
       const payload = verifyAccessToken(token);
       req.user = payload;
     }

@@ -2,15 +2,16 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [master, develop]
+    branches: [main, develop]
   pull_request:
-    branches: [master, develop]
+    branches: [main, develop]
 
 env:
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   POSTGRES_DB: clinic_test_db
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/clinic_test_db
+  DATABASE_URL_SERVICE: postgresql://postgres:postgres@postgres:5432/clinic_test_db
 
 jobs:
   lint:
@@ -32,11 +33,26 @@ jobs:
       - name: Lint frontend
         run: cd frontend && npm run lint
 
+      - name: Build frontend
+        run: cd frontend && npm run build
+
       - name: Install backend dependencies
         run: cd backend && npm ci
 
+      - name: Generate Prisma client
+        run: cd backend && npx prisma generate
+
       - name: Lint backend
-        run: cd backend && npm run lint || echo "Lint command not configured yet"
+        run: |
+          cd backend
+          if [ -f package.json ] && grep -q '"lint"' package.json; then
+            npm run lint
+          else
+            echo "Lint command not configured in package.json, skipping"
+          fi
+
+      - name: Build backend
+        run: cd backend && npm run build
 
   typecheck:
     name: Type Check
@@ -59,6 +75,9 @@ jobs:
 
       - name: Install backend dependencies
         run: cd backend && npm ci
+
+      - name: Generate Prisma client
+        run: cd backend && npx prisma generate
 
       - name: Type check backend
         run: cd backend && npx tsc --noEmit
@@ -96,19 +115,25 @@ jobs:
       - name: Generate Prisma client
         run: cd backend && npx prisma generate
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL_SERVICE }}
 
       - name: Run database migrations
         run: cd backend && npx prisma migrate deploy
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL_SERVICE }}
 
-      - name: Run tests
-        run: cd backend && npm test || echo "Tests not configured yet"
+      - name: Run backend tests
+        run: cd backend && npm test
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL_SERVICE }}
           JWT_SECRET: test-secret-key
           JWT_REFRESH_SECRET: test-refresh-secret-key
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Run frontend tests
+        run: cd frontend && npm test
 
   deploy-frontend:
     name: Deploy Frontend to Vercel
@@ -147,3 +172,53 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  deploy-backend:
+    name: Deploy Backend to Production
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile.prod
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/clinic-backend:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/clinic-backend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/clinic-backend:buildcache,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile.prod
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/clinic-frontend:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/clinic-frontend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/clinic-frontend:buildcache,mode=max
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }}
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d
+            docker system prune -f

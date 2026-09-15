@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { authenticate, authorize } from '../middleware/auth';
-import { DoctorAvailabilityService } from '../lib/doctorAvailabilityService';
+import { DoctorAvailabilityService, NurseAvailabilityService } from '../lib/doctorAvailabilityService';
 
 const router = Router();
 
@@ -204,6 +204,199 @@ router.delete('/:id', authenticate, async (req: Request, res: Response) => {
     res.status(500).json({
       error: 'Failed to delete availability',
       message: 'An error occurred while deleting availability',
+    });
+  }
+});
+
+// ==================== NURSE AVAILABILITY ROUTES ====================
+
+/**
+ * POST /api/availability/nurse
+ * Create nurse availability (Admin, Nurse)
+ */
+router.post('/nurse', authenticate, async (req: Request, res: Response) => {
+  try {
+    const allowedRoles = ['ADMIN', 'NURSE'];
+    if (!allowedRoles.includes(req.user?.role || '')) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'You do not have permission to manage nurse availability',
+      });
+    }
+
+    const { nurseId, weekday, startTime, endTime, effectiveFrom, effectiveTo } = req.body;
+
+    // Validate time format
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+      return res.status(400).json({
+        error: 'Invalid time format',
+        message: 'Time must be in HH:MM format',
+      });
+    }
+
+    // Validate weekday
+    if (weekday < 0 || weekday > 6) {
+      return res.status(400).json({
+        error: 'Invalid weekday',
+        message: 'Weekday must be between 0 (Sunday) and 6 (Saturday)',
+      });
+    }
+
+    const availability = await NurseAvailabilityService.createAvailability({
+      nurseId,
+      weekday,
+      startTime,
+      endTime,
+      effectiveFrom: new Date(effectiveFrom),
+      effectiveTo: effectiveTo ? new Date(effectiveTo) : undefined
+    });
+
+    res.status(201).json({
+      message: 'Nurse availability created successfully',
+      availability,
+    });
+  } catch (error) {
+    console.error('Create nurse availability error:', error);
+    res.status(500).json({
+      error: 'Failed to create nurse availability',
+      message: 'An error occurred while creating nurse availability',
+    });
+  }
+});
+
+/**
+ * GET /api/availability/nurse/:nurseId
+ * Get all availabilities for a nurse
+ */
+router.get('/nurse/:nurseId', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { nurseId } = req.params;
+    const nurseIdValue = Array.isArray(nurseId) ? nurseId[0] : nurseId;
+
+    const availabilities = await NurseAvailabilityService.getAllNurseAvailabilities(nurseIdValue);
+
+    res.json({
+      availabilities,
+      total: availabilities.length,
+    });
+  } catch (error) {
+    console.error('Get nurse availabilities error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch nurse availabilities',
+      message: 'An error occurred while fetching nurse availabilities',
+    });
+  }
+});
+
+/**
+ * GET /api/availability/nurses/available
+ * Get available nurses for a specific date
+ */
+router.get('/nurses/available', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date ? new Date(date as string) : new Date();
+
+    if (isNaN(targetDate.getTime())) {
+      return res.status(400).json({
+        error: 'Invalid date',
+        message: 'Please provide a valid date',
+      });
+    }
+
+    const availabilities = await NurseAvailabilityService.getAvailableNurses(targetDate);
+
+    res.json({
+      date: targetDate,
+      availabilities,
+      total: availabilities.length,
+    });
+  } catch (error) {
+    console.error('Get available nurses error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch available nurses',
+      message: 'An error occurred while fetching available nurses',
+    });
+  }
+});
+
+/**
+ * GET /api/availability/nurse/:nurseId/week/:weekStart
+ * Get weekly availability overview for nurse
+ */
+router.get('/nurse/:nurseId/week/:weekStart', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { nurseId, weekStart } = req.params;
+    const nurseIdValue = Array.isArray(nurseId) ? nurseId[0] : nurseId;
+    const weekStartValue = Array.isArray(weekStart) ? weekStart[0] : weekStart;
+
+    const startDate = new Date(weekStartValue);
+    if (isNaN(startDate.getTime())) {
+      return res.status(400).json({
+        error: 'Invalid date',
+        message: 'Please provide a valid start date',
+      });
+    }
+
+    const weeklyAvailability = await NurseAvailabilityService.getWeeklyAvailability(nurseIdValue, startDate);
+
+    res.json({
+      weekStart: startDate,
+      weeklyAvailability,
+    });
+  } catch (error) {
+    console.error('Get nurse weekly availability error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch nurse weekly availability',
+      message: 'An error occurred while fetching nurse weekly availability',
+    });
+  }
+});
+
+/**
+ * PATCH /api/availability/nurse/:id
+ * Update nurse availability
+ */
+router.patch('/nurse/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const availabilityId = Array.isArray(id) ? id[0] : id;
+
+    const availability = await NurseAvailabilityService.updateAvailability(availabilityId, req.body);
+
+    res.json({
+      message: 'Nurse availability updated successfully',
+      availability,
+    });
+  } catch (error) {
+    console.error('Update nurse availability error:', error);
+    res.status(500).json({
+      error: 'Failed to update nurse availability',
+      message: 'An error occurred while updating nurse availability',
+    });
+  }
+});
+
+/**
+ * DELETE /api/availability/nurse/:id
+ * Delete nurse availability
+ */
+router.delete('/nurse/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const availabilityId = Array.isArray(id) ? id[0] : id;
+
+    await NurseAvailabilityService.deleteAvailability(availabilityId);
+
+    res.json({
+      message: 'Nurse availability deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete nurse availability error:', error);
+    res.status(500).json({
+      error: 'Failed to delete nurse availability',
+      message: 'An error occurred while deleting nurse availability',
     });
   }
 });

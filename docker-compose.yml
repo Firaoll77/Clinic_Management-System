@@ -1,4 +1,25 @@
 services:
+  # Frontend (Next.js)
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: clinic_web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - clinic_network
+
   # PostgreSQL Database
   db:
     image: postgres:16-alpine

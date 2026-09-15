@@ -16,6 +16,7 @@ import {
   filterPatientDataByRole,
   validatePatientEdit,
 } from '../lib/patientAccess';
+import { manualArchivePatient, reactivatePatient } from '../lib/archiver';
 import {
   createCreationAuditLog,
   createFieldChangeAuditLog,
@@ -145,7 +146,7 @@ router.post('/register', authenticate, async (req: Request, res: Response) => {
  */
 router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
-    const search = ((req.query.search || req.query.q || req.query.query || '') as string).trim();
+    const search = ((req.query.search || req.query.q || '') as string).trim();
     const status = ((req.query.status || 'all') as string).toLowerCase() as 'active' | 'archived' | 'all';
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
@@ -181,7 +182,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
  */
 router.get('/search', authenticate, async (req: Request, res: Response) => {
   try {
-    const searchTerm = ((req.query.q || req.query.query || req.query.search || '') as string).trim();
+    const searchTerm = ((req.query.q || req.query.search || '') as string).trim();
     const status = ((req.query.status || 'active') as string).toLowerCase() as 'active' | 'archived' | 'all';
 
     // Use PatientService for improved search
@@ -205,71 +206,7 @@ router.get('/search', authenticate, async (req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /api/patients
- * Get patients with search, status filtering, and count statistics
- */
-router.get('/', authenticate, async (req: Request, res: Response) => {
-  try {
-    const search = ((req.query.search || req.query.q || '') as string).trim();
-    const status = (req.query.status as string)?.toLowerCase();
 
-    // Build filter conditions
-    const where: any = {};
-
-    if (status === 'active') {
-      where.isArchived = false;
-    } else if (status === 'archived') {
-      where.isArchived = true;
-    }
-
-    if (search) {
-      where.OR = [
-        { mrn: { contains: search, mode: 'insensitive' } },
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { nationalId: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    const [patients, totalCount, activeCount, archivedCount] = await Promise.all([
-      prisma.patient.findMany({
-        where,
-        include: {
-          allergies: true,
-        },
-        orderBy: {
-          lastActivityAt: 'desc',
-        },
-        take: 50,
-      }),
-      prisma.patient.count(),
-      prisma.patient.count({ where: { isArchived: false } }),
-      prisma.patient.count({ where: { isArchived: true } }),
-    ]);
-
-    // Filter patients based on role
-    const filteredPatients = patients.map(patient =>
-      filterPatientDataByRole(patient, req.user!.role as any)
-    );
-
-    res.json({
-      patients: filteredPatients,
-      total: filteredPatients.length,
-      totalAll: totalCount,
-      activeCount,
-      archivedCount,
-    });
-  } catch (error) {
-    console.error('Get patients error:', error);
-    res.status(500).json({
-      error: 'Failed to fetch patients',
-      message: 'An error occurred while fetching patients',
-    });
-  }
-});
 
 /**
  * GET /api/patients/:id
@@ -854,6 +791,58 @@ router.patch('/mrn/:mrn', authenticate, async (req: Request, res: Response) => {
     res.status(500).json({
       error: 'Failed to update patient',
       message: 'An error occurred while updating patient',
+    });
+  }
+});
+
+/**
+ * POST /api/patients/:patientId/archive
+ * Archive a patient (Admin only)
+ */
+router.post('/:patientId/archive', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const patientIdValue = Array.isArray(patientId) ? patientId[0] : patientId;
+    const archivedBy = req.user?.userId;
+    const archivedByRole = req.user?.role;
+
+    const archivedPatient = await manualArchivePatient(patientIdValue, archivedBy, archivedByRole);
+
+    res.json({
+      message: 'Patient archived successfully',
+      patient: archivedPatient
+    });
+  } catch (error) {
+    console.error('Archive patient error:', error);
+    res.status(500).json({
+      error: 'Failed to archive patient',
+      message: error instanceof Error ? error.message : 'An error occurred while archiving patient'
+    });
+  }
+});
+
+/**
+ * POST /api/patients/:patientId/reactivate
+ * Reactivate an archived patient (Admin only)
+ */
+router.post('/:patientId/reactivate', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    const patientIdValue = Array.isArray(patientId) ? patientId[0] : patientId;
+    const reactivatedBy = req.user?.userId;
+    const reactivatedByRole = req.user?.role;
+
+    const reactivatedPatient = await reactivatePatient(patientIdValue, reactivatedBy, reactivatedByRole);
+
+    res.json({
+      message: 'Patient reactivated successfully',
+      patient: reactivatedPatient
+    });
+  } catch (error) {
+    console.error('Reactivate patient error:', error);
+    res.status(500).json({
+      error: 'Failed to reactivate patient',
+      message: error instanceof Error ? error.message : 'An error occurred while reactivating patient'
     });
   }
 });

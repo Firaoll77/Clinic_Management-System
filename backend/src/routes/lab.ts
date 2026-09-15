@@ -11,22 +11,22 @@ const router = Router();
  */
 router.post('/tests', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
   try {
-    const { name, code, category, description, sampleType, normalRange, unit, price } = req.body;
+    const { name, code, department, description, sampleType, referenceRange, unit, price } = req.body;
 
-    if (!name || !code || !category || !sampleType || !price) {
+    if (!name || !code || !department || !sampleType || !price) {
       return res.status(400).json({
         error: 'Missing required fields',
-        message: 'name, code, category, sampleType, and price are required',
+        message: 'name, code, department, sampleType, and price are required',
       });
     }
 
     const labTest = await LabService.createLabTest({
       name,
       code,
-      category,
+      department,
       description,
       sampleType,
-      normalRange,
+      referenceRange,
       unit,
       price
     });
@@ -50,9 +50,9 @@ router.post('/tests', authenticate, authorize('ADMIN'), async (req: Request, res
  */
 router.get('/tests', authenticate, async (req: Request, res: Response) => {
   try {
-    const { category } = req.query;
+    const { department } = req.query;
 
-    const labTests = await LabService.getLabTests(category as string);
+    const labTests = await LabService.getLabTests(department as string);
 
     res.json({
       labTests,

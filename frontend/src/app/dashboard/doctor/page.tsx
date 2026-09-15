@@ -7,6 +7,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
+import { formatCurrency } from '@/lib/currency';
 import { evaluateCdsRules } from '@/lib/cdsRules';
 import { 
   Calendar, 
@@ -968,6 +969,22 @@ export default function DoctorDashboardPage() {
                             <option value="routine">Routine</option>
                             <option value="urgent">Urgent</option>
                             <option value="stat">STAT</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Assign Lab Technician (Optional)</label>
+                          <select
+                            value={labOrderForm.labTechId}
+                            onChange={(e) => setLabOrderForm({...labOrderForm, labTechId: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="">Auto-assign to available technician</option>
+                            {availableLabTechs.map((tech) => (
+                              <option key={tech.id} value={tech.id}>
+                                {tech.staffProfile?.fullName || tech.username} 
+                                {tech.isAvailable ? ' (Available)' : ' (Busy)'}
+                              </option>
+                            ))}
                           </select>
                         </div>
                         <div>

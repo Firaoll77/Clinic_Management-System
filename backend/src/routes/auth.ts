@@ -15,6 +15,15 @@ import {
   RefreshTokenInput,
 } from '../lib/validation';
 import { authenticate } from '../middleware/auth';
+import { strictRateLimit } from '../middleware/rateLimit';
+import {
+  storeRefreshToken,
+  validateRefreshToken,
+  revokeRefreshToken,
+  revokeAllUserTokens,
+  revokeOtherUserTokens,
+  getUserSessions,
+} from '../lib/sessionService';
 
 const router = Router();
 
@@ -97,9 +106,9 @@ router.post('/register', authenticate, async (req: Request, res: Response) => {
 
 /**
  * POST /api/auth/login
- * Login user and return tokens
+ * Login user and set HTTP-only cookies
  */
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', strictRateLimit(15 * 60 * 1000, 5), async (req: Request, res: Response) => {
   try {
     // Validate input
     const validatedData: LoginInput = loginSchema.parse(req.body);
@@ -150,13 +159,38 @@ router.post('/login', async (req: Request, res: Response) => {
       role: user.role,
     });
 
-    // Return user info and tokens
+    // Store refresh token in database
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    await storeRefreshToken(tokens.refreshToken, user.id, userAgent, ipAddress);
+
+    // Set HTTP-only cookies
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Access token cookie (15 minutes)
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/',
+    });
+
+    // Refresh token cookie (7 days)
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
+    });
+
+    // Return user info (tokens are in cookies now)
     const { passwordHash: _, ...userWithoutPassword } = user;
 
     res.json({
       message: 'Login successful',
       user: userWithoutPassword,
-      tokens,
     });
   } catch (error) {
     if (error instanceof Error && error.name === 'ZodError') {
@@ -176,38 +210,66 @@ router.post('/login', async (req: Request, res: Response) => {
 
 /**
  * POST /api/auth/refresh
- * Refresh access token using refresh token
+ * Refresh access token using refresh token with token rotation
  */
 router.post('/refresh', async (req: Request, res: Response) => {
   try {
-    // Validate input
-    const validatedData: RefreshTokenInput = refreshTokenSchema.parse(req.body);
+    // Get refresh token from cookie or body
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
-    // Verify refresh token
-    const payload = verifyRefreshToken(validatedData.refreshToken);
-
-    // Check if user still exists and is active
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-    });
-
-    if (!user || !user.isActive) {
+    if (!refreshToken) {
       return res.status(401).json({
-        error: 'Invalid refresh token',
-        message: 'User not found or inactive',
+        error: 'No refresh token',
+        message: 'Refresh token is required',
       });
     }
 
-    // Generate new tokens
-    const tokens = generateTokens({
-      userId: user.id,
-      username: user.username,
-      role: user.role,
+    // Validate refresh token against database
+    const payload = await validateRefreshToken(refreshToken);
+
+    if (!payload) {
+      return res.status(401).json({
+        error: 'Invalid refresh token',
+        message: 'Refresh token is invalid, expired, or revoked',
+      });
+    }
+
+    // Generate new tokens (token rotation)
+    const newTokens = generateTokens({
+      userId: payload.userId,
+      username: payload.username,
+      role: payload.role,
+    });
+
+    // Store new refresh token
+    const userAgent = req.headers['user-agent'];
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    await storeRefreshToken(newTokens.refreshToken, payload.userId, userAgent, ipAddress);
+
+    // Revoke old refresh token
+    await revokeRefreshToken(refreshToken);
+
+    // Set new HTTP-only cookies
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    res.cookie('accessToken', newTokens.accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/',
+    });
+
+    res.cookie('refreshToken', newTokens.refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',
     });
 
     res.json({
       message: 'Token refreshed successfully',
-      tokens,
     });
   } catch (error) {
     if (error instanceof Error && error.name === 'ZodError') {
@@ -261,15 +323,141 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
 
 /**
  * POST /api/auth/logout
- * Logout user (client-side token removal)
+ * Logout user and revoke refresh token
  */
-router.post('/logout', authenticate, (req: Request, res: Response) => {
-  // In a stateless JWT system, logout is handled client-side
-  // by removing the tokens. For additional security, you could
-  // implement a token blacklist in Redis.
-  res.json({
-    message: 'Logout successful',
-  });
+router.post('/logout', authenticate, async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    if (refreshToken) {
+      // Revoke the specific refresh token
+      await revokeRefreshToken(refreshToken);
+    }
+
+    // Clear cookies
+    res.clearCookie('accessToken', { path: '/' });
+    res.clearCookie('refreshToken', { path: '/' });
+
+    res.json({
+      message: 'Logout successful',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      error: 'Logout failed',
+      message: 'An error occurred during logout',
+    });
+  }
+});
+
+/**
+ * POST /api/auth/logout-all
+ * Logout user from all devices and revoke all refresh tokens
+ */
+router.post('/logout-all', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'User not authenticated',
+      });
+    }
+
+    // Revoke all refresh tokens for this user
+    const revokedCount = await revokeAllUserTokens(userId);
+
+    // Clear cookies
+    res.clearCookie('accessToken', { path: '/' });
+    res.clearCookie('refreshToken', { path: '/' });
+
+    res.json({
+      message: 'Logged out from all devices successfully',
+      revokedCount,
+    });
+  } catch (error) {
+    console.error('Logout all error:', error);
+    res.status(500).json({
+      error: 'Logout failed',
+      message: 'An error occurred during logout',
+    });
+  }
+});
+
+/**
+ * GET /api/auth/sessions
+ * Get all active sessions for the current user
+ */
+router.get('/sessions', authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'User not authenticated',
+      });
+    }
+
+    const sessions = await getUserSessions(userId);
+
+    res.json({
+      sessions,
+      total: sessions.length,
+    });
+  } catch (error) {
+    console.error('Get sessions error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch sessions',
+      message: 'An error occurred while fetching sessions',
+    });
+  }
+});
+
+/**
+ * DELETE /api/auth/sessions/:id
+ * Revoke a specific session
+ */
+router.delete('/sessions/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const sessionId = req.params.id;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'User not authenticated',
+      });
+    }
+
+    // Verify the session belongs to the user
+    const session = await prisma.refreshToken.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session || session.userId !== userId) {
+      return res.status(404).json({
+        error: 'Session not found',
+        message: 'Session not found or does not belong to you',
+      });
+    }
+
+    await prisma.refreshToken.update({
+      where: { id: sessionId },
+      data: { revokedAt: new Date() },
+    });
+
+    res.json({
+      message: 'Session revoked successfully',
+    });
+  } catch (error) {
+    console.error('Revoke session error:', error);
+    res.status(500).json({
+      error: 'Failed to revoke session',
+      message: 'An error occurred while revoking the session',
+    });
+  }
 });
 
 export default router;

@@ -18,9 +18,11 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  logoutAll: () => Promise<void>;
+  getSessions: () => Promise<any[]>;
+  revokeSession: (sessionId: string) => Promise<boolean>;
   loading: boolean;
   isAuthenticated: boolean;
 }
@@ -29,15 +31,48 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const logout = useCallback(() => {
-    setUser(null);
-    setToken(null);
-    apiClient.clearToken();
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+  const logout = useCallback(async () => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      // Cookies are cleared by the backend
+    }
+  }, []);
+
+  const logoutAll = useCallback(async () => {
+    try {
+      await apiClient.post('/auth/logout-all');
+    } catch (error) {
+      console.error('Logout all error:', error);
+    } finally {
+      setUser(null);
+      // Cookies are cleared by the backend
+    }
+  }, []);
+
+  const getSessions = useCallback(async () => {
+    try {
+      const response = await apiClient.get<{ sessions: any[] }>('/auth/sessions');
+      return response.data?.sessions || [];
+    } catch (error) {
+      console.error('Get sessions error:', error);
+      return [];
+    }
+  }, []);
+
+  const revokeSession = useCallback(async (sessionId: string) => {
+    try {
+      await apiClient.delete(`/auth/sessions/${sessionId}`);
+      return true;
+    } catch (error) {
+      console.error('Revoke session error:', error);
+      return false;
+    }
   }, []);
 
   const fetchUserInfo = useCallback(async () => {
@@ -48,30 +83,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Failed to fetch user info:', error);
-      logout();
+      // Try to refresh token automatically
+      try {
+        await apiClient.post('/auth/refresh');
+        // Retry fetching user info after refresh
+        const userResponse = await apiClient.get<{ user: User }>('/auth/me');
+        if (userResponse.data?.user) {
+          setUser(userResponse.data.user);
+        } else {
+          setUser(null);
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
-  }, [logout]);
+  }, []);
 
   useEffect(() => {
-    // Check for existing token on mount
-    const storedToken = localStorage.getItem('accessToken');
-    if (storedToken) {
-      setToken(storedToken);
-      apiClient.setToken(storedToken);
-      // Verify token by fetching user info
-      fetchUserInfo();
-    } else {
-      setLoading(false);
-    }
+    // Check authentication on mount by fetching user info
+    // Cookies are automatically sent by the browser
+    fetchUserInfo();
   }, [fetchUserInfo]);
 
   const login = useCallback(async (username: string, password: string) => {
     try {
       const response = await apiClient.post<{
         user: User;
-        tokens: { accessToken: string; refreshToken: string };
       }>('/auth/login', { username, password });
 
       if (response.error) {
@@ -79,12 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (response.data) {
-        const { user: loggedInUser, tokens } = response.data;
+        const { user: loggedInUser } = response.data;
         setUser(loggedInUser);
-        setToken(tokens.accessToken);
-        apiClient.setToken(tokens.accessToken);
-        localStorage.setItem('accessToken', tokens.accessToken);
-        localStorage.setItem('refreshToken', tokens.refreshToken);
+        // Cookies are set by the backend
         return { success: true };
       }
 
@@ -99,12 +136,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AuthContextType>(() => ({
     user,
-    token,
     login,
     logout,
+    logoutAll,
+    getSessions,
+    revokeSession,
     loading,
     isAuthenticated: !!user,
-  }), [user, token, login, logout, loading]);
+  }), [user, login, logout, logoutAll, getSessions, revokeSession, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

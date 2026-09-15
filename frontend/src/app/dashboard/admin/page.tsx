@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
+import { formatCurrency } from '@/lib/currency';
 import Link from 'next/link';
 import { 
   Users, 
@@ -87,7 +88,7 @@ type RoleFilter = 'ALL' | 'DOCTOR' | 'NURSE' | 'ACCOUNTANT' | 'LAB_TECH' | 'RECE
 type StatusFilter = 'all' | 'active' | 'inactive';
 type PatientFilter = 'active' | 'archived' | 'all';
 
-export default function AdminDashboardPage() {
+export default function AdminDashboardPage() {formatCurrency(
   const { user } = useAuth();
   const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
   const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
@@ -205,10 +206,10 @@ export default function AdminDashboardPage() {
     setAuditLoading(true);
     try {
       const response = await apiClient.get<{ logs: any[] }>('/audit/logs?limit=50');
-      if (response.data && response.data.logs) {
+      if (response.data && response.data.logs) {formatCurrency(
         setAuditLogs(response.data.logs);
       }
-    } catch (err) {
+    } catch (err) {formatCurrency(
       console.error('Failed to fetch audit logs', err);
     } finally {
       setAuditLoading(false);
@@ -248,14 +249,14 @@ export default function AdminDashboardPage() {
       { 
         name: 'Laboratory Diagnostics', 
         load: labLoad, 
-        activeStaff: `${activeLabTechs} Laboratorists`, 
+        activeStaff: `{formatCurrency(activeLabTechs} Laboratorists`, 
         status: labLoad > 80 ? 'High Load' : labLoad > 60 ? 'Moderate' : 'Optimal',
         color: labLoad > 80 ? 'from-amber-500 to-orange-600' : 'from-red-500 to-rose-600'
       },
       { 
         name: 'Reception & Intake', 
         load: receptionLoad, 
-        activeStaff: `${activeReceptionists} Receptionists`, 
+        activeStaff: `{formatCurrency(activeReceptionists} Receptionists`, 
         status: receptionLoad > 80 ? 'High Load' : receptionLoad > 60 ? 'Moderate' : 'Optimal',
         color: receptionLoad > 80 ? 'from-amber-500 to-orange-600' : 'from-red-500 to-rose-600'
       },
@@ -266,7 +267,7 @@ export default function AdminDashboardPage() {
   const fetchDashboardStats = useCallback(async () => {
     try {
       const response = await apiClient.get<{ stats: any }>('/dashboard/stats');
-      if (response.data && response.data.stats) {
+      if (response.data && response.data.stats) {formatCurrency(
         setStats(prev => ({
           ...prev,
           totalPatients: response.data!.stats.totalPatients || 0,
@@ -277,7 +278,7 @@ export default function AdminDashboardPage() {
           appointmentGrowth: response.data!.stats.appointmentGrowth || '0%',
         }));
       }
-    } catch (err) {
+    } catch (err) {formatCurrency(
       console.error('Failed to fetch dashboard stats', err);
     }
   }, []);
@@ -292,17 +293,17 @@ export default function AdminDashboardPage() {
       if (staffStatusFilter !== 'all') queryParams.set('status', staffStatusFilter);
 
       const response = await apiClient.get<{ users: UserAccount[]; counts: typeof staffCounts; total: number }>(
-        `/users?${queryParams.toString()}`
+        `/users?{formatCurrency(queryParams.toString()}`
       );
 
-      if (response.data) {
+      if (response.data) {formatCurrency(
         setStaffList(response.data.users || []);
-        if (response.data.counts) {
+        if (response.data.counts) {formatCurrency(
           setStaffCounts(response.data.counts);
           setStats(prev => ({ ...prev, activeStaff: response.data!.counts.active }));
         }
       }
-    } catch (err) {
+    } catch (err) {formatCurrency(
       console.error('Failed to fetch staff', err);
       showToast('Failed to load staff list. Please try again.', 'error');
     } finally {
@@ -324,9 +325,9 @@ export default function AdminDashboardPage() {
         totalAll: number;
         activeCount: number;
         archivedCount: number;
-      }>(`/patients?${queryParams.toString()}`);
+      }>(`/patients?{formatCurrency(queryParams.toString()}`);
 
-      if (response.data) {
+      if (response.data) {formatCurrency(
         setPatientsList(response.data.patients || []);
         setPatientCounts({
           total: response.data.totalAll || 0,
@@ -334,7 +335,7 @@ export default function AdminDashboardPage() {
           archived: response.data.archivedCount || 0,
         });
       }
-    } catch (err) {
+    } catch (err) {formatCurrency(
       console.error('Failed to fetch patients', err);
       showToast('Failed to load patient records.', 'error');
     } finally {
@@ -346,10 +347,10 @@ export default function AdminDashboardPage() {
     setAppointmentsLoading(true);
     try {
       const response = await apiClient.get<{ appointments: any[] }>('/appointments');
-      if (response.data?.appointments) {
+      if (response.data?.appointments) {formatCurrency(
         setAppointmentsList(response.data.appointments);
       }
-    } catch (err) {
+    } catch (err) {formatCurrency(
       console.error('Failed to fetch appointments:', err);
     } finally {
       setAppointmentsLoading(false);
@@ -360,10 +361,10 @@ export default function AdminDashboardPage() {
     setFeeConfigsLoading(true);
     try {
       const response = await apiClient.get<{ fees: any[] }>('/billing/fee-configurations');
-      if (response.data?.fees && response.data.fees.length > 0) {
+      if (response.data?.fees && response.data.fees.length > 0) {formatCurrency(
         setFeeConfigs(response.data.fees);
       }
-    } catch (err) {
+    } catch (err) {formatCurrency(
       console.error('Failed to fetch fee configs:', err);
     } finally {
       setFeeConfigsLoading(false);
@@ -374,10 +375,10 @@ export default function AdminDashboardPage() {
     setInvoicesLoading(true);
     try {
       const response = await apiClient.get<{ invoices: any[] }>('/billing/invoices');
-      if (response.data?.invoices) {
+      if (response.data?.invoices) {formatCurrency(
         setAdminInvoices(response.data.invoices);
       }
-    } catch (err) {
+    } catch (err) {formatCurrency(
       console.error('Failed to fetch invoices:', err);
     } finally {
       setInvoicesLoading(false);
@@ -392,14 +393,14 @@ export default function AdminDashboardPage() {
         description,
         amount
       });
-      if (response.error) {
+      if (response.error) {formatCurrency(
         showToast(response.error, 'error');
         return;
       }
-      showToast(`Fee for ${name} updated to $${amount.toFixed(2)}`, 'success');
+      showToast(`Fee for ${name} updated to ${formatCurrency(amount)}`, 'success');
       setEditingFeeType(null);
       fetchFeeConfigs();
-    } catch (err: any) {
+    } catch (err: any) {formatCurrency(
       showToast('Failed to update fee configuration', 'error');
     }
   };
@@ -454,11 +455,11 @@ export default function AdminDashboardPage() {
   const handleAddStaffSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
-    if (!staffForm.fullName || !staffForm.username || !staffForm.password || !staffForm.phone) {
+    if (!staffForm.fullName || !staffForm.username || !staffForm.password || !staffForm.phone) {formatCurrency(
       setFormError('Please fill in all required fields (Name, Username, Password, Phone).');
       return;
     }
-    if (staffForm.password.length < 8) {
+    if (staffForm.password.length < 8) {formatCurrency(
       setFormError('Password must be at least 8 characters long.');
       return;
     }
@@ -479,12 +480,12 @@ export default function AdminDashboardPage() {
 
       const response = await apiClient.post<{ user: UserAccount; message: string }>('/users', payload);
       
-      if (response.error) {
+      if (response.error) {formatCurrency(
         setFormError(response.error);
         return;
       }
 
-      showToast(`Staff member ${staffForm.fullName} (${staffForm.role}) registered successfully!`);
+      showToast(`Staff member {formatCurrency(staffForm.fullName} ({formatCurrency(staffForm.role}) registered successfully!`);
       setIsAddStaffOpen(false);
       setStaffForm({
         fullName: '',
@@ -504,7 +505,7 @@ export default function AdminDashboardPage() {
         {
           id: Date.now().toString(),
           time: 'Just now',
-          action: `Added new staff: ${staffForm.fullName} (${staffForm.role})`,
+          action: `Added new staff: {formatCurrency(staffForm.fullName} ({formatCurrency(staffForm.role})`,
           user: user?.email || 'admin@clinic.com',
           type: 'staff',
           status: 'success'
@@ -513,7 +514,7 @@ export default function AdminDashboardPage() {
       ]);
 
       fetchStaff();
-    } catch (err: any) {
+    } catch (err: any) {formatCurrency(
       setFormError(err.message || 'Failed to create staff member.');
     } finally {
       setFormSubmitting(false);
@@ -555,21 +556,21 @@ export default function AdminDashboardPage() {
         departmentId: staffForm.departmentId || null,
         isActive: staffForm.isActive,
       };
-      if (staffForm.password) {
+      if (staffForm.password) {formatCurrency(
         payload.password = staffForm.password;
       }
 
-      const response = await apiClient.patch<{ user: UserAccount; message: string }>(`/users/${selectedStaff.id}`, payload);
-      if (response.error) {
+      const response = await apiClient.patch<{ user: UserAccount; message: string }>(`/users/{formatCurrency(selectedStaff.id}`, payload);
+      if (response.error) {formatCurrency(
         setFormError(response.error);
         return;
       }
 
-      showToast(`Updated details for ${staffForm.fullName}.`);
+      showToast(`Updated details for {formatCurrency(staffForm.fullName}.`);
       setIsEditStaffOpen(false);
       setSelectedStaff(null);
       fetchStaff();
-    } catch (err: any) {
+    } catch (err: any) {formatCurrency(
       setFormError(err.message || 'Failed to update staff member.');
     } finally {
       setFormSubmitting(false);
@@ -579,18 +580,18 @@ export default function AdminDashboardPage() {
   const handleToggleStaffStatus = async (member: UserAccount) => {
     try {
       const nextStatus = !member.isActive;
-      const response = await apiClient.patch<{ user: UserAccount }>(`/users/${member.id}`, {
+      const response = await apiClient.patch<{ user: UserAccount }>(`/users/{formatCurrency(member.id}`, {
         isActive: nextStatus,
       });
 
-      if (response.error) {
+      if (response.error) {formatCurrency(
         showToast(response.error, 'error');
         return;
       }
 
-      showToast(`Staff member ${member.staffProfile?.fullName || member.email} ${nextStatus ? 'activated' : 'deactivated'}.`);
+      showToast(`Staff member {formatCurrency(member.staffProfile?.fullName || member.email} {formatCurrency(nextStatus ? 'activated' : 'deactivated'}.`);
       fetchStaff();
-    } catch (err) {
+    } catch (err) {formatCurrency(
       showToast('Failed to change status.', 'error');
     }
   };
@@ -599,17 +600,17 @@ export default function AdminDashboardPage() {
     if (!selectedStaff) return;
     setFormSubmitting(true);
     try {
-      const response = await apiClient.delete(`/users/${selectedStaff.id}`);
-      if (response.error) {
+      const response = await apiClient.delete(`/users/{formatCurrency(selectedStaff.id}`);
+      if (response.error) {formatCurrency(
         showToast(response.error, 'error');
         return;
       }
 
-      showToast(`Staff account for ${selectedStaff.staffProfile?.fullName || selectedStaff.username} deleted.`);
+      showToast(`Staff account for {formatCurrency(selectedStaff.staffProfile?.fullName || selectedStaff.username} deleted.`);
       setIsDeleteStaffOpen(false);
       setSelectedStaff(null);
       fetchStaff();
-    } catch (err) {
+    } catch (err) {formatCurrency(
       showToast('Failed to delete staff member.', 'error');
     } finally {
       setFormSubmitting(false);
@@ -621,13 +622,13 @@ export default function AdminDashboardPage() {
     if (!selectedPatient) return;
     setPatientActionLoading(true);
     try {
-      const response = await apiClient.post(`/patients/${selectedPatient.id}/archive`, {});
-      if (response.error) {
+      const response = await apiClient.post(`/patients/{formatCurrency(selectedPatient.id}/archive`, {});
+      if (response.error) {formatCurrency(
         showToast(response.error, 'error');
         return;
       }
 
-      showToast(`Patient ${selectedPatient.firstName} ${selectedPatient.lastName} (${selectedPatient.mrn}) archived successfully.`);
+      showToast(`Patient {formatCurrency(selectedPatient.firstName} {formatCurrency(selectedPatient.lastName} ({formatCurrency(selectedPatient.mrn}) archived successfully.`);
       setIsArchiveModalOpen(false);
       setSelectedPatient(null);
 
@@ -636,7 +637,7 @@ export default function AdminDashboardPage() {
         {
           id: Date.now().toString(),
           time: 'Just now',
-          action: `Archived patient ${selectedPatient.firstName} ${selectedPatient.lastName} (${selectedPatient.mrn})`,
+          action: `Archived patient {formatCurrency(selectedPatient.firstName} {formatCurrency(selectedPatient.lastName} ({formatCurrency(selectedPatient.mrn})`,
           user: user?.email || 'admin@clinic.com',
           type: 'patient',
           status: 'warning'
@@ -646,7 +647,7 @@ export default function AdminDashboardPage() {
 
       fetchPatients();
       fetchDashboardStats();
-    } catch (err) {
+    } catch (err) {formatCurrency(
       showToast('Failed to archive patient.', 'error');
     } finally {
       setPatientActionLoading(false);
@@ -657,13 +658,13 @@ export default function AdminDashboardPage() {
     if (!selectedPatient) return;
     setPatientActionLoading(true);
     try {
-      const response = await apiClient.post(`/patients/${selectedPatient.id}/restore`, {});
-      if (response.error) {
+      const response = await apiClient.post(`/patients/{formatCurrency(selectedPatient.id}/restore`, {});
+      if (response.error) {formatCurrency(
         showToast(response.error, 'error');
         return;
       }
 
-      showToast(`Patient ${selectedPatient.firstName} ${selectedPatient.lastName} restored from archive to active roster.`);
+      showToast(`Patient {formatCurrency(selectedPatient.firstName} {formatCurrency(selectedPatient.lastName} restored from archive to active roster.`);
       setIsRestoreModalOpen(false);
       setSelectedPatient(null);
 
@@ -672,7 +673,7 @@ export default function AdminDashboardPage() {
         {
           id: Date.now().toString(),
           time: 'Just now',
-          action: `Restored patient ${selectedPatient.firstName} ${selectedPatient.lastName} (${selectedPatient.mrn})`,
+          action: `Restored patient {formatCurrency(selectedPatient.firstName} {formatCurrency(selectedPatient.lastName} ({formatCurrency(selectedPatient.mrn})`,
           user: user?.email || 'admin@clinic.com',
           type: 'patient',
           status: 'success'
@@ -682,7 +683,7 @@ export default function AdminDashboardPage() {
 
       fetchPatients();
       fetchDashboardStats();
-    } catch (err) {
+    } catch (err) {formatCurrency(
       showToast('Failed to restore patient.', 'error');
     } finally {
       setPatientActionLoading(false);
@@ -691,7 +692,7 @@ export default function AdminDashboardPage() {
 
   // Role Badge Styling Helper
   const getRoleBadge = (role: UserAccount['role']) => {
-    switch (role) {
+    switch (role) {formatCurrency(
       case 'DOCTOR':
         return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200"><Stethoscope className="w-3 h-3 mr-1" /> Doctor</span>;
       case 'NURSE':
@@ -720,7 +721,7 @@ export default function AdminDashboardPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className={`p-4 rounded-xl shadow-lg border flex items-center justify-between z-50 ${
+            className={`p-4 rounded-xl shadow-lg border flex items-center justify-between z-50 {formatCurrency(
               toast.type === 'success' ? 'bg-emerald-50 text-emerald-900 border-emerald-300' :
               toast.type === 'error' ? 'bg-red-50 text-red-900 border-red-300' :
               'bg-red-50 text-red-900 border-red-300'
@@ -744,7 +745,7 @@ export default function AdminDashboardPage() {
         <div className="flex items-center space-x-1 sm:space-x-2 flex-wrap">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 {formatCurrency(
               activeTab === 'overview'
                 ? 'bg-[#D93344] text-white shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -756,7 +757,7 @@ export default function AdminDashboardPage() {
 
           <button
             onClick={() => setActiveTab('staff')}
-            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 {formatCurrency(
               activeTab === 'staff'
                 ? 'bg-[#D93344] text-white shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -764,7 +765,7 @@ export default function AdminDashboardPage() {
           >
             <Users className="h-4 w-4" />
             <span>Staff</span>
-            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            <span className={`px-2 py-0.5 rounded-full text-xs font-bold {formatCurrency(
               activeTab === 'staff' ? 'bg-white/20 text-white' : 'bg-red-100 text-red-700'
             }`}>
               {staffCounts.total}
@@ -773,7 +774,7 @@ export default function AdminDashboardPage() {
 
           <button
             onClick={() => setActiveTab('patients')}
-            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 {formatCurrency(
               activeTab === 'patients'
                 ? 'bg-[#D93344] text-white shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -782,7 +783,7 @@ export default function AdminDashboardPage() {
             <FolderArchive className="h-4 w-4" />
             <span>Patients</span>
             {patientCounts.archived > 0 && (
-              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+              <span className={`px-2 py-0.5 rounded-full text-xs font-bold {formatCurrency(
                 activeTab === 'patients' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
               }`}>
                 {patientCounts.archived}
@@ -792,7 +793,7 @@ export default function AdminDashboardPage() {
 
           <button
             onClick={() => setActiveTab('appointments')}
-            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 {formatCurrency(
               activeTab === 'appointments'
                 ? 'bg-[#D93344] text-white shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -804,7 +805,7 @@ export default function AdminDashboardPage() {
 
           <button
             onClick={() => setActiveTab('billing')}
-            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 {formatCurrency(
               activeTab === 'billing'
                 ? 'bg-[#D93344] text-white shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -816,7 +817,7 @@ export default function AdminDashboardPage() {
 
           <button
             onClick={() => setActiveTab('audit')}
-            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 {formatCurrency(
               activeTab === 'audit'
                 ? 'bg-[#D93344] text-white shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -828,7 +829,7 @@ export default function AdminDashboardPage() {
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 ${
+            className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center space-x-2 {formatCurrency(
               activeTab === 'settings'
                 ? 'bg-[#D93344] text-white shadow-md'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -1058,7 +1059,7 @@ export default function AdminDashboardPage() {
                     { role: 'RECEPTIONIST', count: staffCounts.receptionists, color: 'bg-cyan-100', icon: Building2 },
                   ].map((staff) => (
                     <div key={staff.role} className="text-center">
-                      <div className={`w-full aspect-square rounded-lg ${staff.color} flex items-center justify-center mb-1 relative`}>
+                      <div className={`w-full aspect-square rounded-lg {formatCurrency(staff.color} flex items-center justify-center mb-1 relative`}>
                         <staff.icon className="h-6 w-6 text-gray-700" />
                         <span className="absolute -top-1 -right-1 bg-[#D93344] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                           {staff.count}
@@ -1076,7 +1077,7 @@ export default function AdminDashboardPage() {
                   <div key={dept.name} className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-gray-900 text-sm">{dept.name}</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full {formatCurrency(
                         dept.status === 'High Load' ? 'bg-amber-100 text-amber-800' : dept.status === 'Moderate' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
                       }`}>
                         {dept.status}
@@ -1086,8 +1087,8 @@ export default function AdminDashboardPage() {
                       <div className="flex-1 mr-3">
                         <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                           <div
-                            className={`h-3 rounded-full bg-gradient-to-r ${dept.color} transition-all duration-700`}
-                            style={{ width: `${dept.load}%` }}
+                            className={`h-3 rounded-full bg-gradient-to-r {formatCurrency(dept.color} transition-all duration-700`}
+                            style={{ width: `{formatCurrency(dept.load}%` }}
                           />
                         </div>
                       </div>
@@ -1095,7 +1096,7 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-500">Staff: {dept.activeStaff}</span>
-                      <span className={`font-medium ${
+                      <span className={`font-medium {formatCurrency(
                         dept.load > 80 ? 'text-amber-600' : dept.load > 60 ? 'text-yellow-600' : 'text-emerald-600'
                       }`}>
                         {dept.load > 80 ? 'Overloaded' : dept.load > 60 ? 'Moderate' : 'Optimal'}
@@ -1204,14 +1205,14 @@ export default function AdminDashboardPage() {
               <button
                 key={chip.id}
                 onClick={() => setStaffRoleFilter(chip.id as RoleFilter)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 border ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 border {formatCurrency(
                   staffRoleFilter === chip.id
                     ? 'bg-[#D93344] text-white border-[#D93344] shadow-sm'
                     : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 <span>{chip.label}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                <span className={`px-2 py-0.5 rounded-full text-xs {formatCurrency(
                   staffRoleFilter === chip.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
                 }`}>
                   {chip.count}
@@ -1245,19 +1246,19 @@ export default function AdminDashboardPage() {
               <div className="flex items-center bg-gray-100 rounded-xl p-1 text-xs font-semibold text-gray-700">
                 <button
                   onClick={() => setStaffStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${staffStatusFilter === 'all' ? 'bg-white shadow text-[#D93344]' : 'hover:text-gray-900'}`}
+                  className={`px-3 py-1.5 rounded-lg transition-all {formatCurrency(staffStatusFilter === 'all' ? 'bg-white shadow text-[#D93344]' : 'hover:text-gray-900'}`}
                 >
                   All Status ({staffCounts.total})
                 </button>
                 <button
                   onClick={() => setStaffStatusFilter('active')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${staffStatusFilter === 'active' ? 'bg-white shadow text-emerald-700' : 'hover:text-gray-900'}`}
+                  className={`px-3 py-1.5 rounded-lg transition-all {formatCurrency(staffStatusFilter === 'active' ? 'bg-white shadow text-emerald-700' : 'hover:text-gray-900'}`}
                 >
                   Active ({staffCounts.active})
                 </button>
                 <button
                   onClick={() => setStaffStatusFilter('inactive')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${staffStatusFilter === 'inactive' ? 'bg-white shadow text-amber-700' : 'hover:text-gray-900'}`}
+                  className={`px-3 py-1.5 rounded-lg transition-all {formatCurrency(staffStatusFilter === 'inactive' ? 'bg-white shadow text-amber-700' : 'hover:text-gray-900'}`}
                 >
                   Inactive ({staffCounts.inactive})
                 </button>
@@ -1294,7 +1295,7 @@ export default function AdminDashboardPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-1">No staff members found</h3>
                 <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
                   {staffSearch || staffRoleFilter !== 'ALL' || staffStatusFilter !== 'all'
-                    ? `No staff match your current search "${staffSearch || staffRoleFilter}". Try resetting your filters.`
+                    ? `No staff match your current search "{formatCurrency(staffSearch || staffRoleFilter}". Try resetting your filters.`
                     : 'No staff members are registered in the system yet. Get started by adding your first staff member.'}
                 </p>
                 <div className="flex items-center justify-center space-x-3">
@@ -1406,7 +1407,7 @@ export default function AdminDashboardPage() {
                             {/* Toggle Active Button */}
                             <button
                               onClick={() => handleToggleStaffStatus(member)}
-                              className={`p-2 rounded-lg transition-colors ${
+                              className={`p-2 rounded-lg transition-colors {formatCurrency(
                                 member.isActive
                                   ? 'text-amber-600 hover:bg-amber-50'
                                   : 'text-emerald-600 hover:bg-emerald-50'
@@ -1489,7 +1490,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center bg-gray-100 rounded-xl p-1 text-xs font-semibold text-gray-700">
               <button
                 onClick={() => setPatientFilterTab('active')}
-                className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-1.5 ${
+                className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-1.5 {formatCurrency(
                   patientFilterTab === 'active' ? 'bg-white shadow text-emerald-800' : 'hover:text-gray-900'
                 }`}
               >
@@ -1499,7 +1500,7 @@ export default function AdminDashboardPage() {
 
               <button
                 onClick={() => setPatientFilterTab('archived')}
-                className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-1.5 ${
+                className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-1.5 {formatCurrency(
                   patientFilterTab === 'archived' ? 'bg-white shadow text-amber-800' : 'hover:text-gray-900'
                 }`}
               >
@@ -1509,7 +1510,7 @@ export default function AdminDashboardPage() {
 
               <button
                 onClick={() => setPatientFilterTab('all')}
-                className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-1.5 ${
+                className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-1.5 {formatCurrency(
                   patientFilterTab === 'all' ? 'bg-white shadow text-[#D93344]' : 'hover:text-gray-900'
                 }`}
               >
@@ -1554,7 +1555,7 @@ export default function AdminDashboardPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-1">No patient records found</h3>
                 <p className="text-gray-500 text-sm max-w-md mx-auto mb-4">
                   {patientSearch
-                    ? `No patients match "${patientSearch}" under ${patientFilterTab} records.`
+                    ? `No patients match "{formatCurrency(patientSearch}" under {formatCurrency(patientFilterTab} records.`
                     : patientFilterTab === 'archived'
                     ? 'There are currently no archived patients in the system.'
                     : 'No patients registered in the clinic yet.'}
@@ -1586,7 +1587,7 @@ export default function AdminDashboardPage() {
                       <tr key={patient.id} className="hover:bg-red-50/30 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-3">
-                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm ${
+                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm {formatCurrency(
                               patient.isArchived
                                 ? 'bg-gradient-to-br from-gray-400 to-gray-600'
                                 : 'bg-gradient-to-br from-teal-500 to-emerald-600'
@@ -1666,7 +1667,7 @@ export default function AdminDashboardPage() {
 
                             {/* View Profile */}
                             <Link
-                              href={`/dashboard/patients/${patient.id}`}
+                              href={`/dashboard/patients/{formatCurrency(patient.id}`}
                               className="p-1.5 text-gray-500 hover:text-[#D93344] hover:bg-red-50 rounded-lg transition-colors"
                               title="View Patient Record"
                             >
@@ -1704,7 +1705,7 @@ export default function AdminDashboardPage() {
                 <button
                   key={cat}
                   onClick={() => setAuditFilter(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all {formatCurrency(
                     auditFilter === cat
                       ? 'bg-[#D93344] text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1728,7 +1729,7 @@ export default function AdminDashboardPage() {
                         <p className="font-bold text-gray-900">{log.action}</p>
                         <p className="text-gray-500 text-[11px] mt-0.5">
                           Actor: {log.actorRole} • Entity: {log.entityType}
-                          {log.fieldName && ` • Field: ${log.fieldName}`}
+                          {log.fieldName && ` • Field: {formatCurrency(log.fieldName}`}
                         </p>
                       </div>
                     </div>
@@ -1767,7 +1768,7 @@ export default function AdminDashboardPage() {
                 onClick={fetchAppointments}
                 className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors flex items-center space-x-2"
               >
-                <RefreshCw className={`h-4 w-4 ${appointmentsLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 {formatCurrency(appointmentsLoading ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
               </button>
             </div>
@@ -1780,7 +1781,7 @@ export default function AdminDashboardPage() {
                 <button
                   key={status}
                   onClick={() => setAppointmentStatusFilter(status)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors {formatCurrency(
                     appointmentStatusFilter === status
                       ? 'bg-[#D93344] text-white shadow-sm'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1827,7 +1828,7 @@ export default function AdminDashboardPage() {
                         <tr key={apt.id} className="hover:bg-red-50/30 transition-colors">
                           <td className="px-6 py-4">
                             <div className="font-semibold text-gray-900">
-                              {apt.patient ? `${apt.patient.firstName} ${apt.patient.lastName}` : 'Patient'}
+                              {apt.patient ? `{formatCurrency(apt.patient.firstName} {formatCurrency(apt.patient.lastName}` : 'Patient'}
                             </div>
                             <div className="text-xs text-gray-500 font-mono">
                               MRN: {apt.patient?.mrn || 'N/A'}
@@ -1853,7 +1854,7 @@ export default function AdminDashboardPage() {
                             {apt.reason || apt.type || 'Consultation'}
                           </td>
                           <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {formatCurrency(
                               apt.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
                               apt.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
                               apt.status === 'CANCELLED' ? 'bg-red-100 text-red-800 border border-red-200' :
@@ -1894,7 +1895,7 @@ export default function AdminDashboardPage() {
               }}
               className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors flex items-center space-x-2"
             >
-              <RefreshCw className={`h-4 w-4 ${invoicesLoading || feeConfigsLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 {formatCurrency(invoicesLoading || feeConfigsLoading ? 'animate-spin' : ''}`} />
               <span>Refresh Ledger</span>
             </button>
           </div>
@@ -1946,7 +1947,7 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
               <p className="text-2xl font-extrabold text-gray-900">
-                ${adminInvoices.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + (Number(curr.total) || 0), 0).toFixed(2)}
+                {formatCurrency(adminInvoices.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + (Number(curr.total) || 0), 0).toFixed(2)}
               </p>
               <span className="text-xs text-gray-500 mt-1 block">Settled cash & cards</span>
             </div>
@@ -1975,7 +1976,7 @@ export default function AdminDashboardPage() {
                     {editingFeeType === fee.feeType ? (
                       <div className="flex items-center space-x-2">
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">ETB</span>
                           <input
                             type="number"
                             min="0"
@@ -2000,7 +2001,7 @@ export default function AdminDashboardPage() {
                       </div>
                     ) : (
                       <div className="flex items-center space-x-4">
-                        <span className="text-2xl font-black text-gray-900">${Number(fee.amount).toFixed(2)}</span>
+                        <span className="text-2xl font-black text-gray-900">{formatCurrency(Number(fee.amount).toFixed(2)}</span>
                         <button
                           onClick={() => {
                             setEditingFeeType(fee.feeType);
@@ -2051,9 +2052,9 @@ export default function AdminDashboardPage() {
                         <td className="px-6 py-3 font-mono font-bold text-gray-900">{inv.invoiceNo}</td>
                         <td className="px-6 py-3 text-gray-800">{inv.patient?.firstName} {inv.patient?.lastName}</td>
                         <td className="px-6 py-3 text-gray-500 text-xs">{new Date(inv.createdAt).toLocaleDateString()}</td>
-                        <td className="px-6 py-3 font-bold text-gray-900">${Number(inv.total).toFixed(2)}</td>
+                        <td className="px-6 py-3 font-bold text-gray-900">{formatCurrency(Number(inv.total).toFixed(2)}</td>
                         <td className="px-6 py-3">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold {formatCurrency(
                             inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                           }`}>
                             {inv.status}

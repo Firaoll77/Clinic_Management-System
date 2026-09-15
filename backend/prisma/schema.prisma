@@ -86,8 +86,26 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   staffProfile StaffProfile?
+  refreshTokens RefreshToken[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id           String   @id @default(uuid())
+  token        String   @unique
+  userId       String   @map("user_id")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  revokedAt    DateTime? @map("revoked_at")
+  userAgent    String?  @map("user_agent")
+  ipAddress    String?  @map("ip_address")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+  @@index([userId])
+  @@index([token])
 }
 
 model StaffProfile {
@@ -234,7 +252,6 @@ model Encounter {
   patient       Patient             @relation(fields: [patientId], references: [id])
   vitals        Vital[]
   labOrders     LabOrder[]
-  attachments   Attachment[]
   invoices      Invoice[]
   nurseAssignments NurseAssignment[]
   doctorAssignments DoctorAssignment[]
@@ -479,21 +496,6 @@ model EncounterFee {
   @@map("encounter_fees")
   @@index([encounterId])
   @@index([feeType])
-}
-
-model Attachment {
-  id         String   @id @default(uuid())
-  encounterId String  @map("encounter_id")
-  fileName   String   @map("file_name")
-  mimeType   String   @map("mime_type")
-  sizeBytes  Int      @map("size_bytes")
-  storagePath String  @map("storage_path")
-  uploadedBy String   @map("uploaded_by")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  encounter Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
-
-  @@map("attachments")
 }
 
 model AuditLog {

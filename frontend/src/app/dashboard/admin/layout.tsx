@@ -25,7 +25,7 @@ export default function AdminDashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, loading, logout, user } = useAuth();
+  const { logout, user } = useAuth();
   const { activeTab, setActiveTab, role, setRole } = useNavigation();
   const { currentStep, setCurrentStep, setWorkflowSteps } = useWorkflow();
   const router = useRouter();
@@ -40,18 +40,16 @@ export default function AdminDashboardLayout({
     setWorkflowSteps(['overview', 'staff', 'patients', 'appointments', 'billing', 'audit', 'settings']);
   }, [setWorkflowSteps]);
 
+  // Role verification - redirect if wrong role
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
-    }
-    if (!loading && isAuthenticated && user?.role !== 'ADMIN') {
+    if (user && user.role !== 'ADMIN') {
       router.push('/dashboard');
     }
-  }, [isAuthenticated, loading, router, user?.role]);
+  }, [user, router]);
 
-  if (loading) {
+  if (!user || user.role !== 'ADMIN') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-medical">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-rose-50 to-pink-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D93344] mx-auto mb-4"></div>
           <div className="text-xl text-gray-600">Loading...</div>
@@ -60,11 +58,8 @@ export default function AdminDashboardLayout({
     );
   }
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') {
-    return null;
-  }
-
   return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 flex flex-col">
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 flex flex-col">
       {/* Header */}
       <header className="bg-[#D93344] shadow-lg sticky top-0 z-50">

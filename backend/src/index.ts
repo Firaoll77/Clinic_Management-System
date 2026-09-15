@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import pino from 'pino';
 import pinoPretty from 'pino-pretty';
+import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import patientRoutes from './routes/patients';
@@ -22,6 +23,7 @@ import auditRoutes from './routes/audit';
 import { setupPrismaMiddleware } from './lib/prismaMiddleware';
 import { prisma } from './lib/prisma';
 import { checkAndInitDatabase, seedDefaultData } from './lib/dbInit';
+import { archiveInactivePatients } from './lib/archiver';
 
 dotenv.config();
 
@@ -79,6 +81,7 @@ const corsOptions: cors.CorsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -113,8 +116,6 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/encounters', encounterRoutes);
 app.use('/api/lab', labRoutes);
-app.use('/api/lab-results', labRoutes);
-app.use('/api/lab-orders', labRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/fees', feeRoutes);
@@ -134,6 +135,7 @@ app.get('/api', (req, res) => {
       medical: '/api/medical',
       dashboard: '/api/dashboard',
       billing: '/api/billing',
+      attachments: '/api/attachments',
       health: '/api/health',
       seed: '/api/seed',
     },
@@ -174,6 +176,23 @@ app.get('/api/seed', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error?.message || 'Seed failed',
+    });
+  }
+});
+
+// Manual archive endpoint (Admin only, for testing)
+app.post('/api/archive/patients', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const result = await archiveInactivePatients();
+    res.json({
+      success: true,
+      message: 'Patient archiving completed',
+      ...result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error?.message || 'Archive failed',
     });
   }
 });

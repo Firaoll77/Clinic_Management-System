@@ -144,28 +144,19 @@ function getBaseUrl(): string {
 const BASE_URL = getBaseUrl();
 
 class ApiClient {
-  private token: string | null = null;
-  private refreshPromise: Promise<string | null> | null = null;
+  private refreshPromise: Promise<boolean> | null = null;
 
-  constructor() {
-    if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('accessToken');
-    }
-  }
-
+  // These methods are kept for backward compatibility but do nothing
+  // since we now use HTTP-only cookies
   setToken(token: string) {
-    this.token = token;
+    // No-op: tokens are stored in cookies by the backend
   }
 
   clearToken() {
-    this.token = null;
+    // No-op: cookies are cleared by the backend on logout
   }
 
-  private async refreshAccessToken(): Promise<string | null> {
-    if (typeof window === 'undefined') return null;
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return null;
-
+  private async refreshAccessToken(): Promise<boolean> {
     if (this.refreshPromise) {
       return this.refreshPromise;
     }
@@ -175,32 +166,17 @@ class ApiClient {
         const res = await fetch(`${BASE_URL}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
+          credentials: 'include', // Important: include cookies
         });
 
         if (!res.ok) {
-          this.clearToken();
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          return null;
+          return false;
         }
 
-        const data = await res.json();
-        const newAccessToken = data?.tokens?.accessToken;
-        const newRefreshToken = data?.tokens?.refreshToken;
-
-        if (newAccessToken) {
-          this.setToken(newAccessToken);
-          localStorage.setItem('accessToken', newAccessToken);
-          if (newRefreshToken) {
-            localStorage.setItem('refreshToken', newRefreshToken);
-          }
-          return newAccessToken;
-        }
-        return null;
+        return true;
       } catch (err) {
         console.error('Failed to silently refresh token:', err);
-        return null;
+        return false;
       } finally {
         this.refreshPromise = null;
       }
@@ -215,22 +191,15 @@ class ApiClient {
     data?: any,
     isRetry = false
   ): Promise<{ data: T | null; error: string | null }> {
-    if (typeof window !== 'undefined' && !this.token) {
-      this.token = localStorage.getItem('accessToken');
-    }
-
     const url = `${BASE_URL}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-
     const config: RequestInit = {
       method,
       headers,
+      credentials: 'include', // Important: include cookies in all requests
     };
 
     if (data !== undefined) {
@@ -247,8 +216,8 @@ class ApiClient {
         !endpoint.includes('/auth/login') &&
         !endpoint.includes('/auth/refresh')
       ) {
-        const newToken = await this.refreshAccessToken();
-        if (newToken) {
+        const refreshed = await this.refreshAccessToken();
+        if (refreshed) {
           return this.request<T>(method, endpoint, data, true);
         }
       }
@@ -308,6 +277,64 @@ class ApiClient {
 
   async delete<T>(endpoint: string) {
     return this.request<T>('DELETE', endpoint);
+  }
+
+  async upload<T>(endpoint: string, formData: FormData, headers?: Record<string, string>) {
+    const url = `${BASE_URL}${endpoint}`;
+    const requestHeaders: Record<string, string> = {};
+
+    // Merge custom headers (but don't set Content-Type for FormData)
+    if (headers) {
+      Object.keys(headers).forEach(key => {
+        if (key.toLowerCase() !== 'content-type') {
+          requestHeaders[key] = headers[key];
+        }
+      });
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: requestHeaders,
+        body: formData,
+        credentials: 'include', // Important: include cookies
+      });
+
+      // Handle 401 Unauthorized
+      if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/refresh')) {
+        const refreshed = await this.refreshAccessToken();
+        if (refreshed) {
+          const retryResponse = await fetch(url, {
+            method: 'POST',
+            headers: requestHeaders,
+            body: formData,
+            credentials: 'include',
+          });
+
+          if (!retryResponse.ok) {
+            const errorData = await retryResponse.json();
+            return { data: null, error: errorData?.message || errorData?.error || 'Upload failed' };
+          }
+
+          const data = await retryResponse.json();
+          return { data: data as T, error: null };
+        }
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { data: null, error: errorData?.message || errorData?.error || 'Upload failed' };
+      }
+
+      const data = await response.json();
+      return { data: data as T, error: null };
+    } catch (error: any) {
+      console.error(`File upload error for ${url}:`, error);
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Network error occurred during upload',
+      };
+    }
   }
 }
 

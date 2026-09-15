@@ -11,7 +11,8 @@ export class EncounterService {
    */
   static async createEncounter(encounterData: {
     patientId: string;
-    doctorId: string;
+    doctorId?: string;
+    nurseId?: string;
     appointmentId?: string;
     visitStatus: string;
     chiefComplaint: string;
@@ -19,10 +20,17 @@ export class EncounterService {
     try {
       const data: any = {
         patientId: encounterData.patientId,
-        doctorId: encounterData.doctorId,
         visitStatus: encounterData.visitStatus as any,
         chiefComplaint: encounterData.chiefComplaint
       };
+
+      if (encounterData.doctorId) {
+        data.doctorId = encounterData.doctorId;
+      }
+
+      if (encounterData.nurseId) {
+        data.nurseId = encounterData.nurseId;
+      }
 
       if (encounterData.appointmentId) {
         data.appointmentId = encounterData.appointmentId;

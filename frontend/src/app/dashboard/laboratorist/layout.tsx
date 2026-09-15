@@ -23,7 +23,7 @@ export default function LaboratoristDashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, loading, logout, user } = useAuth();
+  const { logout, user } = useAuth();
   const { activeTab, setActiveTab, role, setRole } = useNavigation();
   const { currentStep, setCurrentStep, completedSteps, canAccessStep, getNextStep, getPreviousStep, setWorkflowSteps } = useWorkflow();
   const router = useRouter();
@@ -38,18 +38,16 @@ export default function LaboratoristDashboardLayout({
     setWorkflowSteps(['pending', 'in-progress', 'completed']);
   }, [setWorkflowSteps]);
 
+  // Role verification - redirect if wrong role
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/login');
-    }
-    if (!loading && isAuthenticated && user?.role !== 'LAB_TECH') {
+    if (user && user.role !== 'LAB_TECH') {
       router.push('/dashboard');
     }
-  }, [isAuthenticated, loading, router, user?.role]);
+  }, [user, router]);
 
-  if (loading) {
+  if (!user || user.role !== 'LAB_TECH') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-medical">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
           <div className="text-xl text-gray-600">Loading...</div>
@@ -58,11 +56,8 @@ export default function LaboratoristDashboardLayout({
     );
   }
 
-  if (!isAuthenticated || user?.role !== 'LAB_TECH') {
-    return null;
-  }
-
   return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col">
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col">
       {/* Header */}
       <header className="bg-gradient-to-r from-orange-600 to-amber-600 shadow-lg sticky top-0 z-50">
