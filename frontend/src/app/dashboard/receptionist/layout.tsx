@@ -59,7 +59,6 @@ export default function ReceptionistDashboardLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex flex-col">
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex flex-col">
       {/* Header */}
       <header className="bg-gradient-to-r from-green-600 to-emerald-600 shadow-lg sticky top-0 z-50">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">

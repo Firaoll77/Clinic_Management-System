@@ -88,7 +88,7 @@ type RoleFilter = 'ALL' | 'DOCTOR' | 'NURSE' | 'ACCOUNTANT' | 'LAB_TECH' | 'RECE
 type StatusFilter = 'all' | 'active' | 'inactive';
 type PatientFilter = 'active' | 'archived' | 'all';
 
-export default function AdminDashboardPage() {formatCurrency(
+export default function AdminDashboardPage() {
   const { user } = useAuth();
   const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
   const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();

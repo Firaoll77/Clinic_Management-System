@@ -66,7 +66,6 @@ export default function DoctorDashboardLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 flex flex-col">
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 flex flex-col">
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-600 to-cyan-600 shadow-lg sticky top-0 z-50">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">

@@ -58,7 +58,6 @@ export default function LaboratoristDashboardLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col">
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col">
       {/* Header */}
       <header className="bg-gradient-to-r from-orange-600 to-amber-600 shadow-lg sticky top-0 z-50">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
