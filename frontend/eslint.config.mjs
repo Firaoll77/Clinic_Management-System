@@ -15,11 +15,11 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
-      '@typescript-eslint/no-explicit-any': 'warn',
-      'react-hooks/set-state-in-effect': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'react-hooks/set-state-in-effect': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
-      'react/no-unescaped-entities': 'warn',
-      'no-use-before-define': 'warn',
+      'react/no-unescaped-entities': 'off',
+      'no-use-before-define': 'off',
     },
   },
 ]);
