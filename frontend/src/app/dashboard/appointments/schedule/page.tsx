@@ -14,13 +14,30 @@ import {
   CheckCircle
 } from 'lucide-react';
 
+interface Patient {
+  id: string;
+  firstName: string;
+  lastName: string;
+  mrn: string;
+}
+
+interface Doctor {
+  id: string;
+  fullName: string;
+  specialization: string;
+}
+
+interface TimeSlot {
+  start: string;
+}
+
 export default function ScheduleAppointmentPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [patients, setPatients] = useState<any[]>([]);
-  const [doctors, setDoctors] = useState<any[]>([]);
-  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [formData, setFormData] = useState({
     patientId: '',
     doctorId: '',
@@ -41,7 +58,7 @@ export default function ScheduleAppointmentPage() {
   }, [formData.doctorId, formData.scheduledAt]);
 
   const fetchPatients = async () => {
-    const response = await apiClient.get<{ patients: any[] }>('/patients/search?query=');
+    const response = await apiClient.get<{ patients: Patient[] }>('/patients/search?query=');
     if (response.data) {
       setPatients(response.data.patients || []);
     }
@@ -59,7 +76,7 @@ export default function ScheduleAppointmentPage() {
   };
 
   const fetchAvailableSlots = async () => {
-    const response = await apiClient.get<{ availableSlots: any[] }>(
+    const response = await apiClient.get<{ availableSlots: TimeSlot[] }>(
       `/appointments/available-slots/${formData.doctorId}?date=${formData.scheduledAt}`
     );
     if (response.data) {

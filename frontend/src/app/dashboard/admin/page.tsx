@@ -116,6 +116,11 @@ interface AuditLog {
   user: string;
   type: string;
   status: string;
+  createdAt?: string;
+  fieldName?: string;
+  entityType?: string;
+  actorRole?: string;
+  [key: string]: unknown;
 }
 
 export default function AdminDashboardPage() {
@@ -127,7 +132,7 @@ export default function AdminDashboardPage() {
   const activeTab: TabType = validTabs.includes(currentStep as TabType) ? (currentStep as TabType) : 'overview';
 
   const setActiveTab = (tab: TabType) => {
-    setCurrentStep(tab as string);
+    setCurrentStep(tab as never);
   };
 
   // Appointments State
@@ -136,7 +141,7 @@ export default function AdminDashboardPage() {
   const [appointmentStatusFilter, setAppointmentStatusFilter] = useState('ALL');
 
   // Billing & Fees State
-  const [feeConfigs, setFeeConfigs] = useState<any[]>([
+  const [feeConfigs, setFeeConfigs] = useState<FeeConfig[]>([
     { feeType: 'CONSULTATION', name: 'General Doctor Consultation', description: 'Standard physician check-up fee', amount: 50 },
     { feeType: 'URGENT_CONSULTATION', name: 'Urgent / Priority Consultation', description: 'Immediate doctor review fee', amount: 80 },
     { feeType: 'CBC_LAB_TEST', name: 'Complete Blood Count (CBC)', description: 'Full hematology panel and smear', amount: 45 },
@@ -429,7 +434,7 @@ export default function AdminDashboardPage() {
       showToast(`Fee for ${name} updated to $${amount}`, 'success');
       setEditingFeeType(null);
       fetchFeeConfigs();
-    } catch (err: any) {
+    } catch (err: unknown) {
       showToast('Failed to update fee configuration', 'error');
     }
   };
@@ -543,8 +548,8 @@ export default function AdminDashboardPage() {
       ]);
 
       fetchStaff();
-    } catch (err: any) {
-      setFormError(err.message || 'Failed to create staff member.');
+    } catch (err: unknown) {
+      setFormError((err as Error).message || 'Failed to create staff member.');
     } finally {
       setFormSubmitting(false);
     }
@@ -599,8 +604,8 @@ export default function AdminDashboardPage() {
       setIsEditStaffOpen(false);
       setSelectedStaff(null);
       fetchStaff();
-    } catch (err: any) {
-      setFormError(err.message || 'Failed to update staff member.');
+    } catch (err: unknown) {
+      setFormError((err as Error).message || 'Failed to update staff member.');
     } finally {
       setFormSubmitting(false);
     }
@@ -2283,7 +2288,7 @@ export default function AdminDashboardPage() {
                     </label>
                     <select
                       value={staffForm.role}
-                      onChange={e => setStaffForm({ ...staffForm, role: e.target.value as any })}
+                      onChange={e => setStaffForm({ ...staffForm, role: e.target.value as UserAccount['role'] })}
                       className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm text-gray-900 font-medium"
                     >
                       <option value="DOCTOR">Doctor (Consultations & Prescriptions)</option>
@@ -2450,7 +2455,7 @@ export default function AdminDashboardPage() {
                     <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Assigned Role</label>
                     <select
                       value={staffForm.role}
-                      onChange={e => setStaffForm({ ...staffForm, role: e.target.value as any })}
+                      onChange={e => setStaffForm({ ...staffForm, role: e.target.value as UserAccount['role'] })}
                       className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900 font-medium"
                     >
                       <option value="DOCTOR">Doctor</option>
