@@ -84,6 +84,23 @@ type PatientFilter = 'active' | 'archived' | 'all';
 
 interface Appointment {
   id: string;
+  dateTime?: string;
+  createdAt: string;
+  patient?: {
+    firstName?: string;
+    lastName?: string;
+    mrn?: string;
+    [key: string]: unknown;
+  };
+  doctor?: {
+    username?: string;
+    staffProfile?: {
+      fullName?: string;
+      specialization?: string;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
 
@@ -116,9 +133,9 @@ interface AuditLog {
   user: string;
   type: string;
   status: string;
-  createdAt?: string;
+  createdAt: string;
   fieldName?: string;
-  entityType?: string;
+  entityType: string;
   actorRole?: string;
   [key: string]: unknown;
 }
@@ -1754,7 +1771,7 @@ export default function AdminDashboardPage() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-6">
             <div className="space-y-3 font-mono text-xs">
               {auditLogs
-                .filter(log => auditFilter === 'ALL' || log.entityType.toLowerCase() === auditFilter)
+                .filter(log => auditFilter === 'ALL' || log.entityType?.toLowerCase() === auditFilter)
                 .map(log => (
                   <div key={log.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 hover:bg-red-50/30 transition-colors flex items-center justify-between gap-4">
                     <div className="flex items-center space-x-3">
