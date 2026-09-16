@@ -71,3 +71,5 @@ After adding the Render deploy hook secret:
 2. Go to GitHub Actions tab to see the workflow running
 3. Check Render dashboard to see the deployment starting
 4. Verify both frontend and backend are updated
+
+Last tested: 2026-09-16
