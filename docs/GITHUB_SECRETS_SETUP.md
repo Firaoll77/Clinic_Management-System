@@ -72,4 +72,4 @@ After adding the Render deploy hook secret:
 3. Check Render dashboard to see the deployment starting
 4. Verify both frontend and backend are updated
 
-Last tested: 2026-09-16
+Last tested: 2026-09-16 - Fixed validation workflow conflict

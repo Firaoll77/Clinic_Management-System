@@ -1,10 +1,7 @@
 name: Validate Code
 
 on:
-  push:
-    branches: [main, master, develop]
-  pull_request:
-    branches: [main, master, develop]
+  workflow_dispatch:  # Only run manually, not on push
 
 jobs:
   validate:
