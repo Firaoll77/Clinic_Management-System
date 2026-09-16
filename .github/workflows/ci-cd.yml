@@ -186,8 +186,4 @@ jobs:
         run: cd backend && npm run build
 
       - name: Trigger Render Deployment
-        run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
