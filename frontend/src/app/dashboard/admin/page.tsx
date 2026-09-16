@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -90,18 +91,18 @@ interface Appointment {
     firstName?: string;
     lastName?: string;
     mrn?: string;
-    [key: string]: unknown;
+    [key: string]: any;
   };
   doctor?: {
     username?: string;
     staffProfile?: {
       fullName?: string;
       specialization?: string;
-      [key: string]: unknown;
+      [key: string]: any;
     };
-    [key: string]: unknown;
+    [key: string]: any;
   };
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 interface FeeConfig {
@@ -137,7 +138,7 @@ interface AuditLog {
   fieldName?: string;
   entityType: string;
   actorRole?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export default function AdminDashboardPage() {
@@ -559,7 +560,9 @@ export default function AdminDashboardPage() {
           action: `Added new staff: ${staffForm.fullName} (${staffForm.role})`,
           user: user?.email || 'admin@clinic.com',
           type: 'staff',
-          status: 'success'
+          status: 'success',
+          createdAt: new Date().toISOString(),
+          entityType: 'STAFF'
         },
         ...prev
       ]);
@@ -691,7 +694,9 @@ export default function AdminDashboardPage() {
           action: `Archived patient ${selectedPatient.firstName} ${selectedPatient.lastName} (${selectedPatient.mrn})`,
           user: user?.email || 'admin@clinic.com',
           type: 'patient',
-          status: 'warning'
+          status: 'warning',
+          createdAt: new Date().toISOString(),
+          entityType: 'PATIENT'
         },
         ...prev
       ]);
@@ -727,7 +732,9 @@ export default function AdminDashboardPage() {
           action: `Restored patient ${selectedPatient.firstName} ${selectedPatient.lastName} (${selectedPatient.mrn})`,
           user: user?.email || 'admin@clinic.com',
           type: 'patient',
-          status: 'success'
+          status: 'success',
+          createdAt: new Date().toISOString(),
+          entityType: 'PATIENT'
         },
         ...prev
       ]);
