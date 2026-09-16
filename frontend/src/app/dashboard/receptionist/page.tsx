@@ -968,52 +968,6 @@ export default function ReceptionistDashboardPage() {
         </div>
       )}
 
-      {currentStep === 'appointments' && (
-        <div className="w-full bg-gray-50 flex flex-col p-6 overflow-y-auto">
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 flex items-center">
-                  <Stethoscope className="h-5 w-5 mr-2 text-green-600" />
-                  Available Doctors
-                </h3>
-                <span className="text-sm text-gray-500">{doctors.length} doctors present</span>
-              </div>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {doctorsLoading ? (
-                <div className="p-8 text-center text-gray-500">Loading doctors...</div>
-              ) : doctors.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">No doctors available</div>
-              ) : (
-                doctors.map((doctor) => (
-                  <div key={doctor.id} className="p-4 hover:bg-gray-50">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-full ${doctor.isAvailable ? 'bg-green-100' : 'bg-red-100'}`}>
-                          <Stethoscope className={`h-4 w-4 ${doctor.isAvailable ? 'text-green-600' : 'text-red-600'}`} />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{doctor.name}</p>
-                          <p className="text-sm text-gray-600">{doctor.specialization}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs ${doctor.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                          {doctor.isAvailable ? 'Available' : 'Busy'}
-                        </span>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {doctor.currentPatients}/{doctor.maxPatients} patients
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {currentStep === 'billing' && (
         <div className="w-full bg-gray-50 flex flex-col p-6 overflow-y-auto">

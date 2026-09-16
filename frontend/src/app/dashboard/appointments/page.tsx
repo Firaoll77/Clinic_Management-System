@@ -148,58 +148,9 @@ export default function AppointmentsPage() {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="space-y-4"
         >
-          {appointments.map((appointment, index) => (
-            <motion.div
-              key={appointment.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-              className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow"
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-gradient-to-br from-blue-400 to-blue-600 p-3 rounded-lg">
-                      <Calendar className="h-6 w-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {appointment.patient.firstName} {appointment.patient.lastName}
-                        </h3>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center ${getStatusColor(appointment.status)}`}>
-                          {getStatusIcon(appointment.status)}
-                          <span className="ml-1">{appointment.status}</span>
-                        </span>
-                      </div>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <div className="flex items-center space-x-2">
-                          <User className="h-4 w-4" />
-                          <span>{appointment.patient.mrn}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4" />
-                          <span>{new Date(appointment.scheduledAt).toLocaleString()}</span>
-                        </div>
-                        {appointment.reason && (
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium">Reason:</span>
-                            <span>{appointment.reason}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => router.push(`/dashboard/appointments/${appointment.id}`)}
-                    className="text-teal-600 hover:text-teal-900 transition-colors"
-                  >
-                    <ChevronRight className="h-6 w-6" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8 text-center">
+            <p className="text-gray-500">Appointment list view has been disabled.</p>
+          </div>
         </motion.div>
       )}
     </motion.div>

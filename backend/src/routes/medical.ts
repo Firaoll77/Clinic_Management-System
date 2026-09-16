@@ -473,7 +473,6 @@ router.get('/encounters/:id', authenticate, async (req: Request, res: Response) 
             },
           },
         },
-        attachments: true,
       },
     });
 

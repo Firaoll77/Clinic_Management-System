@@ -1,0 +1,169 @@
+openapi: 3.0.0
+info:
+  title: Clinic Management System API
+  description: Professional API documentation for the Clinic Management System, supporting walk-in clinics, role-based workflows, and automated billing.
+  version: 1.0.0
+  contact:
+    name: API Support
+servers:
+  - url: http://localhost:4000/api
+    description: Local Development Server
+  - url: https://your-clinic-app.onrender.com/api
+    description: Production Server (Render/Vercel)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate User
+      description: Authenticate user and receive JWT token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: doctor
+                password:
+                  type: string
+                  example: Doctor@123
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+        '401':
+          description: Invalid credentials
+
+  /patients/register:
+    post:
+      summary: Register Patient
+      description: Register a new patient with automatic MRN generation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                dob:
+                  type: string
+                  format: date
+                gender:
+                  type: string
+                  enum: [MALE, FEMALE, OTHER]
+                phone:
+                  type: string
+                email:
+                  type: string
+                nationalId:
+                  type: string
+                address:
+                  type: string
+                bloodGroup:
+                  type: string
+                emergencyContact:
+                  type: string
+      responses:
+        '201':
+          description: Patient registered successfully
+
+  /patients/search:
+    get:
+      summary: Search Patients
+      description: Search patients by name, phone, MRN, email, or national ID.
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          required: true
+          description: Search term
+      responses:
+        '200':
+          description: Successful search
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  patients:
+                    type: array
+                    items:
+                      type: object
+                  total:
+                    type: integer
+
+  /encounters:
+    post:
+      summary: Create Encounter
+      description: Create a new patient encounter.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                patientId:
+                  type: string
+                doctorId:
+                  type: string
+                visitStatus:
+                  type: string
+                chiefComplaint:
+                  type: string
+      responses:
+        '201':
+          description: Encounter created successfully
+
+  /lab/orders:
+    post:
+      summary: Create Lab Order
+      description: Create a new lab order.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                encounterId:
+                  type: string
+                patientId:
+                  type: string
+                doctorId:
+                  type: string
+                priority:
+                  type: string
+                  enum: [ROUTINE, URGENT, STAT]
+      responses:
+        '201':
+          description: Lab order created successfully

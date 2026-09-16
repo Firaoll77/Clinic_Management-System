@@ -421,7 +421,7 @@ router.get('/sessions', authenticate, async (req: Request, res: Response) => {
  */
 router.delete('/sessions/:id', authenticate, async (req: Request, res: Response) => {
   try {
-    const sessionId = req.params.id;
+    const sessionId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const userId = req.user?.userId;
 
     if (!userId) {

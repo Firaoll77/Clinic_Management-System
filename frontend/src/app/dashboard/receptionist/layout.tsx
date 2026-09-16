@@ -36,7 +36,7 @@ export default function ReceptionistDashboardLayout({
 
   // Initialize workflow steps for receptionist (for navigation tracking only)
   useEffect(() => {
-    setWorkflowSteps(['queue', 'registration', 'appointments', 'billing']);
+    setWorkflowSteps(['queue', 'registration', 'billing']);
     setWorkflowInitialized(true);
   }, [setWorkflowSteps]);
 
@@ -104,7 +104,6 @@ export default function ReceptionistDashboardLayout({
               {[
                 { id: 'queue' as const, label: 'Patient Queue', icon: Users },
                 { id: 'registration' as const, label: 'Registration', icon: UserPlus },
-                { id: 'appointments' as const, label: 'Appointments', icon: Calendar },
                 { id: 'billing' as const, label: 'Billing', icon: Receipt }
               ].map((step) => {
                 const isCurrent = currentStep === step.id;

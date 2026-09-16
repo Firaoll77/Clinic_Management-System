@@ -803,8 +803,8 @@ router.post('/:patientId/archive', authenticate, authorize('ADMIN'), async (req:
   try {
     const { patientId } = req.params;
     const patientIdValue = Array.isArray(patientId) ? patientId[0] : patientId;
-    const archivedBy = req.user?.userId;
-    const archivedByRole = req.user?.role;
+    const archivedBy = req.user?.userId || 'unknown';
+    const archivedByRole = req.user?.role || 'unknown';
 
     const archivedPatient = await manualArchivePatient(patientIdValue, archivedBy, archivedByRole);
 
@@ -829,8 +829,8 @@ router.post('/:patientId/reactivate', authenticate, authorize('ADMIN'), async (r
   try {
     const { patientId } = req.params;
     const patientIdValue = Array.isArray(patientId) ? patientId[0] : patientId;
-    const reactivatedBy = req.user?.userId;
-    const reactivatedByRole = req.user?.role;
+    const reactivatedBy = req.user?.userId || 'unknown';
+    const reactivatedByRole = req.user?.role || 'unknown';
 
     const reactivatedPatient = await reactivatePatient(patientIdValue, reactivatedBy, reactivatedByRole);
 

@@ -24,6 +24,7 @@ import { setupPrismaMiddleware } from './lib/prismaMiddleware';
 import { prisma } from './lib/prisma';
 import { checkAndInitDatabase, seedDefaultData } from './lib/dbInit';
 import { archiveInactivePatients } from './lib/archiver';
+import { authenticate, authorize } from './middleware/auth';
 
 dotenv.config();
 
@@ -181,7 +182,7 @@ app.get('/api/seed', async (req, res) => {
 });
 
 // Manual archive endpoint (Admin only, for testing)
-app.post('/api/archive/patients', authenticate, authorize('ADMIN'), async (req: Request, res: Response) => {
+app.post('/api/archive/patients', authenticate, authorize('ADMIN'), async (req: express.Request, res: express.Response) => {
   try {
     const result = await archiveInactivePatients();
     res.json({
