@@ -14,8 +14,8 @@ env:
   DATABASE_URL_SERVICE: postgresql://postgres:postgres@postgres:5432/clinic_test_db
 
 jobs:
-  lint:
-    name: Lint
+  lint-frontend:
+    name: Lint Frontend
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -35,6 +35,18 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm run build
 
+  lint-backend:
+    name: Lint Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Install backend dependencies
         run: cd backend && npm ci
 
@@ -53,8 +65,8 @@ jobs:
       - name: Build backend
         run: cd backend && npm run build
 
-  typecheck:
-    name: Type Check
+  typecheck-frontend:
+    name: Type Check Frontend
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -71,6 +83,18 @@ jobs:
       - name: Type check frontend
         run: cd frontend && npx tsc --noEmit || echo "Type errors detected - continuing"
 
+  typecheck-backend:
+    name: Type Check Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Install backend dependencies
         run: cd backend && npm ci
 
@@ -80,8 +104,26 @@ jobs:
       - name: Type check backend
         run: cd backend && npx tsc --noEmit || echo "Type errors detected - continuing"
 
-  test:
-    name: Test
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Run frontend tests
+        run: cd frontend && npm test || echo "Tests failed - continuing with deployment"
+
+  test-backend:
+    name: Test Backend
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -126,16 +168,10 @@ jobs:
           JWT_SECRET: test-secret-key
           JWT_REFRESH_SECRET: test-refresh-secret-key
 
-      - name: Install frontend dependencies
-        run: cd frontend && npm ci
-
-      - name: Run frontend tests
-        run: cd frontend && npm test || echo "Tests failed - continuing with deployment"
-
   deploy-frontend:
     name: Deploy Frontend to Vercel
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, test]
+    needs: [lint-frontend, typecheck-frontend, test-frontend]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     steps:
       - name: Checkout code
@@ -162,7 +198,7 @@ jobs:
   deploy-backend:
     name: Deploy Backend to Render
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, test]
+    needs: [lint-backend, typecheck-backend, test-backend]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     steps:
       - name: Checkout code
