@@ -1,11 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
 
+interface UpdateData {
+  endpoint: string;
+  data: unknown;
+  error: string | null;
+}
+
 interface RealTimeUpdateConfig {
   enabled: boolean;
   interval?: number;
   endpoints: string[];
-  onUpdate?: (data: any) => void;
+  onUpdate?: (data: UpdateData[]) => void;
 }
 
 export function useRealTimeUpdates(config: RealTimeUpdateConfig) {
@@ -41,7 +47,6 @@ export function useRealTimeUpdates(config: RealTimeUpdateConfig) {
 
   useEffect(() => {
     if (!config.enabled) {
-      setIsConnected(false);
       return;
     }
 
@@ -54,7 +59,8 @@ export function useRealTimeUpdates(config: RealTimeUpdateConfig) {
       clearInterval(interval);
       setIsConnected(false);
     };
-  }, [config.enabled, config.interval, fetchData]);
+     
+  }, [config.enabled, config.interval, config.endpoints, config.onUpdate, fetchData]);
 
   return {
     isConnected,

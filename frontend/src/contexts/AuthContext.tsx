@@ -16,12 +16,19 @@ interface User {
   };
 }
 
+interface Session {
+  id: string;
+  device: string;
+  lastActive: string;
+  createdAt: string;
+}
+
 interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
-  getSessions: () => Promise<any[]>;
+  getSessions: () => Promise<Session[]>;
   revokeSession: (sessionId: string) => Promise<boolean>;
   loading: boolean;
   isAuthenticated: boolean;
@@ -57,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const getSessions = useCallback(async () => {
     try {
-      const response = await apiClient.get<{ sessions: any[] }>('/auth/sessions');
+      const response = await apiClient.get<{ sessions: Session[] }>('/auth/sessions');
       return response.data?.sessions || [];
     } catch (error) {
       console.error('Get sessions error:', error);
@@ -106,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check authentication on mount by fetching user info
     // Cookies are automatically sent by the browser
     fetchUserInfo();
+     
   }, [fetchUserInfo]);
 
   const login = useCallback(async (username: string, password: string) => {

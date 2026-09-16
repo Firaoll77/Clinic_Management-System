@@ -148,7 +148,7 @@ class ApiClient {
 
   // These methods are kept for backward compatibility but do nothing
   // since we now use HTTP-only cookies
-  setToken(token: string) {
+  setToken(_token: string) {
     // No-op: tokens are stored in cookies by the backend
   }
 
@@ -188,7 +188,7 @@ class ApiClient {
   private async request<T>(
     method: 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT',
     endpoint: string,
-    data?: any,
+    data?: unknown,
     isRetry = false
   ): Promise<{ data: T | null; error: string | null }> {
     const url = `${BASE_URL}${endpoint}`;
@@ -222,7 +222,7 @@ class ApiClient {
         }
       }
 
-      let responseData: any = null;
+      let responseData: unknown = null;
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         responseData = await response.json();
@@ -240,9 +240,8 @@ class ApiClient {
       }
 
       return { data: responseData as T, error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`API connection error for ${url}:`, error);
-
       let errorMsg = error instanceof Error ? error.message : 'Network error occurred';
       const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
@@ -263,15 +262,15 @@ class ApiClient {
     return this.request<T>('GET', endpoint);
   }
 
-  async post<T>(endpoint: string, data?: any) {
+  async post<T>(endpoint: string, data?: unknown) {
     return this.request<T>('POST', endpoint, data);
   }
 
-  async patch<T>(endpoint: string, data?: any) {
+  async patch<T>(endpoint: string, data?: unknown) {
     return this.request<T>('PATCH', endpoint, data);
   }
 
-  async put<T>(endpoint: string, data?: any) {
+  async put<T>(endpoint: string, data?: unknown) {
     return this.request<T>('PUT', endpoint, data);
   }
 
@@ -328,7 +327,7 @@ class ApiClient {
 
       const data = await response.json();
       return { data: data as T, error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`File upload error for ${url}:`, error);
       return {
         data: null,

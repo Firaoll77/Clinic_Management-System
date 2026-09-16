@@ -36,6 +36,7 @@ export default function NotificationBell() {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
     return () => clearInterval(interval);
+     
   }, []);
 
   // Close dropdown when clicking outside

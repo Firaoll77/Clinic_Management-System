@@ -10,14 +10,29 @@ export interface CdsRecommendation {
   suggestedPlanEntry: string;
 }
 
-export function evaluateCdsRules(labOrders: any[]): CdsRecommendation[] {
+interface LabResult {
+  id: string;
+  value: string;
+  unit?: string;
+  flag?: string;
+  labTest?: {
+    name: string;
+  };
+}
+
+interface LabOrder {
+  results?: LabResult[];
+  notes?: string;
+}
+
+export function evaluateCdsRules(labOrders: LabOrder[]): CdsRecommendation[] {
   const recommendations: CdsRecommendation[] = [];
   if (!labOrders || !Array.isArray(labOrders)) return recommendations;
 
   labOrders.forEach((order) => {
     if (!order.results || !Array.isArray(order.results)) return;
 
-    order.results.forEach((res: any) => {
+    order.results.forEach((res: LabResult) => {
       const flag = res.flag;
       const testName = res.labTest?.name || order.notes || 'Lab Test';
       const numVal = parseFloat(res.value);
