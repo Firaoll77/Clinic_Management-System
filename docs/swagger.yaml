@@ -8,7 +8,7 @@ info:
 servers:
   - url: http://localhost:4000/api
     description: Local Development Server
-  - url: https://your-clinic-app.onrender.com/api
+  - url: https://clinic-management-system-1-4mxh.onrender.com
     description: Production Server (Render/Vercel)
 
 components:
