@@ -150,31 +150,19 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
 
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - name: Build frontend
+        run: cd frontend && npm run build
 
-      - name: Build Frontend
-        run: |
-          cd frontend
-          npm ci
-          npm run build
-
-      - name: Deploy Frontend to Vercel
-        run: |
-          cd frontend
-          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # If you have Vercel Git integration enabled, frontend will auto-deploy
+      # This step just validates the build succeeds
+      - name: Validate Frontend Build
+        run: echo "Frontend build successful - Vercel will auto-deploy via Git integration"
 
   deploy-backend:
-    name: Deploy Backend to Production
+    name: Deploy Backend to Render
     runs-on: ubuntu-latest
     needs: [lint, typecheck, test]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
@@ -182,43 +170,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Build and push backend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile.prod
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/clinic-backend:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/clinic-backend:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/clinic-backend:buildcache,mode=max
+      - name: Install backend dependencies
+        run: cd backend && npm ci
 
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile.prod
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/clinic-frontend:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/clinic-frontend:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/clinic-frontend:buildcache,mode=max
+      - name: Generate Prisma client
+        run: cd backend && npx prisma generate
 
-      - name: Deploy to server
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            cd ${{ secrets.DEPLOY_PATH }}
-            docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d
-            docker system prune -f
+      - name: Build backend
+        run: cd backend && npm run build
+
+      - name: Trigger Render Deployment
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
