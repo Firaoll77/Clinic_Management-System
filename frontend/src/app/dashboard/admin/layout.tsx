@@ -13,7 +13,6 @@ import {
   Users,
   Activity,
   Calendar,
-  Shield,
   DollarSign,
   ChevronRight,
   FolderArchive,
@@ -27,7 +26,7 @@ export default function AdminDashboardLayout({
   children: React.ReactNode;
 }) {
   const { logout, user } = useAuth();
-  const { activeTab, setActiveTab, role, setRole } = useNavigation();
+  const { setRole } = useNavigation();
   const { currentStep, setCurrentStep, setWorkflowSteps } = useWorkflow();
   const router = useRouter();
 

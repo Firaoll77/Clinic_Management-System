@@ -3,10 +3,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigation } from '@/contexts/NavigationContext';
 import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
-import { formatCurrency } from '@/lib/currency';
 import Link from 'next/link';
 import { 
   Users, 
@@ -17,7 +15,6 @@ import {
   Clock, 
   Search, 
   Plus, 
-  Filter, 
   UserCheck, 
   UserX, 
   Edit3, 
@@ -27,7 +24,6 @@ import {
   Shield, 
   UserPlus, 
   Eye, 
-  Key, 
   RefreshCw, 
   Stethoscope, 
   FileText, 
@@ -38,14 +34,12 @@ import {
   Award, 
   X, 
   ChevronRight, 
-  SlidersHorizontal,
   FolderArchive,
   Layers,
   Terminal,
   DollarSign,
   Receipt,
-  Settings,
-  Check
+  Settings
 } from 'lucide-react';
 
 interface StaffProfile {
@@ -88,9 +82,44 @@ type RoleFilter = 'ALL' | 'DOCTOR' | 'NURSE' | 'ACCOUNTANT' | 'LAB_TECH' | 'RECE
 type StatusFilter = 'all' | 'active' | 'inactive';
 type PatientFilter = 'active' | 'archived' | 'all';
 
+interface Appointment {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface FeeConfig {
+  feeType: string;
+  name: string;
+  description: string;
+  amount: number;
+}
+
+interface Invoice {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface DashboardStats {
+  totalPatients: number;
+  todayAppointments: number;
+  activeDoctors: number;
+  activeStaff?: number;
+  pendingTasks: number;
+  patientGrowth: string;
+  appointmentGrowth: string;
+}
+
+interface AuditLog {
+  id: string;
+  time: string;
+  action: string;
+  user: string;
+  type: string;
+  status: string;
+}
+
 export default function AdminDashboardPage() {
   const { user } = useAuth();
-  const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
   const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
 
   // Active Main Tab synced with Workflow currentStep
@@ -98,11 +127,11 @@ export default function AdminDashboardPage() {
   const activeTab: TabType = validTabs.includes(currentStep as TabType) ? (currentStep as TabType) : 'overview';
 
   const setActiveTab = (tab: TabType) => {
-    setCurrentStep(tab as any);
+    setCurrentStep(tab as string);
   };
 
   // Appointments State
-  const [appointmentsList, setAppointmentsList] = useState<any[]>([]);
+  const [appointmentsList, setAppointmentsList] = useState<Appointment[]>([]);
   const [appointmentsLoading, setAppointmentsLoading] = useState(false);
   const [appointmentStatusFilter, setAppointmentStatusFilter] = useState('ALL');
 
@@ -116,7 +145,7 @@ export default function AdminDashboardPage() {
   const [feeConfigsLoading, setFeeConfigsLoading] = useState(false);
   const [editingFeeType, setEditingFeeType] = useState<string | null>(null);
   const [editingFeeAmount, setEditingFeeAmount] = useState<number>(0);
-  const [adminInvoices, setAdminInvoices] = useState<any[]>([]);
+  const [adminInvoices, setAdminInvoices] = useState<Invoice[]>([]);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
 
   // Stats State
@@ -197,7 +226,7 @@ export default function AdminDashboardPage() {
   };
 
   // Real-time Audit Logs
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditFilter, setAuditFilter] = useState('ALL');
   
@@ -205,7 +234,7 @@ export default function AdminDashboardPage() {
   const fetchAuditLogs = useCallback(async () => {
     setAuditLoading(true);
     try {
-      const response = await apiClient.get<{ logs: any[] }>('/audit/logs?limit=50');
+      const response = await apiClient.get<{ logs: AuditLog[] }>('/audit/logs?limit=50');
       if (response.data && response.data.logs) {
         setAuditLogs(response.data.logs);
       }
@@ -266,7 +295,7 @@ export default function AdminDashboardPage() {
   // Fetch Dashboard Overall KPIs
   const fetchDashboardStats = useCallback(async () => {
     try {
-      const response = await apiClient.get<{ stats: any }>('/dashboard/stats');
+      const response = await apiClient.get<{ stats: DashboardStats }>('/dashboard/stats');
       if (response.data && response.data.stats) {
         setStats(prev => ({
           ...prev,
@@ -346,7 +375,7 @@ export default function AdminDashboardPage() {
   const fetchAppointments = useCallback(async () => {
     setAppointmentsLoading(true);
     try {
-      const response = await apiClient.get<{ appointments: any[] }>('/appointments');
+      const response = await apiClient.get<{ appointments: Appointment[] }>('/appointments');
       if (response.data?.appointments) {
         setAppointmentsList(response.data.appointments);
       }
@@ -360,7 +389,7 @@ export default function AdminDashboardPage() {
   const fetchFeeConfigs = useCallback(async () => {
     setFeeConfigsLoading(true);
     try {
-      const response = await apiClient.get<{ fees: any[] }>('/billing/fee-configurations');
+      const response = await apiClient.get<{ fees: FeeConfig[] }>('/billing/fee-configurations');
       if (response.data?.fees && response.data.fees.length > 0) {
         setFeeConfigs(response.data.fees);
       }
@@ -374,7 +403,7 @@ export default function AdminDashboardPage() {
   const fetchAdminInvoices = useCallback(async () => {
     setInvoicesLoading(true);
     try {
-      const response = await apiClient.get<{ invoices: any[] }>('/billing/invoices');
+      const response = await apiClient.get<{ invoices: Invoice[] }>('/billing/invoices');
       if (response.data?.invoices) {
         setAdminInvoices(response.data.invoices);
       }
@@ -387,7 +416,7 @@ export default function AdminDashboardPage() {
 
   const handleUpdateFee = async (feeType: string, name: string, description: string, amount: number) => {
     try {
-      const response = await apiClient.post<{ message: string; fee: any }>('/billing/fee-configurations', {
+      const response = await apiClient.post<{ message: string; fee: FeeConfig }>('/billing/fee-configurations', {
         feeType,
         name,
         description,
@@ -546,7 +575,7 @@ export default function AdminDashboardPage() {
     setFormError('');
 
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         fullName: staffForm.fullName,
         email: staffForm.email,
         role: staffForm.role,
