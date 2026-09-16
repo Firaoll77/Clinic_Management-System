@@ -5,7 +5,7 @@ const isDocker = fs.existsSync("/.dockerenv");
 const defaultBackend = isDocker ? "http://clinic_api:4000" : "http://localhost:4000";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: process.env.VERCEL ? undefined : 'standalone',
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
   },
