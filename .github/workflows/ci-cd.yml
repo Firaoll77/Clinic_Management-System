@@ -190,5 +190,4 @@ jobs:
           curl -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
-            -d '{}' \
             ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
