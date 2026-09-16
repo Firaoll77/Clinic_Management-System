@@ -37,7 +37,8 @@ export default function NurseDashboardLayout({
   // Initialize workflow steps for nurse
   useEffect(() => {
     setWorkflowSteps(['triage', 'vitals', 'intake']);
-  }, [setWorkflowSteps]);
+    setCurrentStep('triage');
+  }, [setWorkflowSteps, setCurrentStep]);
 
   // Role verification - redirect if wrong role
   useEffect(() => {
