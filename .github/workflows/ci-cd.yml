@@ -136,7 +136,7 @@ jobs:
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
         ports:
           - 5432:5432
     steps:
@@ -155,6 +155,17 @@ jobs:
         run: cd backend && npx prisma generate
         env:
           DATABASE_URL: ${{ env.DATABASE_URL_SERVICE }}
+
+      - name: Wait for database to be ready
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h postgres -p 5432; then
+              echo "Database is ready"
+              break
+            fi
+            echo "Waiting for database... attempt $i"
+            sleep 2
+          done
 
       - name: Run database migrations
         run: cd backend && npx prisma migrate deploy

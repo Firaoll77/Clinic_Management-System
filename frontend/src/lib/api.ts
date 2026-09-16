@@ -229,9 +229,13 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        let errorMsg = responseData?.message || responseData?.error;
-        if (responseData?.error && responseData?.message && responseData.error !== responseData.message) {
-          errorMsg = `${responseData.error}: ${responseData.message}`;
+        let errorMsg = 'Request failed';
+        if (responseData && typeof responseData === 'object') {
+          const data = responseData as Record<string, unknown>;
+          errorMsg = (data.message || data.error) as string;
+          if (data.error && data.message && data.error !== data.message) {
+            errorMsg = `${data.error}: ${data.message}`;
+          }
         }
         if (!errorMsg) {
           errorMsg = `Request failed with status ${response.status}`;
