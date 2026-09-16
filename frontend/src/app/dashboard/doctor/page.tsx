@@ -80,6 +80,142 @@ interface Encounter {
   plan: string;
   icd10Code?: string;
   createdAt: string;
+  patient?: {
+    allergies?: Array<{ substance: string }>;
+  };
+  vitals?: Array<{
+    systolic?: number;
+    diastolic?: number;
+    bloodPressure?: string;
+    pulse?: number;
+    heartRate?: number;
+    temperatureC?: number;
+    temperature?: number;
+    spo2?: number;
+    weightKg?: number;
+    weight?: number;
+    heightCm?: number;
+    height?: number;
+    respRate?: number;
+    respiratoryRate?: number;
+    recordedAt: string;
+  }>;
+}
+
+interface LabOrder {
+  id: string;
+  testType: string;
+  priority: 'routine' | 'urgent' | 'stat';
+  notes?: string;
+  status?: string;
+  results?: LabResult[];
+  encounterId?: string;
+  patientId?: string;
+  doctorId?: string;
+  createdAt: string;
+}
+
+interface LabResult {
+  id: string;
+  value: string;
+  unit?: string;
+  flag?: string;
+  referenceRange?: string;
+  labTest?: {
+    id: string;
+    name: string;
+  };
+}
+
+interface LabTech {
+  id: string;
+  username: string;
+  staffProfile?: {
+    id: string;
+    fullName?: string;
+    isAvailable?: boolean;
+  };
+  isAvailable?: boolean;
+}
+
+interface EncounterForm {
+  chiefComplaint: string;
+  subjective: string;
+  objective: string;
+  assessment: string;
+  plan: string;
+  icd10Code: string;
+  labResultInterpretation: string;
+}
+
+interface PrescriptionForm {
+  medication: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+}
+
+interface LabOrderForm {
+  testType: string;
+  priority: 'routine' | 'urgent' | 'stat';
+  notes: string;
+  labTechId: string;
+}
+
+interface User {
+  id: string;
+  staffProfile?: {
+    id: string;
+    isAvailable?: boolean;
+  };
+}
+
+interface Assignment {
+  id: string;
+  encounterId: string;
+  assignedAt: string;
+  status: string;
+  encounter: {
+    id: string;
+    chiefComplaint: string;
+    patient: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      mrn?: string;
+      allergies?: Array<{ substance: string }>;
+    };
+    vitals?: Array<{
+      systolic?: number;
+      diastolic?: number;
+      bloodPressure?: string;
+      pulse?: number;
+      heartRate?: number;
+      temperatureC?: number;
+      temperature?: number;
+      spo2?: number;
+      weightKg?: number;
+      weight?: number;
+      heightCm?: number;
+      height?: number;
+      respRate?: number;
+      respiratoryRate?: number;
+      recordedAt: string;
+    }>;
+  };
+}
+
+interface VitalsResponse {
+  vitals: Array<{
+    bloodPressure: string;
+    heartRate: number;
+    temperature: number;
+    spo2: number;
+    weight: number;
+    height: number;
+    respiratoryRate: number;
+    recordedAt: string;
+  }>;
 }
 
 export default function DoctorDashboardPage() {
@@ -93,10 +229,10 @@ export default function DoctorDashboardPage() {
   const [nurseIntake, setNurseIntake] = useState<NurseIntake | null>(null);
   const [vitals, setVitals] = useState<Vitals | null>(null);
   const [encounters, setEncounters] = useState<Encounter[]>([]);
-  const [patientLabOrders, setPatientLabOrders] = useState<any[]>([]);
-  const [labResults, setLabResults] = useState<any[]>([]);
+  const [patientLabOrders, setPatientLabOrders] = useState<LabOrder[]>([]);
+  const [labResults, setLabResults] = useState<LabResult[]>([]);
 
-  const [encounterForm, setEncounterForm] = useState({
+  const [encounterForm, setEncounterForm] = useState<EncounterForm>({
     chiefComplaint: '',
     subjective: '',
     objective: '',
@@ -106,7 +242,7 @@ export default function DoctorDashboardPage() {
     labResultInterpretation: ''
   });
 
-  const [prescriptionForm, setPrescriptionForm] = useState({
+  const [prescriptionForm, setPrescriptionForm] = useState<PrescriptionForm>({
     medication: '',
     dosage: '',
     frequency: '',
@@ -115,14 +251,14 @@ export default function DoctorDashboardPage() {
 
   const [currentEncounterId, setCurrentEncounterId] = useState<string | null>(null);
 
-  const [labOrderForm, setLabOrderForm] = useState({
+  const [labOrderForm, setLabOrderForm] = useState<LabOrderForm>({
     testType: '',
     priority: 'routine' as 'routine' | 'urgent' | 'stat',
     notes: '',
     labTechId: ''
   });
 
-  const [availableLabTechs, setAvailableLabTechs] = useState<any[]>([]);
+  const [availableLabTechs, setAvailableLabTechs] = useState<LabTech[]>([]);
 
   const [isAvailable, setIsAvailable] = useState<boolean>(true);
 
@@ -141,9 +277,9 @@ export default function DoctorDashboardPage() {
 
   const fetchDoctorAvailability = async () => {
     try {
-      const response = await apiClient.get<{ users: any[] }>('/users');
+      const response = await apiClient.get<{ users: User[] }>('/users');
       if (response.data) {
-        const currentUser = response.data.users.find((u: any) => u.id === user?.id);
+        const currentUser = response.data.users.find((u: User) => u.id === user?.id);
         if (currentUser && currentUser.staffProfile) {
           setIsAvailable(currentUser.staffProfile.isAvailable !== false);
         }
@@ -175,7 +311,7 @@ export default function DoctorDashboardPage() {
 
   const fetchAvailableLabTechs = async () => {
     try {
-      const response = await apiClient.get<{ labTechs: any[] }>('/assignments/lab-techs/available');
+      const response = await apiClient.get<{ labTechs: LabTech[] }>('/assignments/lab-techs/available');
       if (response.data) {
         setAvailableLabTechs(response.data.labTechs);
       }
@@ -187,11 +323,11 @@ export default function DoctorDashboardPage() {
   const fetchDoctorPatients = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const response = await apiClient.get<{ assignments: any[] }>('/assignments/doctor/my-assignments');
+      const response = await apiClient.get<{ assignments: Assignment[] }>('/assignments/doctor/my-assignments');
       if (response.data && Array.isArray(response.data.assignments)) {
         const allPatients = response.data.assignments
-          .filter((a: any) => a && a.encounter && a.encounter.patient)
-          .map((a: any) => ({
+          .filter((a: Assignment) => a && a.encounter && a.encounter.patient)
+          .map((a: Assignment) => ({
             id: a.id,
             assignmentId: a.id,
             patientId: a.encounter.patient.id,
@@ -231,12 +367,12 @@ export default function DoctorDashboardPage() {
   const fetchPatientData = async (patientId: string, preferredEncounterId?: string) => {
     try {
       // Fetch encounters (includes nurse intake)
-      const encounterResponse = await apiClient.get<{ encounters: any[] }>(`/medical/patients/${patientId}/encounters`);
-      let currentEncounter: any = null;
+      const encounterResponse = await apiClient.get<{ encounters: Encounter[] }>(`/medical/patients/${patientId}/encounters`);
+      let currentEncounter: Encounter | null = null;
 
       if (encounterResponse.data && encounterResponse.data.encounters.length > 0) {
         currentEncounter = (preferredEncounterId
-          ? encounterResponse.data.encounters.find((e: any) => e.id === preferredEncounterId)
+          ? encounterResponse.data.encounters.find((e: Encounter) => e.id === preferredEncounterId)
           : null) || encounterResponse.data.encounters[0];
 
         // Robust parser for subjective fields supporting multiline / variable spacing
@@ -255,7 +391,7 @@ export default function DoctorDashboardPage() {
         const currentMedications = extractField(subjective, 'Current Medications');
         const allergies = extractField(subjective, 'Allergies') || 
           (currentEncounter.patient?.allergies && currentEncounter.patient.allergies.length > 0
-            ? currentEncounter.patient.allergies.map((a: any) => a.substance).join(', ')
+            ? currentEncounter.patient.allergies.map((a: { substance: string }) => a.substance).join(', ')
             : '');
         const medicalHistory = extractField(subjective, 'Medical History');
         const notes = extractField(subjective, 'Nurse Notes') || currentEncounter.plan || '';
@@ -270,13 +406,13 @@ export default function DoctorDashboardPage() {
         });
 
         // Pre-fill encounterForm with chief complaint and intake info
-        setEncounterForm((prev: any) => ({
+        setEncounterForm((prev: EncounterForm) => ({
           ...prev,
           chiefComplaint: chiefComplaint || prev.chiefComplaint,
           subjective: subjective || prev.subjective,
         }));
 
-        setEncounters(encounterResponse.data.encounters.map((e: any) => ({
+        setEncounters(encounterResponse.data.encounters.map((e: Encounter) => ({
           id: e.id,
           chiefComplaint: e.chiefComplaint,
           subjective: e.subjective,
@@ -293,17 +429,17 @@ export default function DoctorDashboardPage() {
         const lv = currentEncounter.vitals[0];
         setVitals({
           bloodPressure: lv.systolic && lv.diastolic ? `${lv.systolic}/${lv.diastolic}` : lv.bloodPressure || 'N/A',
-          heartRate: lv.pulse || lv.heartRate || 'N/A',
-          temperature: lv.temperatureC || lv.temperature || 'N/A',
-          spo2: lv.spo2 || 'N/A',
-          weight: lv.weightKg || lv.weight || 'N/A',
-          height: lv.heightCm || lv.height || 'N/A',
-          respiratoryRate: lv.respRate || lv.respiratoryRate || 'N/A',
+          heartRate: (lv.pulse ?? lv.heartRate) ?? 0,
+          temperature: (lv.temperatureC ?? lv.temperature) ?? 0,
+          spo2: lv.spo2 ?? 0,
+          weight: (lv.weightKg ?? lv.weight) ?? 0,
+          height: (lv.heightCm ?? lv.height) ?? 0,
+          respiratoryRate: (lv.respRate ?? lv.respiratoryRate) ?? 0,
           recordedAt: lv.recordedAt
         });
       } else {
         // Fallback: fetch vitals
-        const vitalsResponse = await apiClient.get<{ vitals: any[] }>(`/medical/patients/${patientId}/vitals`);
+        const vitalsResponse = await apiClient.get<VitalsResponse>(`/medical/patients/${patientId}/vitals`);
         if (vitalsResponse.data && vitalsResponse.data.vitals.length > 0) {
           const latestVitals = vitalsResponse.data.vitals[0];
           setVitals({
@@ -320,7 +456,7 @@ export default function DoctorDashboardPage() {
       }
 
       // Fetch patient lab history & results
-      const labResponse = await apiClient.get<{ labOrders: any[] }>(`/lab/patient/${patientId}`);
+      const labResponse = await apiClient.get<{ labOrders: LabOrder[] }>(`/lab/patient/${patientId}`);
       if (labResponse.data && labResponse.data.labOrders) {
         setPatientLabOrders(labResponse.data.labOrders);
       }
@@ -351,7 +487,7 @@ export default function DoctorDashboardPage() {
 
     try {
       const targetEncounterId = selectedPatient.encounterId || currentEncounterId;
-      let response: any;
+      let response: { data?: { id?: string; encounter?: { id?: string } } | null; error?: string | null };
       if (targetEncounterId) {
         response = await apiClient.patch(`/medical/encounters/${targetEncounterId}`, {
           chiefComplaint: encounterForm.chiefComplaint,
@@ -411,7 +547,7 @@ export default function DoctorDashboardPage() {
     const summaryLines: string[] = [];
     patientLabOrders.forEach((o) => {
       if (o.results) {
-        o.results.forEach((r: any) => {
+        o.results.forEach((r: LabResult) => {
           summaryLines.push(`• ${r.labTest?.name || 'Lab Test'}: ${r.value} ${r.unit || ''} [Flag: ${r.flag || 'N'}, Ref: ${r.referenceRange || 'N/A'}]`);
         });
       }
@@ -1066,7 +1202,7 @@ export default function DoctorDashboardPage() {
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 text-sm">
-                                  {order.results.map((res: any) => (
+                                  {order.results.map((res: LabResult) => (
                                     <tr key={res.id}>
                                       <td className="px-4 py-2.5 font-medium text-gray-900">
                                         {res.labTest?.name || 'General Lab Test'}

@@ -475,7 +475,7 @@ function DayView({
         {timeSlots.map((time) => {
           const slotAppointments = dayAppointments.filter((apt: any) => {
             const aptTime = new Date(apt.scheduledAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-            return aptTime.startsWith(time.split(':')[0]);
+            return aptTime.startsWith(time.split(':')[0] || '');
           });
 
           return (

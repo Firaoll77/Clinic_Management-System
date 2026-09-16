@@ -86,7 +86,7 @@ export default function DoctorDashboardLayout({
               <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg">
                 <User className="h-5 w-5 text-white" />
                 <span className="text-sm text-white font-medium">
-                  Dr. {user?.staffProfile?.fullName?.split(' ')[1] || user?.email}
+                  Dr. {user?.staffProfile?.fullName?.split(' ')[1] || user?.staffProfile?.fullName?.split(' ')[0] || user?.email}
                 </span>
               </div>
               <button

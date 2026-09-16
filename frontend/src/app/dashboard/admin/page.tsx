@@ -114,6 +114,14 @@ interface FeeConfig {
 
 interface Invoice {
   id: string;
+  invoiceNo: string;
+  patient?: {
+    firstName?: string;
+    lastName?: string;
+  };
+  createdAt: string;
+  total: number;
+  status: string;
   [key: string]: unknown;
 }
 
@@ -1413,7 +1421,7 @@ export default function AdminDashboardPage() {
                           <div className="flex items-center space-x-3">
                             <div className="h-10 w-10 rounded-xl bg-[#D93344] flex items-center justify-center text-white font-bold text-sm shadow-sm">
                               {member.staffProfile?.fullName
-                                ? member.staffProfile.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                                ? member.staffProfile.fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
                                 : (member.email ? member.email[0].toUpperCase() : 'S')}
                             </div>
                             <div>
@@ -1778,7 +1786,7 @@ export default function AdminDashboardPage() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-6">
             <div className="space-y-3 font-mono text-xs">
               {auditLogs
-                .filter(log => auditFilter === 'ALL' || log.entityType?.toLowerCase() === auditFilter)
+                .filter(log => auditFilter === 'ALL' || (log.entityType && log.entityType.toLowerCase() === auditFilter))
                 .map(log => (
                   <div key={log.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 hover:bg-red-50/30 transition-colors flex items-center justify-between gap-4">
                     <div className="flex items-center space-x-3">
