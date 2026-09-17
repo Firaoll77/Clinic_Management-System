@@ -60,4 +60,4 @@ ENV PORT 4000
 ENV HOSTNAME "0.0.0.0"
 
 # Run migrations before starting the application
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy || npx prisma db push && node dist/index.js"]
