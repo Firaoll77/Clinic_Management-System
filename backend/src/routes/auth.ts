@@ -108,7 +108,7 @@ router.post('/register', authenticate, async (req: Request, res: Response) => {
  * POST /api/auth/login
  * Login user and set HTTP-only cookies
  */
-router.post('/login', strictRateLimit(15 * 60 * 1000, 5), async (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     // Validate input
     const validatedData: LoginInput = loginSchema.parse(req.body);
