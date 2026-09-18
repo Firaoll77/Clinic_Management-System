@@ -126,7 +126,13 @@ export default function AdminDashboardLayout({
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-6">
-        {children}
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="text-gray-600 mt-1">Manage clinic operations, staff, and patient records</p>
+          </div>
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -150,8 +150,14 @@ export default function DoctorDashboardLayout({
       </nav>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {children}
+      <div className="flex-1 flex flex-col overflow-auto p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Doctor Workspace</h1>
+            <p className="text-gray-600 mt-1">Patient care and clinical workflow management</p>
+          </div>
+          {children}
+        </div>
       </div>
     </div>
   );

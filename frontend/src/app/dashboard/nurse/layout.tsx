@@ -142,8 +142,14 @@ export default function NurseDashboardLayout({
       </nav>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {children}
+      <div className="flex-1 flex flex-col overflow-auto p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Nurse Station</h1>
+            <p className="text-gray-600 mt-1">Patient triage, vitals, and care coordination</p>
+          </div>
+          {children}
+        </div>
       </div>
     </div>
   );
