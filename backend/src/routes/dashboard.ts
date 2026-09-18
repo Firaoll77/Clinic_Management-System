@@ -29,7 +29,7 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
         },
         status: {
           not: 'CANCELLED',
-        },
+        },   
       },
     });
 

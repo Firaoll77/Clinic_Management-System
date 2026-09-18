@@ -4,12 +4,18 @@
 
 ```
 Development: http://localhost:4000/api
-Production: https://your-domain.com/api
+Production: https://clinic-management-system-1-4mxh.onrender.com/api
 ```
 
 ## Authentication
 
-All API endpoints (except `/api/auth/login`) require authentication via JWT token.
+All API endpoints (except `/api/auth/login`, `/api/auth/refresh`) require authentication via JWT token.
+
+The system uses token-based authentication with:
+- **Access tokens**: Expire after 15 minutes
+- **Refresh tokens**: Expire after 7 days
+
+Tokens are returned in the response body and should be stored in localStorage (client-side) for use in subsequent requests.
 
 ### Headers
 
@@ -35,7 +41,7 @@ Authenticate user and receive JWT token.
 **Response (200 OK):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "message": "Login successful",
   "user": {
     "id": "user-id",
     "username": "doctor",
@@ -45,6 +51,10 @@ Authenticate user and receive JWT token.
       "fullName": "John Smith",
       "specialization": "General Medicine"
     }
+  },
+  "tokens": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
@@ -52,8 +62,75 @@ Authenticate user and receive JWT token.
 **Error Response (401 Unauthorized):**
 ```json
 {
-  "error": "Invalid credentials",
-  "message": "Email or password is incorrect"
+  "error": "Authentication failed",
+  "message": "Invalid username or password"
+}
+```
+
+### Refresh Token
+
+**POST** `/api/auth/refresh`
+
+Refresh access token using refresh token.
+
+**Request Body:**
+```json
+{
+  "refreshToken": "your-refresh-token"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "tokens": {
+    "accessToken": "new-access-token",
+    "refreshToken": "new-refresh-token"
+  }
+}
+```
+
+**Error Response (401 Unauthorized):**
+```json
+{
+  "error": "Invalid token",
+  "message": "Refresh token is invalid or expired"
+}
+```
+
+### Logout
+
+**POST** `/api/auth/logout`
+
+Logout current session.
+
+**Headers:**
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "message": "Logged out successfully"
+}
+```
+
+### Logout All Sessions
+
+**POST** `/api/auth/logout-all`
+
+Logout all sessions for the user.
+
+**Headers:**
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+**Response (200 OK):**
+```json
+{
+  "message": "All sessions logged out successfully"
 }
 ```
 
@@ -964,12 +1041,9 @@ All endpoints may return error responses in the following format:
 
 ## Rate Limiting
 
-API endpoints are rate-limited to prevent abuse:
+API endpoints have configurable rate limiting to prevent abuse. Rate limits can be adjusted per endpoint based on system requirements.
 
-- **Authenticated Users**: 1000 requests per hour
-- **Unauthenticated**: 100 requests per hour
-
-Rate limit headers are included in responses:
+Rate limit headers are included in responses when rate limiting is enabled:
 
 ```
 X-RateLimit-Limit: 1000
@@ -981,66 +1055,16 @@ X-RateLimit-Reset: 1692537600
 
 ## Webhooks
 
-The system supports webhooks for real-time notifications:
-
-### Configure Webhook
-
-**POST** `/api/webhooks`
-
-Configure a webhook endpoint.
-
-**Request Body:**
-```json
-{
-  "url": "https://your-domain.com/webhook",
-  "events": ["APPOINTMENT_CREATED", "LAB_RESULT_READY"]
-}
-```
-
-### Webhook Events
-
-- `APPOINTMENT_CREATED` - New appointment created
-- `APPOINTMENT_CANCELLED` - Appointment cancelled
-- `LAB_RESULT_READY` - Lab results ready
-- `PATIENT_REGISTERED` - New patient registered
+Webhook support is planned for future releases to enable real-time notifications for events such as appointment creation, lab result readiness, and patient registration.
 
 ---
 
 ## SDK Integration
 
-### JavaScript/TypeScript
-
-```typescript
-import { ClinicAPI } from '@clinic/sdk';
-
-const api = new ClinicAPI({
-  baseURL: 'https://api.clinic.com',
-  apiKey: 'your-api-key'
-});
-
-// Register patient
-const patient = await api.patients.register({
-  firstName: 'Alemu',
-  lastName: 'Firisa',
-  dob: '1990-01-01',
-  gender: 'MALE',
-  phone: '+1234567890'
-});
-
-// Create appointment
-const appointment = await api.appointments.create({
-  patientId: patient.id,
-  doctorId: 'doctor-id',
-  scheduledAt: '2024-08-20T10:00:00Z',
-  reason: 'Annual checkup'
-});
-```
+A JavaScript/TypeScript SDK is planned for future releases to simplify API integration for third-party developers.
 
 ---
 
 ## Support
 
-For API support:
-- Email: api-support@clinic.com
-- Documentation: https://docs.clinic.com
-- Status Page: https://status.clinic.com
+For API support, please contact the system administrator or refer to the project documentation in the repository.
