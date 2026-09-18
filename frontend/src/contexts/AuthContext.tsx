@@ -42,36 +42,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   const logout = useCallback(async () => {
-    // Immediately clear local state regardless of API call
+    // Try to call logout API first with current token
+    try {
+      await apiClient.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Continue with local cleanup even if API fails
+    }
+
+    // Clear local state after API call
     setUser(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setLoading(false);
     setIsLoggedOut(true);
-
-    // Try to call logout API, but don't let it block
-    try {
-      await apiClient.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Local state is already cleared, so logout is complete
-    }
   }, []);
 
   const logoutAll = useCallback(async () => {
-    // Immediately clear local state regardless of API call
-    setUser(null);
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    setLoading(false);
-
-    // Try to call logout-all API, but don't let it block
+    // Try to call logout-all API first with current token
     try {
       await apiClient.post('/auth/logout-all');
     } catch (error) {
       console.error('Logout all error:', error);
-      // Local state is already cleared, so logout is complete
+      // Continue with local cleanup even if API fails
     }
+
+    // Clear local state after API call
+    setUser(null);
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setLoading(false);
+    setIsLoggedOut(true);
   }, []);
 
   const getSessions = useCallback(async () => {

@@ -240,7 +240,6 @@ class ApiClient {
         !isRetry &&
         !endpoint.includes('/auth/login') &&
         !endpoint.includes('/auth/refresh') &&
-        !endpoint.includes('/auth/logout') &&
         !endpoint.includes('/auth/me')
       ) {
         const refreshed = await this.refreshAccessToken();
