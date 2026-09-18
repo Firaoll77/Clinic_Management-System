@@ -373,9 +373,9 @@ router.get('/patient/:patientId/invoices', authenticate, authorize('RECEPTIONIST
 
 /**
  * GET /api/billing/invoices
- * Get all invoices - Receptionist only
+ * Get all invoices - Admin and Receptionist only
  */
-router.get('/invoices', authenticate, authorize('RECEPTIONIST'), async (req: Request, res: Response) => {
+router.get('/invoices', authenticate, authorize('ADMIN', 'RECEPTIONIST'), async (req: Request, res: Response) => {
   try {
     const invoices = await prisma.invoice.findMany({
       include: {
