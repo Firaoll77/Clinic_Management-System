@@ -338,9 +338,18 @@ router.post('/logout', authenticate, async (req: Request, res: Response) => {
       await revokeRefreshToken(refreshToken);
     }
 
-    // Clear cookies
-    res.clearCookie('accessToken', { path: '/' });
-    res.clearCookie('refreshToken', { path: '/' });
+    // Clear cookies with proper cross-origin settings
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.clearCookie('accessToken', { 
+      path: '/',
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction,
+    });
+    res.clearCookie('refreshToken', { 
+      path: '/',
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction,
+    });
 
     res.json({
       message: 'Logout successful',
@@ -372,9 +381,18 @@ router.post('/logout-all', authenticate, async (req: Request, res: Response) => 
     // Revoke all refresh tokens for this user
     const revokedCount = await revokeAllUserTokens(userId);
 
-    // Clear cookies
-    res.clearCookie('accessToken', { path: '/' });
-    res.clearCookie('refreshToken', { path: '/' });
+    // Clear cookies with proper cross-origin settings
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.clearCookie('accessToken', { 
+      path: '/',
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction,
+    });
+    res.clearCookie('refreshToken', { 
+      path: '/',
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction,
+    });
 
     res.json({
       message: 'Logged out from all devices successfully',
