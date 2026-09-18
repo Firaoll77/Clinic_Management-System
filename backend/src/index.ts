@@ -4,7 +4,6 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import pino from 'pino';
 import pinoPretty from 'pino-pretty';
-import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import patientRoutes from './routes/patients';
@@ -72,7 +71,7 @@ const corsOptions: cors.CorsOptions = {
 
     // Automatically allow any Vercel deployment (production, preview, branch URLs)
     const isVercel = origin.endsWith('.vercel.app');
-    
+
     // Allow any Render deployment
     const isRender = origin.endsWith('.onrender.com');
 
@@ -83,14 +82,12 @@ const corsOptions: cors.CorsOptions = {
     logger.warn(`CORS blocked request from origin: ${origin}`);
     return callback(null, false);
   },
-  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 };
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

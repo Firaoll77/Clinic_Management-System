@@ -10,14 +10,9 @@ declare global {
 }
 
 /**
- * Get token from either cookie or Authorization header
+ * Get token from Authorization header
  */
 function getToken(req: Request): string | null {
-  // Try cookie first
-  const token = req.cookies.accessToken;
-  if (token) return token;
-
-  // Fallback to Authorization header
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7);

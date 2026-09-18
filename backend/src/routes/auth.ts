@@ -164,30 +164,7 @@ router.post('/login', strictRateLimit(15 * 60 * 1000, 5), async (req: Request, r
     const ipAddress = req.ip || req.socket.remoteAddress;
     await storeRefreshToken(tokens.refreshToken, user.id, userAgent, ipAddress);
 
-    // Set HTTP-only cookies
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    // Access token cookie (15 minutes)
-    res.cookie('accessToken', tokens.accessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-      path: '/',
-      domain: isProduction ? undefined : undefined,
-    });
-
-    // Refresh token cookie (7 days)
-    res.cookie('refreshToken', tokens.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/',
-      domain: isProduction ? undefined : undefined,
-    });
-
-    // Return user info and tokens (tokens in cookies as primary, in body as fallback)
+    // Return user info and tokens in response body (no cookies)
     const { passwordHash: _, ...userWithoutPassword } = user;
 
     res.json({
@@ -220,8 +197,8 @@ router.post('/login', strictRateLimit(15 * 60 * 1000, 5), async (req: Request, r
  */
 router.post('/refresh', async (req: Request, res: Response) => {
   try {
-    // Get refresh token from cookie, body, or Authorization header
-    let refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    // Get refresh token from body or Authorization header
+    let refreshToken = req.body.refreshToken;
 
     // Try Authorization header as fallback
     if (!refreshToken && req.headers.authorization) {
@@ -262,27 +239,6 @@ router.post('/refresh', async (req: Request, res: Response) => {
 
     // Revoke old refresh token
     await revokeRefreshToken(refreshToken);
-
-    // Set new HTTP-only cookies
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    res.cookie('accessToken', newTokens.accessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-      path: '/',
-      domain: isProduction ? undefined : undefined,
-    });
-
-    res.cookie('refreshToken', newTokens.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/',
-      domain: isProduction ? undefined : undefined,
-    });
 
     res.json({
       message: 'Token refreshed successfully',
@@ -362,19 +318,6 @@ router.post('/logout', authenticate, async (req: Request, res: Response) => {
       await revokeRefreshToken(refreshToken);
     }
 
-    // Clear cookies with proper cross-origin settings
-    const isProduction = process.env.NODE_ENV === 'production';
-    res.clearCookie('accessToken', { 
-      path: '/',
-      sameSite: isProduction ? 'none' : 'lax',
-      secure: isProduction,
-    });
-    res.clearCookie('refreshToken', { 
-      path: '/',
-      sameSite: isProduction ? 'none' : 'lax',
-      secure: isProduction,
-    });
-
     res.json({
       message: 'Logout successful',
     });
@@ -403,30 +346,7 @@ router.post('/logout-all', authenticate, async (req: Request, res: Response) => 
     }
 
     // Revoke all refresh tokens for this user
-    let refreshToken = req.cookies.refreshToken || req.body.refreshToken;
-
-    // Try Authorization header as fallback
-    if (!refreshToken && req.headers.authorization) {
-      const authHeader = req.headers.authorization;
-      if (authHeader.startsWith('Bearer ')) {
-        refreshToken = authHeader.substring(7);
-      }
-    }
-
     const revokedCount = await revokeAllUserTokens(userId);
-
-    // Clear cookies with proper cross-origin settings
-    const isProduction = process.env.NODE_ENV === 'production';
-    res.clearCookie('accessToken', { 
-      path: '/',
-      sameSite: isProduction ? 'none' : 'lax',
-      secure: isProduction,
-    });
-    res.clearCookie('refreshToken', { 
-      path: '/',
-      sameSite: isProduction ? 'none' : 'lax',
-      secure: isProduction,
-    });
 
     res.json({
       message: 'Logged out from all devices successfully',
