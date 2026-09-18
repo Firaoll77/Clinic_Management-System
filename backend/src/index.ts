@@ -55,6 +55,11 @@ const allowedOrigins = [
   ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim()) : []),
 ];
 
+// Allow all Render deployments
+const renderOrigins = [
+  'https://*.onrender.com',
+];
+
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     // Allow non-browser requests or same-origin (no Origin header)
@@ -67,8 +72,11 @@ const corsOptions: cors.CorsOptions = {
 
     // Automatically allow any Vercel deployment (production, preview, branch URLs)
     const isVercel = origin.endsWith('.vercel.app');
+    
+    // Allow any Render deployment
+    const isRender = origin.endsWith('.onrender.com');
 
-    if (isAllowed || isVercel || process.env.NODE_ENV !== 'production') {
+    if (isAllowed || isVercel || isRender || process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
 
