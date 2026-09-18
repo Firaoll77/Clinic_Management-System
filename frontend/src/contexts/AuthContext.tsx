@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { apiClient } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 interface User {
   id: string;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoggedOut, setIsLoggedOut] = useState(false);
+  const router = useRouter();
 
   const logout = useCallback(() => {
     // Clear all local state immediately
@@ -49,6 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
     setIsLoggedOut(true);
 
+    // Redirect to login page
+    router.push('/login');
+
     // Optionally call backend to revoke token (non-blocking, fire and forget)
     // Use setTimeout to ensure it doesn't block the UI
     setTimeout(() => {
@@ -56,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Logout API error (non-critical):', err);
       });
     }, 0);
-  }, []);
+  }, [router]);
 
   const logoutAll = useCallback(() => {
     // Clear all local state immediately
@@ -66,6 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
     setIsLoggedOut(true);
 
+    // Redirect to login page
+    router.push('/login');
+
     // Optionally call backend to revoke all tokens (non-blocking, fire and forget)
     // Use setTimeout to ensure it doesn't block the UI
     setTimeout(() => {
@@ -73,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Logout all API error (non-critical):', err);
       });
     }, 0);
-  }, []);
+  }, [router]);
 
   const getSessions = useCallback(async () => {
     try {
