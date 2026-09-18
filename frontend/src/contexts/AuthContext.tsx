@@ -26,8 +26,8 @@ interface Session {
 interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => Promise<void>;
-  logoutAll: () => Promise<void>;
+  logout: () => void;
+  logoutAll: () => void;
   getSessions: () => Promise<Session[]>;
   revokeSession: (sessionId: string) => Promise<boolean>;
   loading: boolean;
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isLoggedOut, setIsLoggedOut] = useState(false);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(() => {
     // Clear all local state immediately
     setUser(null);
     localStorage.removeItem('accessToken');
@@ -50,12 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoggedOut(true);
 
     // Optionally call backend to revoke token (non-blocking, fire and forget)
-    apiClient.post('/auth/logout').catch(err => {
-      console.error('Logout API error (non-critical):', err);
-    });
+    // Use setTimeout to ensure it doesn't block the UI
+    setTimeout(() => {
+      apiClient.post('/auth/logout').catch(err => {
+        console.error('Logout API error (non-critical):', err);
+      });
+    }, 0);
   }, []);
 
-  const logoutAll = useCallback(async () => {
+  const logoutAll = useCallback(() => {
     // Clear all local state immediately
     setUser(null);
     localStorage.removeItem('accessToken');
@@ -64,9 +67,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoggedOut(true);
 
     // Optionally call backend to revoke all tokens (non-blocking, fire and forget)
-    apiClient.post('/auth/logout-all').catch(err => {
-      console.error('Logout all API error (non-critical):', err);
-    });
+    // Use setTimeout to ensure it doesn't block the UI
+    setTimeout(() => {
+      apiClient.post('/auth/logout-all').catch(err => {
+        console.error('Logout all API error (non-critical):', err);
+      });
+    }, 0);
   }, []);
 
   const getSessions = useCallback(async () => {
