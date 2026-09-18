@@ -163,14 +163,31 @@ class ApiClient {
 
     this.refreshPromise = (async () => {
       try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+
+        // Try to use refresh token from localStorage as fallback
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          headers['Authorization'] = `Bearer ${refreshToken}`;
+        }
+
         const res = await fetch(`${BASE_URL}/auth/refresh`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           credentials: 'include', // Important: include cookies
         });
 
         if (!res.ok) {
           return false;
+        }
+
+        // Store new tokens in localStorage if the refresh succeeds
+        const data = await res.json();
+        if (data.tokens) {
+          localStorage.setItem('accessToken', data.tokens.accessToken);
+          localStorage.setItem('refreshToken', data.tokens.refreshToken);
         }
 
         return true;
@@ -195,6 +212,12 @@ class ApiClient {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
+
+    // Try to get token from localStorage as fallback
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
     const config: RequestInit = {
       method,

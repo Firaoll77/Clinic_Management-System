@@ -187,12 +187,16 @@ router.post('/login', strictRateLimit(15 * 60 * 1000, 5), async (req: Request, r
       domain: isProduction ? undefined : undefined,
     });
 
-    // Return user info (tokens are in cookies now)
+    // Return user info and tokens (tokens in cookies as primary, in body as fallback)
     const { passwordHash: _, ...userWithoutPassword } = user;
 
     res.json({
       message: 'Login successful',
       user: userWithoutPassword,
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
     });
   } catch (error) {
     if (error instanceof Error && error.name === 'ZodError') {
@@ -216,8 +220,16 @@ router.post('/login', strictRateLimit(15 * 60 * 1000, 5), async (req: Request, r
  */
 router.post('/refresh', async (req: Request, res: Response) => {
   try {
-    // Get refresh token from cookie or body
-    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    // Get refresh token from cookie, body, or Authorization header
+    let refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    // Try Authorization header as fallback
+    if (!refreshToken && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith('Bearer ')) {
+        refreshToken = authHeader.substring(7);
+      }
+    }
 
     if (!refreshToken) {
       return res.status(401).json({
@@ -274,6 +286,10 @@ router.post('/refresh', async (req: Request, res: Response) => {
 
     res.json({
       message: 'Token refreshed successfully',
+      tokens: {
+        accessToken: newTokens.accessToken,
+        refreshToken: newTokens.refreshToken,
+      },
     });
   } catch (error) {
     if (error instanceof Error && error.name === 'ZodError') {
