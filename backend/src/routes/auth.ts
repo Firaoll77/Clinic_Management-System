@@ -171,18 +171,20 @@ router.post('/login', strictRateLimit(15 * 60 * 1000, 5), async (req: Request, r
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 15 * 60 * 1000, // 15 minutes
       path: '/',
+      domain: isProduction ? undefined : undefined,
     });
 
     // Refresh token cookie (7 days)
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
+      domain: isProduction ? undefined : undefined,
     });
 
     // Return user info (tokens are in cookies now)
@@ -255,17 +257,19 @@ router.post('/refresh', async (req: Request, res: Response) => {
     res.cookie('accessToken', newTokens.accessToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 15 * 60 * 1000, // 15 minutes
       path: '/',
+      domain: isProduction ? undefined : undefined,
     });
 
     res.cookie('refreshToken', newTokens.refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
+      domain: isProduction ? undefined : undefined,
     });
 
     res.json({
