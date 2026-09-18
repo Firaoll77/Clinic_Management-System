@@ -95,27 +95,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const fetchUserInfo = useCallback(async () => {
+    // Don't fetch if there's no token in localStorage
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await apiClient.get<{ user: User }>('/auth/me');
       if (response.data && response.data.user) {
         setUser(response.data.user);
+      } else {
+        setUser(null);
       }
     } catch (error) {
       console.error('Failed to fetch user info:', error);
-      // Try to refresh token automatically
-      try {
-        await apiClient.post('/auth/refresh');
-        // Retry fetching user info after refresh
-        const userResponse = await apiClient.get<{ user: User }>('/auth/me');
-        if (userResponse.data?.user) {
-          setUser(userResponse.data.user);
-        } else {
-          setUser(null);
-        }
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
-        setUser(null);
-      }
+      setUser(null);
     } finally {
       setLoading(false);
     }

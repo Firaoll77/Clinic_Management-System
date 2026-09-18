@@ -165,6 +165,8 @@ class ApiClient {
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) {
+          // Clear access token if no refresh token exists
+          localStorage.removeItem('accessToken');
           return false;
         }
 
@@ -175,6 +177,9 @@ class ApiClient {
         });
 
         if (!res.ok) {
+          // Clear tokens if refresh fails
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
           return false;
         }
 
@@ -188,6 +193,9 @@ class ApiClient {
         return true;
       } catch (err) {
         console.error('Failed to silently refresh token:', err);
+        // Clear tokens on error
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         return false;
       } finally {
         this.refreshPromise = null;
@@ -232,7 +240,8 @@ class ApiClient {
         !isRetry &&
         !endpoint.includes('/auth/login') &&
         !endpoint.includes('/auth/refresh') &&
-        !endpoint.includes('/auth/logout')
+        !endpoint.includes('/auth/logout') &&
+        !endpoint.includes('/auth/me')
       ) {
         const refreshed = await this.refreshAccessToken();
         if (refreshed) {
