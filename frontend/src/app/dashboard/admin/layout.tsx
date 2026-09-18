@@ -78,8 +78,6 @@ export default function AdminDashboardLayout({
             {[
               { id: 'overview' as const, label: 'Overview', icon: Activity },
               { id: 'staff' as const, label: 'Staff Management', icon: Users },
-              { id: 'patients' as const, label: 'Patient Records', icon: FolderArchive },
-              { id: 'appointments' as const, label: 'Appointments', icon: Calendar },
               { id: 'billing' as const, label: 'Billing & Fees', icon: DollarSign },
               { id: 'audit' as const, label: 'Audit Logs', icon: Terminal },
               { id: 'settings' as const, label: 'Settings', icon: Settings }
