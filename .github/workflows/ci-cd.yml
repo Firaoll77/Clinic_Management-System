@@ -239,6 +239,12 @@ jobs:
       - name: Build backend
         run: cd backend && npm run build
 
+      - name: Apply database migrations to production
+        if: secrets.DATABASE_URL != ''
+        run: cd backend && npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Trigger Render Deployment
         if: secrets.RENDER_DEPLOY_HOOK != ''
         run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
