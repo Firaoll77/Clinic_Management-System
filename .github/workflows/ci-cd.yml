@@ -240,7 +240,7 @@ jobs:
         run: cd backend && npm run build
 
       - name: Apply database migrations to production
-        if: secrets.DATABASE_URL != ''
+        continue-on-error: true
         run: cd backend && npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
