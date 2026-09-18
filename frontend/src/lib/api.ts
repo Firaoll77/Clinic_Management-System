@@ -270,6 +270,86 @@ class ApiClient {
     return this.request<T>('POST', endpoint, data);
   }
 
+  async postWithAuth<T>(endpoint: string, data?: unknown) {
+    const url = `${BASE_URL}${endpoint}`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Try to get token from localStorage as fallback
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: data ? JSON.stringify(data) : undefined,
+        credentials: 'include', // Include cookies
+      });
+
+      const contentType = response.headers.get('content-type');
+      let responseData: unknown = null;
+      if (contentType && contentType.includes('application/json')) {
+        responseData = await response.json();
+      }
+
+      if (!response.ok) {
+        // Try token refresh if we have a refresh token
+        if (response.status === 401 && localStorage.getItem('refreshToken')) {
+          const refreshSuccess = await this.refreshAccessToken();
+          if (refreshSuccess) {
+            // Retry the original request with new token
+            const newToken = localStorage.getItem('accessToken');
+            if (newToken) {
+              headers['Authorization'] = `Bearer ${newToken}`;
+              const retryResponse = await fetch(url, {
+                method: 'POST',
+                headers,
+                body: data ? JSON.stringify(data) : undefined,
+                credentials: 'include',
+              });
+              if (retryResponse.ok) {
+                const retryData = await retryResponse.json();
+                return { data: retryData as T, error: null };
+              }
+            }
+          }
+        }
+
+        let errorMsg = 'Request failed';
+        if (responseData && typeof responseData === 'object') {
+          const data = responseData as Record<string, unknown>;
+          errorMsg = (data.message || data.error) as string;
+          if (data.error && data.message && data.error !== data.message) {
+            errorMsg = `${data.error}: ${data.message}`;
+          }
+        }
+
+        return { data: null, error: errorMsg };
+      }
+
+      return { data: responseData as T, error: null };
+    } catch (error: unknown) {
+      console.error(`API connection error for ${url}:`, error);
+      let errorMsg = error instanceof Error ? error.message : 'Network error occurred';
+      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+
+      if (isHttps && url.startsWith('http://localhost')) {
+        errorMsg = 'Frontend is deployed on HTTPS, but NEXT_PUBLIC_API_URL is pointing to localhost. Please configure NEXT_PUBLIC_API_URL in your Vercel Project Settings and redeploy.';
+      } else if (errorMsg === 'Failed to fetch') {
+        errorMsg = 'Failed to connect to backend server. The Render service may be waking up (cold start can take 50s), CORS is blocking, or the Render backend is inactive. Please check Render logs and retry.';
+      }
+
+      return {
+        data: null,
+        error: errorMsg,
+      };
+    }
+  }
+
   async patch<T>(endpoint: string, data?: unknown) {
     return this.request<T>('PATCH', endpoint, data);
   }

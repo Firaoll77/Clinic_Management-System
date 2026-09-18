@@ -122,6 +122,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await apiClient.post<{
         user: User;
+        tokens?: {
+          accessToken: string;
+          refreshToken: string;
+        };
       }>('/auth/login', { username, password });
 
       if (response.error) {
@@ -129,9 +133,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (response.data) {
-        const { user: loggedInUser } = response.data;
+        const { user: loggedInUser, tokens } = response.data;
         setUser(loggedInUser);
-        // Cookies are set by the backend
+        
+        // Fallback: store tokens in localStorage if cookies don't work
+        if (tokens) {
+          localStorage.setItem('accessToken', tokens.accessToken);
+          localStorage.setItem('refreshToken', tokens.refreshToken);
+        }
+        
         return { success: true };
       }
 
