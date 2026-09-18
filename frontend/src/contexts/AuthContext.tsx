@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setUser(null);
       // Cookies are cleared by the backend
+      setLoading(false);
     }
   }, []);
 
@@ -59,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setUser(null);
       // Cookies are cleared by the backend
+      setLoading(false);
     }
   }, []);
 
