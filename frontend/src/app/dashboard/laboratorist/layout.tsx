@@ -5,8 +5,8 @@ import { useNavigation } from '@/contexts/NavigationContext';
 import { useWorkflow } from '@/contexts/WorkflowContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { 
-  LogOut, 
+import {
+  LogOut,
   HeartPulse,
   User,
   Settings,
@@ -17,7 +17,6 @@ import {
   ChevronRight,
   Lock
 } from 'lucide-react';
-import NotificationBell from '@/components/NotificationBell';
 
 export default function LaboratoristDashboardLayout({
   children,
@@ -58,101 +57,91 @@ export default function LaboratoristDashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-orange-600 to-amber-600 shadow-lg sticky top-0 z-50">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex items-center space-x-3">
-                <div className="bg-white p-2 rounded-lg">
-                  <HeartPulse className="h-6 w-6 text-orange-600" />
-                </div>
-                <h1 className="text-xl font-bold text-white">
-                  Laboratory Pipeline
-                </h1>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 flex overflow-hidden">
+      {/* Vertical Sidebar */}
+      <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0 flex flex-col">
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center space-x-3">
+            <div className="bg-orange-600 p-2 rounded-lg">
+              <HeartPulse className="h-6 w-6 text-white" />
             </div>
-            <div className="flex items-center space-x-4">
-              <NotificationBell />
-              <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg">
-                <User className="h-5 w-5 text-white" />
-                <span className="text-sm text-white font-medium">
-                  {user?.staffProfile?.fullName || user?.email}
-                </span>
-              </div>
-              <button
-                onClick={logout}
-                className="flex items-center space-x-2 text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-all duration-200"
-              >
-                <LogOut className="h-5 w-5" />
-                <span className="text-sm font-medium">Logout</span>
-              </button>
-            </div>
+            <h1 className="text-lg font-bold text-gray-800">
+              Lab
+            </h1>
           </div>
         </div>
-      </header>
 
-      {/* Main Content with Sidebar */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Vertical Sidebar - Workflow Steps */}
-        <nav className="w-64 bg-white border-r border-gray-200 shadow-sm flex-shrink-0">
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Lab Workflow</h3>
-            <div className="space-y-1">
-              {[
-                { id: 'pending' as const, label: 'Pending Orders', icon: Clock },
-                { id: 'in-progress' as const, label: 'In Progress', icon: Activity },
-                { id: 'completed' as const, label: 'Completed', icon: CheckCircle }
-              ].map((step, index) => {
-                const isCurrent = currentStep === step.id;
-                const isCompleted = completedSteps.has(step.id);
-                const canAccess = canAccessStep(step.id);
-                const Icon = step.icon;
-                
-                return (
-                  <div key={step.id} className="relative">
-                    <button
-                      onClick={() => canAccess && setCurrentStep(step.id)}
-                      disabled={!canAccess}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                        isCurrent
-                          ? 'bg-orange-100 text-orange-700 font-medium'
-                          : isCompleted
-                          ? 'bg-orange-50 text-orange-700'
-                          : canAccess
-                          ? 'text-gray-600 hover:bg-gray-100'
-                          : 'text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      <div className="relative">
-                        {isCompleted ? (
-                          <CheckCircle className="h-5 w-5 text-orange-600" />
-                        ) : !canAccess ? (
-                          <Lock className="h-5 w-5" />
-                        ) : (
-                          <Icon className="h-5 w-5" />
-                        )}
-                      </div>
-                      <span>{step.label}</span>
-                      {isCurrent && (
-                        <ChevronRight className="h-4 w-4 ml-auto" />
+        <div className="flex-1 p-4 overflow-y-auto">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Lab Workflow</h3>
+          <div className="space-y-1">
+            {[
+              { id: 'pending' as const, label: 'Pending Orders', icon: Clock },
+              { id: 'in-progress' as const, label: 'In Progress', icon: Activity },
+              { id: 'completed' as const, label: 'Completed', icon: CheckCircle }
+            ].map((step, index) => {
+              const isCurrent = currentStep === step.id;
+              const isCompleted = completedSteps.has(step.id);
+              const canAccess = canAccessStep(step.id);
+              const Icon = step.icon;
+
+              return (
+                <div key={step.id} className="relative">
+                  <button
+                    onClick={() => canAccess && setCurrentStep(step.id)}
+                    disabled={!canAccess}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                      isCurrent
+                        ? 'bg-orange-100 text-orange-700 font-medium'
+                        : isCompleted
+                        ? 'bg-orange-50 text-orange-700'
+                        : canAccess
+                        ? 'text-gray-600 hover:bg-gray-100'
+                        : 'text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="relative">
+                      {isCompleted ? (
+                        <CheckCircle className="h-5 w-5 text-orange-600" />
+                      ) : !canAccess ? (
+                        <Lock className="h-5 w-5" />
+                      ) : (
+                        <Icon className="h-5 w-5" />
                       )}
-                    </button>
-                    {index < 2 && (
-                      <div className="absolute left-7 top-10 w-0.5 h-4 bg-gray-200" />
+                    </div>
+                    <span>{step.label}</span>
+                    {isCurrent && (
+                      <ChevronRight className="h-4 w-4 ml-auto" />
                     )}
-                  </div>
-                );
-              })}
-            </div>
+                  </button>
+                  {index < 2 && (
+                    <div className="absolute left-7 top-10 w-0.5 h-4 bg-gray-200" />
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </nav>
-
-        {/* Kanban Pipeline */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {children}
         </div>
+
+        <div className="p-4 border-t border-gray-200 space-y-3">
+          <div className="flex items-center space-x-3 px-3 py-2 bg-gray-50 rounded-lg">
+            <User className="h-5 w-5 text-gray-600" />
+            <span className="text-sm text-gray-700 font-medium truncate">
+              {user?.staffProfile?.fullName || user?.email}
+            </span>
+          </div>
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all duration-200"
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="text-sm font-medium">Logout</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {children}
       </div>
     </div>
   );
