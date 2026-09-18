@@ -47,7 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
-      // Cookies are cleared by the backend
+      // Clear localStorage tokens as fallback
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       setLoading(false);
     }
   }, []);
@@ -59,7 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Logout all error:', error);
     } finally {
       setUser(null);
-      // Cookies are cleared by the backend
+      // Clear localStorage tokens as fallback
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       setLoading(false);
     }
   }, []);
