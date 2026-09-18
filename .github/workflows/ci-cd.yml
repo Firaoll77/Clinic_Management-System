@@ -246,9 +246,10 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Trigger Render Deployment
-        if: secrets.RENDER_DEPLOY_HOOK != ''
-        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
-
-      - name: Skip deployment (no hook configured)
-        if: secrets.RENDER_DEPLOY_HOOK == ''
-        run: echo "RENDER_DEPLOY_HOOK secret not configured - skipping deployment"
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+          else
+            echo "RENDER_DEPLOY_HOOK secret not configured - skipping deployment"
+          fi
