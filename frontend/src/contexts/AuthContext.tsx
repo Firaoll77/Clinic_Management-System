@@ -39,6 +39,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   const logout = useCallback(async () => {
     // Immediately clear local state regardless of API call
@@ -46,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setLoading(false);
+    setIsLoggedOut(true);
 
     // Try to call logout API, but don't let it block
     try {
@@ -122,9 +124,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check authentication on mount by fetching user info
     // Cookies are automatically sent by the browser
-    fetchUserInfo();
-     
-  }, [fetchUserInfo]);
+    // Don't fetch if user has logged out
+    if (!isLoggedOut) {
+      fetchUserInfo();
+    }
+  }, [fetchUserInfo, isLoggedOut]);
 
   const login = useCallback(async (username: string, password: string) => {
     try {
@@ -143,13 +147,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.data) {
         const { user: loggedInUser, tokens } = response.data;
         setUser(loggedInUser);
-        
+        setIsLoggedOut(false); // Reset logout flag on successful login
+
         // Fallback: store tokens in localStorage if cookies don't work
         if (tokens) {
           localStorage.setItem('accessToken', tokens.accessToken);
           localStorage.setItem('refreshToken', tokens.refreshToken);
         }
-        
+
         return { success: true };
       }
 
