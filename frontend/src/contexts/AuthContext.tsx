@@ -42,37 +42,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedOut, setIsLoggedOut] = useState(false);
 
   const logout = useCallback(async () => {
-    // Try to call logout API first with current token
-    try {
-      await apiClient.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Continue with local cleanup even if API fails
-    }
-
-    // Clear local state after API call
+    // Clear all local state immediately
     setUser(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setLoading(false);
     setIsLoggedOut(true);
+
+    // Optionally call backend to revoke token (non-blocking, fire and forget)
+    apiClient.post('/auth/logout').catch(err => {
+      console.error('Logout API error (non-critical):', err);
+    });
   }, []);
 
   const logoutAll = useCallback(async () => {
-    // Try to call logout-all API first with current token
-    try {
-      await apiClient.post('/auth/logout-all');
-    } catch (error) {
-      console.error('Logout all error:', error);
-      // Continue with local cleanup even if API fails
-    }
-
-    // Clear local state after API call
+    // Clear all local state immediately
     setUser(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setLoading(false);
     setIsLoggedOut(true);
+
+    // Optionally call backend to revoke all tokens (non-blocking, fire and forget)
+    apiClient.post('/auth/logout-all').catch(err => {
+      console.error('Logout all API error (non-critical):', err);
+    });
   }, []);
 
   const getSessions = useCallback(async () => {
