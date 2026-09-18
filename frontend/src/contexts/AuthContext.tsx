@@ -41,30 +41,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const logout = useCallback(async () => {
+    // Immediately clear local state regardless of API call
+    setUser(null);
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setLoading(false);
+
+    // Try to call logout API, but don't let it block
     try {
       await apiClient.post('/auth/logout');
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      setUser(null);
-      // Clear localStorage tokens as fallback
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      setLoading(false);
+      // Local state is already cleared, so logout is complete
     }
   }, []);
 
   const logoutAll = useCallback(async () => {
+    // Immediately clear local state regardless of API call
+    setUser(null);
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    setLoading(false);
+
+    // Try to call logout-all API, but don't let it block
     try {
       await apiClient.post('/auth/logout-all');
     } catch (error) {
       console.error('Logout all error:', error);
-    } finally {
-      setUser(null);
-      // Clear localStorage tokens as fallback
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      setLoading(false);
+      // Local state is already cleared, so logout is complete
     }
   }, []);
 

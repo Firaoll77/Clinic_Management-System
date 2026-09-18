@@ -237,7 +237,8 @@ class ApiClient {
         response.status === 401 &&
         !isRetry &&
         !endpoint.includes('/auth/login') &&
-        !endpoint.includes('/auth/refresh')
+        !endpoint.includes('/auth/refresh') &&
+        !endpoint.includes('/auth/logout')
       ) {
         const refreshed = await this.refreshAccessToken();
         if (refreshed) {

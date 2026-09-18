@@ -347,7 +347,15 @@ router.get('/me', authenticate, async (req: Request, res: Response) => {
  */
 router.post('/logout', authenticate, async (req: Request, res: Response) => {
   try {
-    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    let refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    // Try Authorization header as fallback
+    if (!refreshToken && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith('Bearer ')) {
+        refreshToken = authHeader.substring(7);
+      }
+    }
 
     if (refreshToken) {
       // Revoke the specific refresh token
@@ -395,6 +403,16 @@ router.post('/logout-all', authenticate, async (req: Request, res: Response) => 
     }
 
     // Revoke all refresh tokens for this user
+    let refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    // Try Authorization header as fallback
+    if (!refreshToken && req.headers.authorization) {
+      const authHeader = req.headers.authorization;
+      if (authHeader.startsWith('Bearer ')) {
+        refreshToken = authHeader.substring(7);
+      }
+    }
+
     const revokedCount = await revokeAllUserTokens(userId);
 
     // Clear cookies with proper cross-origin settings
