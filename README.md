@@ -186,14 +186,19 @@ The system includes the following pre-configured users:
 
 ### Authentication
 
-All API endpoints (except login) require authentication via JWT token in the Authorization header:
+All API endpoints (except login and refresh) require authentication via JWT token in the Authorization header:
 
 ```
 Authorization: Bearer <your-jwt-token>
 ```
 
+The system uses pure token-based authentication:
+- **Access tokens**: Expire after 15 minutes
+- **Refresh tokens**: Expire after 7 days
+- Tokens are returned in response body and stored in localStorage
+
 #### POST /api/auth/login
-Login to get JWT token
+Login to get JWT tokens
 
 **Request:**
 ```json
@@ -206,12 +211,66 @@ Login to get JWT token
 **Response:**
 ```json
 {
-  "token": "jwt-token-here",
+  "message": "Login successful",
   "user": {
     "id": "user-id",
     "username": "receptionist",
     "role": "RECEPTIONIST"
+  },
+  "tokens": {
+    "accessToken": "jwt-access-token-here",
+    "refreshToken": "jwt-refresh-token-here"
   }
+}
+```
+
+#### POST /api/auth/refresh
+Refresh access token using refresh token
+
+**Request:**
+```json
+{
+  "refreshToken": "your-refresh-token"
+}
+```
+
+**Response:**
+```json
+{
+  "tokens": {
+    "accessToken": "new-access-token",
+    "refreshToken": "new-refresh-token"
+  }
+}
+```
+
+#### POST /api/auth/logout
+Logout current session
+
+**Headers:**
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+**Response:**
+```json
+{
+  "message": "Logged out successfully"
+}
+```
+
+#### POST /api/auth/logout-all
+Logout all sessions for the user
+
+**Headers:**
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+**Response:**
+```json
+{
+  "message": "All sessions logged out successfully"
 }
 ```
 
@@ -498,7 +557,7 @@ The Clinic Management System provides a unified platform for managing walk-in cl
 
 ## 🔒 Security Features
 
-- **JWT Authentication**: Secure token-based authentication
+- **JWT Authentication**: Secure token-based authentication with 15-minute access tokens and 7-day refresh tokens
 - **Role-Based Access Control**: Granular permissions per role
 - **Input Validation**: Comprehensive input validation
 - **SQL Injection Prevention**: Prisma ORM prevents SQL injection
@@ -506,6 +565,7 @@ The Clinic Management System provides a unified platform for managing walk-in cl
 - **CORS Configuration**: Controlled cross-origin access
 - **Security Headers**: Helmet.js for security headers
 - **Activity Logging**: Comprehensive audit trail for patient movement and sensitive operations
+- **Configurable Rate Limiting**: API endpoint rate limiting to prevent abuse
 
 ## 📊 Database Schema
 
@@ -608,9 +668,7 @@ Contributions are welcome! Please follow these steps:
 
 ## 📞 Support
 
-For support, please contact:
-- Email: support@clinic.com
-- Documentation: See this README and inline code comments
+For support, please refer to the project documentation in the repository or contact the system administrator.
 
 ## 🙏 Acknowledgments
 
