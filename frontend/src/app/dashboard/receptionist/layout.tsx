@@ -14,7 +14,8 @@ import {
   Users,
   UserPlus,
   Calendar,
-  Receipt
+  Receipt,
+  Database
 } from 'lucide-react';
 
 export default function ReceptionistDashboardLayout({
@@ -35,7 +36,7 @@ export default function ReceptionistDashboardLayout({
 
   // Initialize workflow steps for receptionist (for navigation tracking only)
   useEffect(() => {
-    setWorkflowSteps(['queue', 'registration', 'billing']);
+    setWorkflowSteps(['queue', 'registration', 'billing', 'patients']);
     setWorkflowInitialized(true);
   }, [setWorkflowSteps]);
 
@@ -78,6 +79,7 @@ export default function ReceptionistDashboardLayout({
             {[
               { id: 'queue' as const, label: 'Patient Queue', icon: Users },
               { id: 'registration' as const, label: 'Registration', icon: UserPlus },
+              { id: 'patients' as const, label: 'Patients List', icon: Database },
               { id: 'billing' as const, label: 'Billing', icon: Receipt }
             ].map((step) => {
               const isCurrent = currentStep === step.id;

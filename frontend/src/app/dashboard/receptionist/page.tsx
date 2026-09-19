@@ -35,6 +35,7 @@ import {
   RefreshCw,
   ShieldAlert,
   Upload,
+  Database,
 } from 'lucide-react';
 
 interface WaitingPatient {
@@ -76,6 +77,11 @@ interface Patient {
   email?: string;
   dob: string;
   gender: string;
+  address?: string;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  nationalId?: string;
+  createdAt: string;
   isNewPatient: boolean;
   lastVisit?: string;
 }
@@ -138,6 +144,15 @@ export default function ReceptionistDashboardPage() {
   const [showPatientForm, setShowPatientForm] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<string | null>(null);
 
+  // Patients list state
+  const [patientsList, setPatientsList] = useState<Patient[]>([]);
+  const [patientsListLoading, setPatientsListLoading] = useState(false);
+  const [patientsListSearch, setPatientsListSearch] = useState('');
+  const [patientsListSort, setPatientsListSort] = useState<'name' | 'mrn' | 'registrationDate'>('name');
+  const [patientsListSortDirection, setPatientsListSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [patientsListPage, setPatientsListPage] = useState(1);
+  const [patientsListPerPage] = useState(12);
+
   // Fetch data on component mount
   useEffect(() => {
     fetchWaitingPatients();
@@ -145,7 +160,19 @@ export default function ReceptionistDashboardPage() {
     fetchNurses();
     fetchAllPatients();
     fetchInvoices();
+    fetchPatientsList();
   }, []);
+
+  // Real-time updates for patients list
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (currentStep === 'patients') {
+        fetchPatientsList();
+      }
+    }, 5000); // Update every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [currentStep]);
 
   const handleViewFullRecord = async (patientIdOrMrn?: string) => {
     const targetId = patientIdOrMrn || selectedPatient?.patientId || selectedPatient?.mrn || selectedPatient?.id;
@@ -253,6 +280,11 @@ export default function ReceptionistDashboardPage() {
           email: p.email,
           dob: p.dob,
           gender: p.gender,
+          address: p.address,
+          bloodGroup: p.bloodGroup,
+          emergencyContact: p.emergencyContact,
+          nationalId: p.nationalId,
+          createdAt: p.createdAt,
           isNewPatient: !p.lastActivityAt || new Date(p.lastActivityAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
           lastVisit: p.lastActivityAt
         }));
@@ -262,6 +294,37 @@ export default function ReceptionistDashboardPage() {
       console.error('Failed to fetch patients:', error);
     } finally {
       setPatientsLoading(false);
+    }
+  };
+
+  const fetchPatientsList = async () => {
+    setPatientsListLoading(true);
+    try {
+      const response = await apiClient.get<{ patients: any[] }>('/patients');
+      if (response.data) {
+        const patients = response.data.patients.map((p: any) => ({
+          id: p.id,
+          mrn: p.mrn,
+          firstName: p.firstName,
+          lastName: p.lastName,
+          phone: p.phone,
+          email: p.email,
+          dob: p.dob,
+          gender: p.gender,
+          address: p.address,
+          bloodGroup: p.bloodGroup,
+          emergencyContact: p.emergencyContact,
+          nationalId: p.nationalId,
+          createdAt: p.createdAt,
+          isNewPatient: !p.lastActivityAt || new Date(p.lastActivityAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          lastVisit: p.lastActivityAt
+        }));
+        setPatientsList(patients);
+      }
+    } catch (error) {
+      console.error('Failed to fetch patients list:', error);
+    } finally {
+      setPatientsListLoading(false);
     }
   };
 
@@ -284,6 +347,107 @@ export default function ReceptionistDashboardPage() {
       case 'LAB_READY': return 'Lab Ready';
       case 'BILLING': return 'Billing';
       default: return visitStatus;
+    }
+  };
+
+  // Patients list filtering and sorting
+  const getFilteredAndSortedPatients = () => {
+    let filtered = patientsList;
+
+    // Search filtering
+    if (patientsListSearch) {
+      const searchLower = patientsListSearch.toLowerCase();
+      filtered = filtered.filter(patient =>
+        patient.firstName.toLowerCase().includes(searchLower) ||
+        patient.lastName.toLowerCase().includes(searchLower) ||
+        patient.mrn.toLowerCase().includes(searchLower) ||
+        patient.phone.includes(searchLower) ||
+        (patient.email && patient.email.toLowerCase().includes(searchLower)) ||
+        (patient.nationalId && patient.nationalId.includes(searchLower))
+      );
+    }
+
+    // Sorting
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      switch (patientsListSort) {
+        case 'name':
+          comparison = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+          break;
+        case 'mrn':
+          comparison = a.mrn.localeCompare(b.mrn);
+          break;
+        case 'registrationDate':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+      return patientsListSortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  };
+
+  const handleSort = (field: 'name' | 'mrn' | 'registrationDate') => {
+    if (patientsListSort === field) {
+      setPatientsListSortDirection(patientsListSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setPatientsListSort(field);
+      setPatientsListSortDirection('asc');
+    }
+  };
+
+  const getPaginatedPatients = () => {
+    const filtered = getFilteredAndSortedPatients();
+    const startIndex = (patientsListPage - 1) * patientsListPerPage;
+    return filtered.slice(startIndex, startIndex + patientsListPerPage);
+  };
+
+  const getTotalPages = () => {
+    return Math.ceil(getFilteredAndSortedPatients().length / patientsListPerPage);
+  };
+
+  const handlePrintPatient = (patient: Patient) => {
+    const printContent = `
+      <html>
+        <head>
+          <title>Patient Record - ${patient.firstName} ${patient.lastName}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .patient-info { margin-bottom: 20px; }
+            .field { margin-bottom: 10px; }
+            .label { font-weight: bold; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Patient Record</h1>
+            <p>Generated on ${new Date().toLocaleString()}</p>
+          </div>
+          <div class="patient-info">
+            <div class="field"><span class="label">MRN:</span> ${patient.mrn}</div>
+            <div class="field"><span class="label">Name:</span> ${patient.firstName} ${patient.lastName}</div>
+            <div class="field"><span class="label">Date of Birth:</span> ${new Date(patient.dob).toLocaleDateString()}</div>
+            <div class="field"><span class="label">Gender:</span> ${patient.gender}</div>
+            <div class="field"><span class="label">Phone:</span> ${patient.phone}</div>
+            <div class="field"><span class="label">Email:</span> ${patient.email || 'N/A'}</div>
+            <div class="field"><span class="label">Address:</span> ${patient.address || 'N/A'}</div>
+            <div class="field"><span class="label">Blood Group:</span> ${patient.bloodGroup || 'N/A'}</div>
+            <div class="field"><span class="label">Emergency Contact:</span> ${patient.emergencyContact || 'N/A'}</div>
+            <div class="field"><span class="label">National ID:</span> ${patient.nationalId || 'N/A'}</div>
+            <div class="field"><span class="label">Registration Date:</span> ${new Date(patient.createdAt).toLocaleString()}</div>
+            <div class="field"><span class="label">Last Visit:</span> ${patient.lastVisit ? new Date(patient.lastVisit).toLocaleString() : 'N/A'}</div>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
     }
   };
 
@@ -429,12 +593,6 @@ export default function ReceptionistDashboardPage() {
 
   const filteredPatients = waitingPatients.filter(patient =>
     patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    patient.phone.includes(searchQuery) ||
-    patient.mrn?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredAllPatients = allPatients.filter(patient =>
-    `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     patient.phone.includes(searchQuery) ||
     patient.mrn?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -717,73 +875,17 @@ export default function ReceptionistDashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">Patient Database</h3>
-                  <span className="text-sm text-gray-500">{filteredAllPatients.length} patients</span>
-                </div>
-              </div>
-              <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-                {patientsLoading ? (
-                  <div className="p-8 text-center text-gray-500">Loading patients...</div>
-                ) : filteredAllPatients.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">No patients found</div>
-                ) : (
-                  filteredAllPatients.slice(0, 10).map((patient) => (
-                    <div
-                      key={patient.id}
-                      onClick={() => setSelectedPatient({
-                        id: patient.id,
-                        patientId: patient.id,
-                        name: `${patient.firstName} ${patient.lastName}`,
-                        mrn: patient.mrn,
-                        phone: patient.phone,
-                        visitStatus: 'TRIAGE',
-                        createdAt: new Date().toISOString(),
-                        isNewPatient: patient.isNewPatient,
-                        hasHistory: !patient.isNewPatient
-                      })}
-                      className="p-4 hover:bg-gray-50 cursor-pointer flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-green-100 p-2 rounded-full">
-                          <User className="h-4 w-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{patient.firstName} {patient.lastName}</p>
-                          <p className="text-sm text-gray-600">MRN: {patient.mrn}</p>
-                          {patient.isNewPatient && (
-                            <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">New</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewFullRecord(patient.id);
-                          }}
-                          className="px-3 py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-medium border border-emerald-200 transition-colors flex items-center"
-                          title="View Full Patient Record"
-                        >
-                          <FileText className="h-3.5 w-3.5 mr-1" />
-                          Record
-                        </button>
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+            <div className="text-center py-12">
+              <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p className="text-gray-500">Select a patient from the waiting room</p>
             </div>
           )}
         </div>
       </div>
-      </>
-      )}
+    </>
+  )}
 
-      {currentStep === 'registration' && (
+  {currentStep === 'registration' && (
         <div className="w-full bg-gray-50 flex flex-col p-6 overflow-y-auto">
           {!showPatientForm ? (
             <button
@@ -965,6 +1067,191 @@ export default function ReceptionistDashboardPage() {
               </form>
             </div>
           )}
+        </div>
+      )}
+
+      {currentStep === 'patients' && (
+        <div className="w-full bg-gray-50 flex flex-col p-6 overflow-y-auto">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <Database className="h-6 w-6 mr-2 text-purple-600" />
+                Patients List
+              </h2>
+              <button
+                onClick={() => fetchPatientsList()}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </button>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="mb-6 space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, MRN, phone, email, or national ID..."
+                  value={patientsListSearch}
+                  onChange={(e) => setPatientsListSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-600">Sort by:</span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleSort('name')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      patientsListSort === 'name' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Name
+                    {patientsListSort === 'name' && (
+                      <span className="ml-1">{patientsListSortDirection === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleSort('mrn')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      patientsListSort === 'mrn' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    MRN
+                    {patientsListSort === 'mrn' && (
+                      <span className="ml-1">{patientsListSortDirection === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleSort('registrationDate')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      patientsListSort === 'registrationDate' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Registration Date
+                    {patientsListSort === 'registrationDate' && (
+                      <span className="ml-1">{patientsListSortDirection === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Patient Cards */}
+            {patientsListLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <p className="text-gray-500">Loading patients...</p>
+              </div>
+            ) : getPaginatedPatients().length === 0 ? (
+              <div className="text-center py-12">
+                <Database className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p className="text-gray-500">No patients found</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {getPaginatedPatients().map((patient) => (
+                    <motion.div
+                      key={patient.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        setFullRecordPatient(patient);
+                        setShowFullRecordModal(true);
+                        setFullRecordTab('overview');
+                      }}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-purple-100 p-2 rounded-full">
+                            <User className="h-5 w-5 text-purple-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{patient.firstName} {patient.lastName}</h3>
+                            <p className="text-sm text-gray-500">{patient.mrn}</p>
+                          </div>
+                        </div>
+                        {patient.isNewPatient && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">New</span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center text-gray-600">
+                          <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                          {patient.phone}
+                        </div>
+                        {patient.email && (
+                          <div className="flex items-center text-gray-600">
+                            <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                            {patient.email}
+                          </div>
+                        )}
+                        <div className="flex items-center text-gray-600">
+                          <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                          DOB: {new Date(patient.dob).toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center text-gray-600">
+                          <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+                          {patient.gender}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                        <div className="text-xs text-gray-500">
+                          Registered: {new Date(patient.createdAt).toLocaleDateString()}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintPatient(patient);
+                          }}
+                          className="px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-xs font-medium flex items-center transition-colors"
+                        >
+                          <Printer className="h-3.5 w-3.5 mr-1" />
+                          Print
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {getTotalPages() > 1 && (
+                  <div className="mt-6 flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Showing {((patientsListPage - 1) * patientsListPerPage) + 1} to {Math.min(patientsListPage * patientsListPerPage, getFilteredAndSortedPatients().length)} of {getFilteredAndSortedPatients().length} patients
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setPatientsListPage(Math.max(1, patientsListPage - 1))}
+                        disabled={patientsListPage === 1}
+                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-sm text-gray-600">
+                        Page {patientsListPage} of {getTotalPages()}
+                      </span>
+                      <button
+                        onClick={() => setPatientsListPage(Math.min(getTotalPages(), patientsListPage + 1))}
+                        disabled={patientsListPage === getTotalPages()}
+                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       )}
 
