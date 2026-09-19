@@ -154,4 +154,34 @@ router.post('/:encounterId/print', authenticate, authorize('RECEPTIONIST'), asyn
   }
 });
 
+/**
+ * PATCH /api/prescription/:id
+ * Update prescription (for marking as printed)
+ */
+router.patch('/:id', authenticate, authorize('RECEPTIONIST'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { printedAt, printedBy } = req.body;
+
+    const prescription = await prisma.prescription.update({
+      where: { id },
+      data: {
+        printedAt: printedAt ? new Date(printedAt) : new Date(),
+        printedBy: printedBy
+      }
+    });
+
+    res.json({
+      message: 'Prescription updated successfully',
+      prescription
+    });
+  } catch (error) {
+    console.error('Update prescription error:', error);
+    res.status(500).json({
+      error: 'Failed to update prescription',
+      message: 'An error occurred while updating prescription',
+    });
+  }
+});
+
 export default router;

@@ -13,7 +13,8 @@ import {
   AlertCircle,
   User,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Send
 } from 'lucide-react';
 
 interface LabAssignment {
@@ -166,6 +167,11 @@ export default function LaboratoristDashboardPage() {
       try {
         await apiClient.post(`/lab/orders/${selectedAssignmentForResults.labOrderId}/complete`, {});
         showSuccess('Lab order completed and sent to doctor for review');
+        
+        // Mark assignment as completed
+        await apiClient.post(`/assignments/lab-tech/assignment/${selectedAssignmentForResults.id}/respond`, {
+          action: 'complete'
+        });
       } catch (completeError) {
         console.error('Failed to complete lab order:', completeError);
         showError('Results saved but failed to complete order');

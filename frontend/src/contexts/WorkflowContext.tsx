@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 
 export type DoctorWorkflowStep = 'intake' | 'vitals' | 'encounter' | 'orders' | 'lab-results' | 'prescription';
-export type ReceptionistWorkflowStep = 'queue' | 'registration' | 'appointments' | 'billing';
+export type ReceptionistWorkflowStep = 'queue' | 'registration' | 'appointments' | 'billing' | 'prescription';
 export type NurseWorkflowStep = 'triage' | 'vitals' | 'intake';
 export type LaboratoristWorkflowStep = 'pending' | 'in-progress' | 'completed';
 export type AdminWorkflowStep = 'overview' | 'staff' | 'patients' | 'appointments' | 'billing' | 'audit' | 'settings';
@@ -31,7 +31,7 @@ const WorkflowContext = createContext<WorkflowContextType | undefined>(undefined
 
 const defaultWorkflows: Record<string, WorkflowStep[]> = {
   doctor: ['intake', 'vitals', 'encounter', 'orders', 'lab-results', 'prescription'],
-  receptionist: ['queue', 'registration', 'appointments', 'billing'],
+  receptionist: ['queue', 'registration', 'appointments', 'billing', 'prescription'],
   nurse: ['triage', 'vitals', 'intake'],
   laboratorist: ['pending', 'in-progress', 'completed'],
   admin: ['overview', 'staff', 'patients', 'appointments', 'billing', 'audit', 'settings']

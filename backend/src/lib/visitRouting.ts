@@ -476,6 +476,15 @@ export class VisitRoutingService {
             bloodGroup: true,
             emergencyContact: true,
             lastActivityAt: true,
+            totalExpectedFees: true,
+          },
+        },
+        prescription: {
+          select: {
+            id: true,
+            medications: true,
+            instructions: true,
+            printedAt: true,
           },
         },
         invoices: {

@@ -18,6 +18,7 @@ import {
   MapPin,
   X,
   ChevronRight,
+  Printer,
   Plus,
   Stethoscope,
   Users,
@@ -31,7 +32,6 @@ import {
   Thermometer,
   HeartPulse,
   FlaskConical,
-  Printer,
   RefreshCw,
   ShieldAlert,
   Upload,
@@ -49,6 +49,15 @@ interface WaitingPatient {
   isNewPatient?: boolean;
   hasHistory?: boolean;
   encounterId?: string;
+  hasPrescription?: boolean;
+  totalExpectedFees?: number;
+}
+
+interface Prescription {
+  id: string;
+  medications: string;
+  instructions: string;
+  printedAt?: string;
 }
 
 interface Doctor {
@@ -201,7 +210,9 @@ export default function ReceptionistDashboardPage() {
           visitStatus: p.visitStatus,
           createdAt: p.createdAt,
           isNewPatient: !p.patient?.lastActivityAt || new Date(p.patient.lastActivityAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-          hasHistory: !!p.patient?.lastActivityAt
+          hasHistory: !!p.patient?.lastActivityAt,
+          hasPrescription: !!p.prescription,
+          totalExpectedFees: p.patient?.totalExpectedFees || 0
         }));
         setWaitingPatients(patients);
       }
@@ -660,6 +671,69 @@ export default function ReceptionistDashboardPage() {
     }
   };
 
+  const handlePrintPrescription = async (encounterId: string) => {
+    try {
+      const response = await apiClient.get<{ prescription: Prescription }>(`/prescription/${encounterId}`);
+      if (response.data && response.data.prescription) {
+        const prescription: Prescription = response.data.prescription;
+        // Print the prescription
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(`
+            <html>
+              <head>
+                <title>Prescription</title>
+                <style>
+                  body { font-family: Arial, sans-serif; padding: 20px; }
+                  .prescription { border: 1px solid #000; padding: 20px; }
+                  .header { text-align: center; margin-bottom: 20px; }
+                  .medications { margin: 20px 0; }
+                  .instructions { margin: 20px 0; }
+                  .footer { margin-top: 40px; font-size: 12px; }
+                </style>
+              </head>
+              <body>
+                <div class="prescription">
+                  <div class="header">
+                    <h1>CLINIC MANAGEMENT SYSTEM</h1>
+                    <p>Prescription</p>
+                  </div>
+                  <div class="medications">
+                    <h3>Medications:</h3>
+                    <p>${prescription.medications.replace(/\n/g, '<br>')}</p>
+                  </div>
+                  <div class="instructions">
+                    <h3>Instructions:</h3>
+                    <p>${prescription.instructions || 'No additional instructions'}</p>
+                  </div>
+                  <div class="footer">
+                    <p>Printed: ${new Date().toLocaleString()}</p>
+                    <p>Prescription ID: ${prescription.id}</p>
+                  </div>
+                </div>
+              </body>
+            </html>
+          `);
+          printWindow.document.close();
+          printWindow.print();
+
+          // Mark prescription as printed
+          await apiClient.patch(`/prescription/${prescription.id}`, {
+            printedAt: new Date().toISOString(),
+            printedBy: user?.id
+          });
+
+          showSuccess('Prescription printed successfully!');
+        }
+      } else {
+        showError('No prescription found for this patient');
+      }
+    } catch (error) {
+      console.error('Failed to print prescription:', error);
+      showError('Failed to print prescription. Please try again.');
+    }
+  };
+
   const handleViewInvoice = async (invoiceId: string) => {
     try {
       const response = await apiClient.get(`/billing/invoices/${invoiceId}`);
@@ -805,10 +879,19 @@ export default function ReceptionistDashboardPage() {
                     <p className="font-medium">{selectedPatient.phone}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Arrived</p>
-                    <p className="font-medium">{new Date(selectedPatient.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="text-gray-500">Total Fees</p>
+                    <p className="font-medium text-green-600 font-bold">${selectedPatient.totalExpectedFees || '0.00'}</p>
                   </div>
                 </div>
+                {selectedPatient.hasPrescription && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="h-4 w-4 text-blue-600" />
+                      <p className="text-sm font-medium text-blue-900">Prescription Ready</p>
+                    </div>
+                    <p className="text-xs text-blue-700 mt-1">Doctor has sent prescription for this patient</p>
+                  </div>
+                )}
               </div>
               
               <div className="mt-4 space-y-3">
@@ -851,7 +934,16 @@ export default function ReceptionistDashboardPage() {
                   </button>
                 </div>
                 {selectedPatient.visitStatus === 'BILLING' && (
-                  <div className="mt-3">
+                  <div className="mt-3 space-y-2">
+                    {selectedPatient.hasPrescription && (
+                      <button
+                        onClick={() => handlePrintPrescription(selectedPatient.encounterId || selectedPatient.id)}
+                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center"
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print Prescription
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDischargePatient(selectedPatient.encounterId || selectedPatient.id)}
                       className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center"

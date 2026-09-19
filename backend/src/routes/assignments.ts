@@ -366,7 +366,7 @@ router.post('/nurse/assignment/:id/respond', async (req, res) => {
 router.post('/lab-tech/assignment/:id/respond', async (req, res) => {
   try {
     const { id } = req.params;
-    const { action, rejectionReason } = req.body; // action: 'accept' or 'reject'
+    const { action, rejectionReason } = req.body; // action: 'accept', 'reject', or 'complete'
     const userId = req.user?.userId;
 
     const assignment = await prisma.labAssignment.findUnique({
@@ -401,6 +401,14 @@ router.post('/lab-tech/assignment/:id/respond', async (req, res) => {
         where: { id: (assignment as any).labOrderId },
         data: {
           status: 'ORDERED',
+        },
+      });
+    } else if (action === 'complete') {
+      await prisma.labAssignment.update({
+        where: { id },
+        data: {
+          status: 'COMPLETED',
+          completedAt: new Date(),
         },
       });
     }
