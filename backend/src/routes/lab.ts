@@ -444,11 +444,11 @@ router.post('/orders/:id/complete', authenticate, async (req: Request, res: Resp
       }
     });
 
-    // Update encounter status to BILLING when lab is completed
+    // Update encounter status to DOCTOR_REVIEW when lab is completed
     if (labOrder.encounter) {
       await prisma.encounter.update({
         where: { id: labOrder.encounterId },
-        data: { visitStatus: 'BILLING' }
+        data: { visitStatus: 'DOCTOR_REVIEW' }
       });
     }
 

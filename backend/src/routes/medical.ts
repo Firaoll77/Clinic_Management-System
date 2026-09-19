@@ -17,7 +17,7 @@ router.get('/encounters/recent', authenticate, authorize('DOCTOR', 'ADMIN'), asy
   try {
     const encounters = await prisma.encounter.findMany({
       where: {
-        visitStatus: { in: ['DOCTOR_CONSULT', 'COMPLETED', 'BILLING'] }
+        visitStatus: { in: ['DOCTOR_CONSULT', 'DOCTOR_REVIEW', 'COMPLETED', 'BILLING'] }
       },
       include: {
         patient: {
@@ -489,6 +489,124 @@ router.get('/encounters/:id', authenticate, async (req: Request, res: Response) 
     res.status(500).json({
       error: 'Failed to fetch encounter',
       message: 'An error occurred while fetching the encounter',
+    });
+  }
+});
+
+/**
+ * POST /api/medical/encounters/:id/send-to-doctor
+ * Send patient back to doctor after lab review (from DOCTOR_REVIEW to DOCTOR_CONSULT)
+ */
+router.post('/encounters/:id/send-to-doctor', authenticate, authorize('DOCTOR'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.id;
+
+    const encounter = await prisma.encounter.update({
+      where: { id: Array.isArray(id) ? id[0] : id },
+      data: {
+        visitStatus: 'DOCTOR_CONSULT'
+      }
+    });
+
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId,
+        action: 'SEND_TO_DOCTOR',
+        entityType: 'ENCOUNTER',
+        entityId: encounter.id,
+        details: 'Patient sent back to doctor consultation after lab review'
+      }
+    });
+
+    res.json({
+      message: 'Patient sent back to doctor consultation',
+      encounter
+    });
+  } catch (error) {
+    console.error('Send to doctor error:', error);
+    res.status(500).json({
+      error: 'Failed to send patient to doctor',
+      message: 'An error occurred while sending patient to doctor',
+    });
+  }
+});
+
+/**
+ * POST /api/medical/encounters/:id/complete-consultation
+ * Complete consultation and send to billing (with prescription)
+ */
+router.post('/encounters/:id/complete-consultation', authenticate, authorize('DOCTOR'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { medications, instructions } = req.body;
+    const userId = (req as any).user.id;
+
+    // Create or update prescription
+    if (medications) {
+      await prisma.prescription.upsert({
+        where: { encounterId: id },
+        create: {
+          encounterId: id,
+          doctorId: userId,
+          medications,
+          instructions
+        },
+        update: {
+          medications,
+          instructions
+        }
+      });
+
+      // Add prescription fee to encounter fees
+      const prescriptionFee = await prisma.feeConfiguration.findUnique({
+        where: { feeType: 'PRESCRIPTION' }
+      });
+
+      if (prescriptionFee && prescriptionFee.isActive) {
+        await prisma.encounterFee.create({
+          data: {
+            encounterId: id,
+            feeType: 'PRESCRIPTION',
+            description: 'Prescription fee',
+            amount: prescriptionFee.amount,
+            loggedBy: userId
+          }
+        });
+      }
+    }
+
+    // Update encounter status to BILLING
+    const encounter = await prisma.encounter.update({
+      where: { id: Array.isArray(id) ? id[0] : id },
+      data: {
+        visitStatus: 'BILLING',
+        signedAt: new Date(),
+        signedBy: userId
+      }
+    });
+
+    // Log activity
+    await prisma.activityLog.create({
+      data: {
+        userId,
+        action: 'COMPLETE_CONSULTATION',
+        entityType: 'ENCOUNTER',
+        entityId: encounter.id,
+        details: 'Consultation completed with prescription - patient sent to billing'
+      }
+    });
+
+    res.json({
+      message: 'Consultation completed and patient sent to billing',
+      encounter
+    });
+  } catch (error) {
+    console.error('Complete consultation error:', error);
+    res.status(500).json({
+      error: 'Failed to complete consultation',
+      message: 'An error occurred while completing consultation',
     });
   }
 });

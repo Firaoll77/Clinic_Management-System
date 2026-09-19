@@ -161,7 +161,16 @@ export default function LaboratoristDashboardPage() {
       showSuccess('Lab result saved successfully');
       setSelectedAssignmentForResults(null);
       fetchAssignments();
-      
+
+      // Complete the lab order to send to doctor
+      try {
+        await apiClient.post(`/lab/orders/${selectedAssignmentForResults.labOrderId}/complete`, {});
+        showSuccess('Lab order completed and sent to doctor for review');
+      } catch (completeError) {
+        console.error('Failed to complete lab order:', completeError);
+        showError('Results saved but failed to complete order');
+      }
+
       // Mark pending step as complete and move to in-progress
       completeStep('pending');
       const nextStep = getNextStep('pending');

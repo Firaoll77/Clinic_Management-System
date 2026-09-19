@@ -104,7 +104,7 @@ export class VisitRoutingService {
    * It must:
    * 1. Save the numeric data
    * 2. Update the specific lab order status to 'COMPLETED'
-   * 3. Change the overall visit_status back to 'LAB_READY' so it triggers an alert on the doctor's screen
+   * 3. Change the overall visit_status to 'LAB_RESULTS_READY' so it triggers an alert on the doctor's screen
    */
   static async completeLabOrder(labOrderId: string, labTechId: string): Promise<void> {
     try {
@@ -158,12 +158,12 @@ export class VisitRoutingService {
         (order) => order.status === 'COMPLETED'
       );
 
-      // If all lab orders are completed, change visit status to LAB_READY
+      // If all lab orders are completed, change visit status to LAB_RESULTS_READY
       if (allLabOrdersCompleted) {
         await prisma.encounter.update({
           where: { id: labOrder.encounterId },
           data: {
-            visitStatus: VisitStatus.LAB_READY,
+            visitStatus: VisitStatus.LAB_RESULTS_READY,
           },
         });
 
@@ -174,11 +174,11 @@ export class VisitRoutingService {
             action: 'STATUS_CHANGE',
             entityType: 'ENCOUNTER',
             entityId: labOrder.encounterId,
-            details: `Visit status changed to LAB_READY - all lab orders completed`,
+            details: `Visit status changed to LAB_RESULTS_READY - all lab orders completed`,
           },
         });
 
-        console.log(`Visit status changed to LAB_READY for encounter ${labOrder.encounterId}`);
+        console.log(`Visit status changed to LAB_RESULTS_READY for encounter ${labOrder.encounterId}`);
       }
     } catch (error) {
       console.error('Error completing lab order:', error);
@@ -335,6 +335,54 @@ export class VisitRoutingService {
   }
 
   /**
+   * DOCTOR QUERY: Fetch patients with DOCTOR_REVIEW status (lab results sent back to doctor)
+   */
+  static async getDoctorReviewPatients(doctorId?: string) {
+    return await prisma.encounter.findMany({
+      where: {
+        visitStatus: VisitStatus.DOCTOR_REVIEW,
+        ...(doctorId && { doctorId: doctorId })
+      },
+      select: {
+        id: true,
+        chiefComplaint: true,
+        subjective: true,
+        objective: true,
+        assessment: true,
+        plan: true,
+        visitStatus: true,
+        createdAt: true,
+        patient: {
+          select: {
+            id: true,
+            mrn: true,
+            firstName: true,
+            lastName: true,
+            dob: true,
+            gender: true,
+          },
+        },
+        labOrders: {
+          include: {
+            results: {
+              include: {
+                labTest: true,
+              },
+            },
+          },
+        },
+        vitals: {
+          orderBy: { recordedAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  }
+
+  /**
    * STATE CHANGE: Doctor reviews lab results and continues consultation
    * Changes visit status from LAB_READY back to DOCTOR_CONSULT or to BILLING
    */
@@ -409,7 +457,7 @@ export class VisitRoutingService {
     return await prisma.encounter.findMany({
       where: {
         visitStatus: {
-          in: [VisitStatus.TRIAGE, VisitStatus.WAITING_FOR_DOCTOR, VisitStatus.DOCTOR_CONSULT, VisitStatus.LAB_PENDING, VisitStatus.LAB_READY, VisitStatus.BILLING]
+          in: [VisitStatus.TRIAGE, VisitStatus.WAITING_FOR_DOCTOR, VisitStatus.DOCTOR_CONSULT, VisitStatus.LAB_PENDING, VisitStatus.LAB_RESULTS_READY, VisitStatus.DOCTOR_REVIEW, VisitStatus.BILLING]
         },
       },
       select: {

@@ -41,7 +41,8 @@ enum VisitStatus {
   WAITING_FOR_DOCTOR
   DOCTOR_CONSULT
   LAB_PENDING
-  LAB_READY
+  LAB_RESULTS_READY
+  DOCTOR_REVIEW
   BILLING
   COMPLETED
 }
@@ -177,6 +178,7 @@ model Patient {
   isArchived       Boolean  @default(false) @map("is_archived")
   archivedAt       DateTime? @map("archived_at")
   lastActivityAt   DateTime @default(now()) @map("last_activity_at")
+  totalExpectedFees Decimal @default(0) @map("total_expected_fees") @db.Decimal(12, 2) // Running total of expected fees
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -257,6 +259,7 @@ model Encounter {
   nurseAssignments NurseAssignment[]
   doctorAssignments DoctorAssignment[]
   encounterFees EncounterFee[]
+  prescription  Prescription?
 
   @@map("encounters")
   @@index([patientId])
@@ -491,12 +494,15 @@ model EncounterFee {
   amount      Decimal  @db.Decimal(12, 2)
   loggedAt    DateTime @default(now()) @map("logged_at")
   loggedBy    String   @map("logged_by")
+  isPaid      Boolean  @default(false) @map("is_paid")
+  paidAt      DateTime? @map("paid_at")
 
   encounter Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
 
   @@map("encounter_fees")
   @@index([encounterId])
   @@index([feeType])
+  @@index([isPaid])
 }
 
 model AuditLog {
@@ -575,4 +581,21 @@ model ActivityLog {
   @@index([entityType, entityId])
   @@index([action])
   @@index([createdAt])
+}
+
+model Prescription {
+  id          String   @id @default(uuid())
+  encounterId String   @unique @map("encounter_id")
+  doctorId    String   @map("doctor_id")
+  medications String   // Text field for printable prescription
+  instructions String? // Additional instructions for patient
+  printedAt   DateTime? @map("printed_at")
+  printedBy   String?   @map("printed_by") // Receptionist who printed
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+
+  @@map("prescriptions")
+  @@index([doctorId])
 }

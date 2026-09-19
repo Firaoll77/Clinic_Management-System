@@ -148,23 +148,27 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
 
 /**
  * GET /api/dashboard/doctor-patients
- * Get patients for doctor dashboard (DOCTOR_CONSULT and LAB_READY status)
+ * Get patients for doctor dashboard (DOCTOR_CONSULT, LAB_READY, and DOCTOR_REVIEW status)
  */
 router.get('/doctor-patients', authenticate, async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
     const staffProfile = userId ? await prisma.staffProfile.findUnique({ where: { userId } }) : null;
     const doctorId = staffProfile?.id || userId;
-    
+
     // Get patients in WAITING_FOR_DOCTOR / DOCTOR_CONSULT status
     const consultationPatients = await VisitRoutingService.getDoctorConsultationPatients(doctorId);
-    
+
     // Get patients with LAB_READY status (results ready for review)
     const labReadyPatients = await VisitRoutingService.getLabReadyPatients(doctorId);
+
+    // Get patients with DOCTOR_REVIEW status (lab results sent back to doctor)
+    const doctorReviewPatients = await VisitRoutingService.getDoctorReviewPatients(doctorId);
 
     res.json({
       consultationPatients,
       labReadyPatients,
+      doctorReviewPatients,
     });
   } catch (error) {
     console.error('Get doctor patients error:', error);

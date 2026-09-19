@@ -19,6 +19,7 @@ import reportRoutes from './routes/reports';
 import assignmentRoutes from './routes/assignments';
 import feeRoutes from './routes/fees';
 import auditRoutes from './routes/audit';
+import prescriptionRoutes from './routes/prescription';
 import { setupPrismaMiddleware } from './lib/prismaMiddleware';
 import { prisma } from './lib/prisma';
 import { checkAndInitDatabase, seedDefaultData } from './lib/dbInit';
@@ -126,6 +127,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/fees', feeRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/prescription', prescriptionRoutes);
 
 // API info endpoint
 app.get('/api', (req, res) => {

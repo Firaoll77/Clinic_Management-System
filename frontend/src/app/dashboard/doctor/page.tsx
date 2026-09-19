@@ -10,11 +10,11 @@ import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
 import { formatCurrency } from '@/lib/currency';
 import { evaluateCdsRules } from '@/lib/cdsRules';
-import { 
-  Calendar, 
-  Clock, 
-  User, 
-  FileText, 
+import {
+  Calendar,
+  Clock,
+  User,
+  FileText,
   Activity,
   AlertCircle,
   CheckCircle,
@@ -32,7 +32,10 @@ import {
   Printer,
   RefreshCw,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Send,
+  Clipboard,
+  FileCheck
 } from 'lucide-react';
 
 interface Patient {
@@ -222,7 +225,7 @@ export default function DoctorDashboardPage() {
   const { user } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
   const { activeTab: navTab, setActiveTab: setNavTab } = useNavigation();
-  const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
+  const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep, setWorkflowSteps } = useWorkflow();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -261,11 +264,19 @@ export default function DoctorDashboardPage() {
   const [availableLabTechs, setAvailableLabTechs] = useState<LabTech[]>([]);
 
   const [isAvailable, setIsAvailable] = useState<boolean>(true);
+  const [showPrescriptionForm, setShowPrescriptionForm] = useState(false);
+  const [prescription, setPrescription] = useState({
+    medications: '',
+    instructions: ''
+  });
 
   useEffect(() => {
     fetchDoctorPatients();
     fetchAvailableLabTechs();
     fetchDoctorAvailability();
+
+    // Initialize workflow steps
+    setWorkflowSteps(['vitals', 'encounter', 'orders', 'lab-results', 'prescription']);
 
     // Auto-poll doctor patient queue every 10 seconds so patients sent by nurse appear immediately
     const interval = setInterval(() => {
@@ -361,6 +372,61 @@ export default function DoctorDashboardPage() {
     } catch (error) {
       console.error('Failed to accept patient:', error);
       showError('Failed to accept patient');
+    }
+  };
+
+  const handleCreatePrescription = async (encounterId: string) => {
+    try {
+      const response = await apiClient.post('/prescription', {
+        encounterId,
+        medications: prescription.medications,
+        instructions: prescription.instructions
+      });
+
+      if (response.data) {
+        showSuccess('Prescription created successfully!');
+        setShowPrescriptionForm(false);
+        setPrescription({ medications: '', instructions: '' });
+        if (selectedPatient) {
+          fetchPatientData(selectedPatient.patientId, encounterId);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to create prescription:', error);
+      showError('Failed to create prescription');
+    }
+  };
+
+  const handleSendToDoctor = async (encounterId: string) => {
+    try {
+      const response = await apiClient.post(`/medical/encounters/${encounterId}/send-to-doctor`, {});
+      if (response.data) {
+        showSuccess('Patient sent back to doctor consultation!');
+        fetchDoctorPatients(true);
+      }
+    } catch (error) {
+      console.error('Failed to send to doctor:', error);
+      showError('Failed to send patient to doctor');
+    }
+  };
+
+  const handleCompleteConsultation = async (encounterId: string) => {
+    try {
+      const response = await apiClient.post(`/medical/encounters/${encounterId}/complete-consultation`, {
+        medications: prescription.medications,
+        instructions: prescription.instructions
+      });
+
+      if (response.data) {
+        showSuccess('Consultation completed and patient sent to billing!');
+        setShowPrescriptionForm(false);
+        setPrescription({ medications: '', instructions: '' });
+        fetchDoctorPatients(true);
+        setSelectedPatient(null);
+      }
+    } catch (error) {
+      console.error('Failed to complete consultation:', error);
+      showError('Failed to complete consultation');
     }
   };
 
@@ -1071,8 +1137,71 @@ export default function DoctorDashboardPage() {
                       >
                         Save Encounter & Continue
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          completeStep('encounter');
+                          setCurrentStep('prescription');
+                        }}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                      >
+                        Skip to Prescription
+                      </button>
                     </div>
                   </form>
+                </div>
+              )}
+
+              {currentStep === 'prescription' && (
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Pill className="h-5 w-5 mr-2 text-blue-600" />
+                    Prescription
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Medications</label>
+                      <textarea
+                        value={prescription.medications}
+                        onChange={(e) => setPrescription({...prescription, medications: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        rows={6}
+                        placeholder="Enter medications (e.g., Amoxicillin 500mg - Take 1 tablet every 8 hours for 7 days)"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Instructions</label>
+                      <textarea
+                        value={prescription.instructions}
+                        onChange={(e) => setPrescription({...prescription, instructions: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        rows={3}
+                        placeholder="Additional instructions for the patient"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => {
+                          const prevStep = getPreviousStep('prescription');
+                          if (prevStep) setCurrentStep(prevStep);
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (selectedPatient) {
+                            handleCompleteConsultation((selectedPatient as any).encounterId || selectedPatient.id);
+                          }
+                        }}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                      >
+                        Complete Consultation & Send to Billing
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1249,11 +1378,11 @@ export default function DoctorDashboardPage() {
                     <button
                       onClick={() => {
                         completeStep('lab-results');
-                        showSuccess('Patient workflow completed!');
+                        showSuccess('Lab results reviewed!');
                       }}
                       className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                     >
-                      Complete Workflow
+                      Review Complete
                     </button>
                   </div>
                 </div>
