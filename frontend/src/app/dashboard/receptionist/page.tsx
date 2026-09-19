@@ -163,17 +163,6 @@ export default function ReceptionistDashboardPage() {
     fetchPatientsList();
   }, []);
 
-  // Real-time updates for patients list
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (currentStep === 'patients') {
-        fetchPatientsList();
-      }
-    }, 5000); // Update every 5 seconds
-
-    return () => clearInterval(interval);
-  }, [currentStep]);
-
   const handleViewFullRecord = async (patientIdOrMrn?: string) => {
     const targetId = patientIdOrMrn || selectedPatient?.patientId || selectedPatient?.mrn || selectedPatient?.id;
     if (!targetId) {
