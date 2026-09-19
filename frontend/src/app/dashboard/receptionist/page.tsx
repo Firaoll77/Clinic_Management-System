@@ -1390,14 +1390,14 @@ export default function ReceptionistDashboardPage() {
                     <div className="mt-3 flex space-x-2">
                       <button
                         onClick={() => handleViewInvoice(invoice.id)}
-                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        className="flex-1 px-2 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs"
                       >
                         View Invoice
                       </button>
                       {invoice.status !== 'PAID' && (
                         <button
                           onClick={() => handleMarkAsPaid(invoice.id)}
-                          className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                          className="flex-1 px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs"
                         >
                           Mark Paid
                         </button>
@@ -1474,7 +1474,7 @@ export default function ReceptionistDashboardPage() {
 
       {/* Invoice Modal */}
       {showInvoiceModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
