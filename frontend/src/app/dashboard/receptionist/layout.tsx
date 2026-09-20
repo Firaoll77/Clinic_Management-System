@@ -115,7 +115,11 @@ export default function ReceptionistDashboardLayout({
             </span>
           </div>
           <button
-            onClick={logout}
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('Logout button clicked');
+              logout();
+            }}
             className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200"
           >
             <LogOut className="h-5 w-5" />
