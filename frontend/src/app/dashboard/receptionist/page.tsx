@@ -787,13 +787,13 @@ export default function ReceptionistDashboardPage() {
         </div>
         
         <div className="flex-1 overflow-y-auto">
-          {filteredPatients.length === 0 ? (
+          {waitingPatients.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm">No patients found</p>
+              <p className="text-sm">No patients in waiting room</p>
             </div>
           ) : (
-            filteredPatients.map((patient) => (
+            waitingPatients.map((patient) => (
               <motion.div
                 key={patient.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -1390,14 +1390,14 @@ export default function ReceptionistDashboardPage() {
                     <div className="mt-3 flex space-x-2">
                       <button
                         onClick={() => handleViewInvoice(invoice.id)}
-                        className="flex-1 px-2 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs"
+                        className="w-24 px-2 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs font-medium shadow-sm"
                       >
                         View Invoice
                       </button>
                       {invoice.status !== 'PAID' && (
                         <button
                           onClick={() => handleMarkAsPaid(invoice.id)}
-                          className="flex-1 px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs"
+                          className="w-24 px-2 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs font-medium shadow-sm"
                         >
                           Mark Paid
                         </button>
