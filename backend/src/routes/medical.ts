@@ -545,10 +545,11 @@ router.post('/encounters/:id/complete-consultation', authenticate, authorize('DO
 
     // Create or update prescription
     if (medications) {
+      const encounterId = Array.isArray(id) ? id[0] : id;
       await prisma.prescription.upsert({
-        where: { encounterId: id },
+        where: { encounterId },
         create: {
-          encounterId: id,
+          encounterId,
           doctorId: userId,
           medications,
           instructions
@@ -567,7 +568,7 @@ router.post('/encounters/:id/complete-consultation', authenticate, authorize('DO
       if (prescriptionFee && prescriptionFee.isActive) {
         await prisma.encounterFee.create({
           data: {
-            encounterId: id,
+            encounterId,
             feeType: 'PRESCRIPTION',
             description: 'Prescription fee',
             amount: prescriptionFee.amount,
@@ -1008,7 +1009,7 @@ router.patch('/lab-results/:id', authenticate, async (req: Request, res: Respons
         },
       });
 
-      // AUTOMATED VISIT ROUTING: Change visit status to LAB_READY when lab results are completed
+      // AUTOMATED VISIT ROUTING: Change visit status to LAB_RESULTS_READY when lab results are completed
       try {
         await VisitRoutingService.completeLabOrder(labResult.labOrderId, req.user?.userId || '');
       } catch (routingError) {

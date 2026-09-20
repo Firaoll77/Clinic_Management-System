@@ -148,7 +148,7 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
 
 /**
  * GET /api/dashboard/doctor-patients
- * Get patients for doctor dashboard (DOCTOR_CONSULT, LAB_READY, and DOCTOR_REVIEW status)
+ * Get patients for doctor dashboard (DOCTOR_CONSULT, LAB_RESULTS_READY, and DOCTOR_REVIEW status)
  */
 router.get('/doctor-patients', authenticate, async (req: Request, res: Response) => {
   try {
@@ -159,7 +159,7 @@ router.get('/doctor-patients', authenticate, async (req: Request, res: Response)
     // Get patients in WAITING_FOR_DOCTOR / DOCTOR_CONSULT status
     const consultationPatients = await VisitRoutingService.getDoctorConsultationPatients(doctorId);
 
-    // Get patients with LAB_READY status (results ready for review)
+    // Get patients with LAB_RESULTS_READY status (results ready for review)
     const labReadyPatients = await VisitRoutingService.getLabReadyPatients(doctorId);
 
     // Get patients with DOCTOR_REVIEW status (lab results sent back to doctor)

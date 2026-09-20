@@ -287,12 +287,12 @@ export class VisitRoutingService {
   }
 
   /**
-   * DOCTOR QUERY: Fetch patients with LAB_READY status (results ready for review)
+   * DOCTOR QUERY: Fetch patients with LAB_RESULTS_READY status (results ready for review)
    */
   static async getLabReadyPatients(doctorId?: string) {
     return await prisma.encounter.findMany({
       where: {
-        visitStatus: VisitStatus.LAB_READY,
+        visitStatus: VisitStatus.LAB_RESULTS_READY,
         ...(doctorId && { doctorId: doctorId })
       },
       select: {
@@ -384,7 +384,7 @@ export class VisitRoutingService {
 
   /**
    * STATE CHANGE: Doctor reviews lab results and continues consultation
-   * Changes visit status from LAB_READY back to DOCTOR_CONSULT or to BILLING
+   * Changes visit status from LAB_RESULTS_READY back to DOCTOR_CONSULT or to BILLING
    */
   static async continueAfterLabReview(encounterId: string, nextStatus: 'DOCTOR_CONSULT' | 'BILLING', doctorId?: string): Promise<void> {
     try {

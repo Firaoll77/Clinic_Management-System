@@ -780,7 +780,7 @@ router.get('/doctor/my-assignments', async (req, res) => {
     const directEncounters = await prisma.encounter.findMany({
       where: {
         doctorId: { in: doctorIds },
-        visitStatus: { in: ['WAITING_FOR_DOCTOR', 'DOCTOR_CONSULT', 'LAB_READY'] },
+        visitStatus: { in: ['WAITING_FOR_DOCTOR', 'DOCTOR_CONSULT', 'LAB_RESULTS_READY'] },
         id: { notIn: Array.from(assignedEncounterIds) },
       },
       include: {
@@ -819,7 +819,7 @@ router.get('/doctor/my-assignments', async (req, res) => {
     }));
 
     const allAssignments = [...assignments, ...directAssignments];
-    const validAssignments = allAssignments.filter(a => a.encounter && a.encounter.patient);
+    const validAssignments = allAssignments.filter(a => a.encounter && a.encounter.patientId);
 
     res.json({ assignments: validAssignments });
   } catch (error) {

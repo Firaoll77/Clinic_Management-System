@@ -95,9 +95,10 @@ router.post('/', authenticate, authorize('DOCTOR'), async (req: Request, res: Re
 router.get('/:encounterId', authenticate, async (req: Request, res: Response) => {
   try {
     const { encounterId } = req.params;
+    const id = Array.isArray(encounterId) ? encounterId[0] : encounterId;
 
     const prescription = await prisma.prescription.findUnique({
-      where: { encounterId },
+      where: { encounterId: id },
       include: {
         encounter: {
           include: {
@@ -131,10 +132,11 @@ router.get('/:encounterId', authenticate, async (req: Request, res: Response) =>
 router.post('/:encounterId/print', authenticate, authorize('RECEPTIONIST'), async (req: Request, res: Response) => {
   try {
     const { encounterId } = req.params;
+    const id = Array.isArray(encounterId) ? encounterId[0] : encounterId;
     const userId = (req as any).user.id;
 
     const prescription = await prisma.prescription.update({
-      where: { encounterId },
+      where: { encounterId: id },
       data: {
         printedAt: new Date(),
         printedBy: userId
@@ -161,13 +163,14 @@ router.post('/:encounterId/print', authenticate, authorize('RECEPTIONIST'), asyn
 router.patch('/:id', authenticate, authorize('RECEPTIONIST'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const prescriptionId = Array.isArray(id) ? id[0] : id;
     const { printedAt, printedBy } = req.body;
 
     const prescription = await prisma.prescription.update({
-      where: { id },
+      where: { id: prescriptionId },
       data: {
-        printedAt: printedAt ? new Date(printedAt) : new Date(),
-        printedBy: printedBy
+        printedAt: printedAt ? new Date(Array.isArray(printedAt) ? printedAt[0] : printedAt) : new Date(),
+        printedBy: Array.isArray(printedBy) ? printedBy[0] : printedBy
       }
     });
 

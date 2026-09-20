@@ -46,7 +46,7 @@ export function setupPrismaMiddleware() {
           case 'LAB_PENDING':
             console.log('🔄 AUTOMATION: Lab orders pending, notifying lab technicians');
             break;
-          case 'LAB_READY':
+          case 'LAB_RESULTS_READY':
             console.log('🔄 AUTOMATION: Lab results ready, notifying doctor');
             break;
           case 'BILLING':

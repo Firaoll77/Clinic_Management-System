@@ -329,10 +329,10 @@ router.post('/orders/:id/results', authenticate, async (req: Request, res: Respo
     });
 
     if (labOrder && labOrder.encounter) {
-      // Update encounter status to LAB_READY
+      // Update encounter status to LAB_RESULTS_READY
       await prisma.encounter.update({
         where: { id: labOrder.encounterId },
-        data: { visitStatus: 'LAB_READY' }
+        data: { visitStatus: 'LAB_RESULTS_READY' }
       });
     }
 
