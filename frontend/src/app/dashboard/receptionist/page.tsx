@@ -300,8 +300,11 @@ export default function ReceptionistDashboardPage() {
   const fetchPatientsList = async () => {
     setPatientsListLoading(true);
     try {
+      console.log('Fetching patients list...');
       const response = await apiClient.get<{ patients: any[] }>('/patients');
+      console.log('Patients list response:', response);
       if (response.data) {
+        console.log('Patients data:', response.data.patients);
         const patients = response.data.patients.map((p: any) => ({
           id: p.id,
           mrn: p.mrn,
@@ -319,10 +322,15 @@ export default function ReceptionistDashboardPage() {
           isNewPatient: !p.lastActivityAt || new Date(p.lastActivityAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
           lastVisit: p.lastActivityAt
         }));
+        console.log('Processed patients:', patients);
         setPatientsList(patients);
+      } else {
+        console.error('No patients data in response');
+        showError('Failed to load patients data');
       }
     } catch (error) {
       console.error('Failed to fetch patients list:', error);
+      showError('Failed to fetch patients list');
     } finally {
       setPatientsListLoading(false);
     }
@@ -736,10 +744,14 @@ export default function ReceptionistDashboardPage() {
 
   const handleViewInvoice = async (invoiceId: string) => {
     try {
+      console.log('Viewing invoice:', invoiceId);
       const response = await apiClient.get(`/billing/invoices/${invoiceId}`);
+      console.log('Invoice response:', response);
       if (response.data) {
         setSelectedInvoice(response.data);
         setShowInvoiceModal(true);
+      } else {
+        showError('Failed to load invoice data');
       }
     } catch (error) {
       console.error('Failed to fetch invoice:', error);

@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const logout = useCallback(() => {
+    console.log('Logout called');
     // Clear all local state immediately
     setUser(null);
     localStorage.removeItem('accessToken');
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoggedOut(true);
 
     // Redirect to login page
+    console.log('Redirecting to login');
     router.push('/login');
 
     // Optionally call backend to revoke token (non-blocking, fire and forget)
