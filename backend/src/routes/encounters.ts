@@ -19,7 +19,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       });
     }
 
-    const { patientId, doctorId, nurseId, appointmentId, visitStatus, chiefComplaint } = req.body;
+    const { patientId, doctorId, nurseId, visitStatus, chiefComplaint } = req.body;
 
     if (!patientId || !chiefComplaint) {
       return res.status(400).json({
@@ -32,7 +32,6 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
       patientId,
       doctorId,
       nurseId,
-      appointmentId,
       visitStatus: visitStatus || 'TRIAGE',
       chiefComplaint
     });

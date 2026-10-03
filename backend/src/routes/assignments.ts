@@ -31,11 +31,6 @@ router.get('/doctors/available', async (req, res) => {
             email: true,
           },
         },
-        doctorAvailability: {
-          where: {
-            weekday: currentDay,
-          },
-        },
       },
     });
 
@@ -100,11 +95,6 @@ router.get('/nurses/available', async (req, res) => {
             id: true,
             username: true,
             email: true,
-          },
-        },
-        nurseAvailability: {
-          where: {
-            weekday: currentDay,
           },
         },
       },

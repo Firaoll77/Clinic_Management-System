@@ -39,14 +39,6 @@ export class VisitRoutingService {
             bloodGroup: true,
           },
         },
-        appointment: {
-          select: {
-            id: true,
-            scheduledAt: true,
-            durationMin: true,
-            reason: true,
-          },
-        },
         vitals: {
           orderBy: { recordedAt: 'desc' },
           take: 1, // Get most recent vitals
@@ -204,13 +196,6 @@ export class VisitRoutingService {
             dob: true,
             gender: true,
             phone: true,
-          },
-        },
-        appointment: {
-          select: {
-            id: true,
-            scheduledAt: true,
-            reason: true,
           },
         },
       },

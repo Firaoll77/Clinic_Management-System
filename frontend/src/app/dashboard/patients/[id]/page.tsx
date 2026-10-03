@@ -62,7 +62,7 @@ interface EditablePatient {
 }
 
 interface TimelineEvent {
-  type: 'appointment' | 'encounter' | 'invoice';
+  type: 'encounter' | 'invoice';
   date: Date;
   data: any;
 }
@@ -129,11 +129,6 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
       
       // Mock timeline data
       const mockTimeline: TimelineEvent[] = [
-        {
-          type: 'appointment',
-          date: new Date('2024-08-17T10:00:00Z'),
-          data: { reason: 'Annual Checkup', status: 'COMPLETED' }
-        },
         {
           type: 'encounter',
           date: new Date('2024-08-17T10:30:00Z'),
@@ -632,11 +627,9 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                     <div key={index} className="flex items-start space-x-4">
                       <div className="flex flex-col items-center">
                         <div className={`p-2 rounded-full ${
-                          event.type === 'appointment' ? 'bg-blue-100' :
                           event.type === 'encounter' ? 'bg-green-100' :
                           'bg-purple-100'
                         }`}>
-                          {event.type === 'appointment' && <Calendar className="h-4 w-4 text-blue-600" />}
                           {event.type === 'encounter' && <Activity className="h-4 w-4 text-green-600" />}
                           {event.type === 'invoice' && <DollarSign className="h-4 w-4 text-purple-600" />}
                         </div>
@@ -651,7 +644,6 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                           </p>
                           <p className="font-medium text-gray-900 capitalize">{event.type}</p>
                           <p className="text-sm text-gray-600 mt-1">
-                            {event.type === 'appointment' && `Reason: ${event.data.reason}`}
                             {event.type === 'encounter' && `Chief Complaint: ${event.data.chiefComplaint}`}
                             {event.type === 'invoice' && `Total: $${event.data.total}`}
                           </p>

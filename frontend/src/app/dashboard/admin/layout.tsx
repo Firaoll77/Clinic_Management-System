@@ -12,7 +12,6 @@ import {
   Settings,
   Users,
   Activity,
-  Calendar,
   DollarSign,
   ChevronRight,
   FolderArchive,
@@ -36,7 +35,7 @@ export default function AdminDashboardLayout({
 
   // Initialize workflow steps for admin (for navigation tracking only)
   useEffect(() => {
-    setWorkflowSteps(['overview', 'staff', 'patients', 'appointments', 'billing', 'audit', 'settings']);
+    setWorkflowSteps(['overview', 'staff', 'patients', 'billing', 'audit', 'settings']);
   }, [setWorkflowSteps]);
 
   // Role verification - redirect if wrong role

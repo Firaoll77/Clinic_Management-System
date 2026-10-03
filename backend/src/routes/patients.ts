@@ -226,12 +226,6 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
       },
       include: {
         allergies: true,
-        appointments: {
-          orderBy: {
-            scheduledAt: 'desc',
-          },
-          take: 20,
-        },
         encounters: {
           orderBy: {
             createdAt: 'desc',

@@ -134,7 +134,7 @@ export default function ReceptionistDashboardPage() {
   const [showFullRecordModal, setShowFullRecordModal] = useState(false);
   const [fullRecordPatient, setFullRecordPatient] = useState<any | null>(null);
   const [fullRecordLoading, setFullRecordLoading] = useState(false);
-  const [fullRecordTab, setFullRecordTab] = useState<'overview' | 'encounters' | 'labs' | 'billing' | 'appointments'>('overview');
+  const [fullRecordTab, setFullRecordTab] = useState<'overview' | 'encounters' | 'labs' | 'billing'>('overview');
 
   const [newPatient, setNewPatient] = useState<NewPatient>({
     firstName: '',
@@ -1696,18 +1696,6 @@ export default function ReceptionistDashboardPage() {
                 <DollarSign className="h-4 w-4" />
                 <span>Invoices & Billing ({fullRecordPatient?.invoices?.length || 0})</span>
               </button>
-
-              <button
-                onClick={() => setFullRecordTab('appointments')}
-                className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-1.5 ${
-                  fullRecordTab === 'appointments'
-                    ? 'border-emerald-600 text-emerald-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Calendar className="h-4 w-4" />
-                <span>Appointments ({fullRecordPatient?.appointments?.length || 0})</span>
-              </button>
             </div>
 
             {/* Modal Content Body */}
@@ -2112,40 +2100,6 @@ export default function ReceptionistDashboardPage() {
                                 ))}
                               </div>
                             )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-
-                  {/* Tab 5: Appointments */}
-                  {fullRecordTab === 'appointments' && (
-                    <div className="space-y-3">
-                      {(!fullRecordPatient.appointments || fullRecordPatient.appointments.length === 0) ? (
-                        <div className="text-center py-12 bg-white rounded-xl border border-gray-200 text-gray-500">
-                          <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                          <p>No appointments recorded for this patient.</p>
-                        </div>
-                      ) : (
-                        fullRecordPatient.appointments.map((apt: any) => (
-                          <div key={apt.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="p-2 bg-emerald-100 rounded-lg text-emerald-700">
-                                <Calendar className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <p className="font-semibold text-sm text-gray-900">
-                                  {new Date(apt.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-                                </p>
-                                <p className="text-xs text-gray-500">{apt.reason || 'Routine Consultation'} ({apt.durationMin} mins)</p>
-                              </div>
-                            </div>
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                              apt.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
-                              apt.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                            }`}>
-                              {apt.status}
-                            </span>
                           </div>
                         ))
                       )}

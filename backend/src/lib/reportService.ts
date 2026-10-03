@@ -116,15 +116,6 @@ export class ReportService {
         }
       });
 
-      const appointments = await prisma.appointment.count({
-        where: {
-          scheduledAt: {
-            gte: startDate,
-            lte: endDate
-          }
-        }
-      });
-
       const encounters = await prisma.encounter.count({
         where: {
           createdAt: {
@@ -146,7 +137,6 @@ export class ReportService {
       return {
         period: { startDate, endDate },
         newPatients: patients,
-        totalAppointments: appointments,
         totalEncounters: encounters,
         totalLabOrders: labOrders
       };
@@ -161,19 +151,6 @@ export class ReportService {
    */
   static async getDoctorPerformanceReport(doctorId: string, startDate: Date, endDate: Date) {
     try {
-      const appointments = await prisma.appointment.findMany({
-        where: {
-          doctorId,
-          scheduledAt: {
-            gte: startDate,
-            lte: endDate
-          }
-        },
-        include: {
-          encounter: true
-        }
-      });
-
       const encounters = await prisma.encounter.findMany({
         where: {
           doctorId,
@@ -192,9 +169,8 @@ export class ReportService {
       return {
         doctorId,
         period: { startDate, endDate },
-        totalAppointments: appointments.length,
-        completedAppointments: appointments.filter(a => a.status === 'COMPLETED').length,
         totalEncounters: encounters.length,
+        completedEncounters: encounters.filter(e => e.visitStatus === 'COMPLETED').length,
         totalRevenue
       };
     } catch (error) {

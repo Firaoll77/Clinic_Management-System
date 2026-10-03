@@ -8,11 +8,9 @@ import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import patientRoutes from './routes/patients';
 import notificationRoutes from './routes/notifications';
-import appointmentRoutes from './routes/appointments';
 import medicalRoutes from './routes/medical';
 import dashboardRoutes from './routes/dashboard';
 import billingRoutes from './routes/billing';
-import availabilityRoutes from './routes/availability';
 import encounterRoutes from './routes/encounters';
 import labRoutes from './routes/lab';
 import reportRoutes from './routes/reports';
@@ -116,11 +114,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/appointments', appointmentRoutes);
 app.use('/api/medical', medicalRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/billing', billingRoutes);
-app.use('/api/availability', availabilityRoutes);
 app.use('/api/encounters', encounterRoutes);
 app.use('/api/lab', labRoutes);
 app.use('/api/reports', reportRoutes);
@@ -139,11 +135,16 @@ app.get('/api', (req, res) => {
       users: '/api/users',
       patients: '/api/patients',
       notifications: '/api/notifications',
-      appointments: '/api/appointments',
       medical: '/api/medical',
       dashboard: '/api/dashboard',
       billing: '/api/billing',
-      attachments: '/api/attachments',
+      encounters: '/api/encounters',
+      lab: '/api/lab',
+      reports: '/api/reports',
+      assignments: '/api/assignments',
+      fees: '/api/fees',
+      audit: '/api/audit',
+      prescription: '/api/prescription',
       health: '/api/health',
       seed: '/api/seed',
     },

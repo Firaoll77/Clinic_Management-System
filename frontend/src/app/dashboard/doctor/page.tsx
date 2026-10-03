@@ -45,7 +45,7 @@ interface Patient {
   firstName: string;
   lastName: string;
   mrn: string;
-  appointmentTime: string;
+  assignmentTime: string;
   arrivalTime?: string;
   spentTime?: string;
   reason: string;
@@ -345,7 +345,7 @@ export default function DoctorDashboardPage() {
             firstName: a.encounter.patient.firstName,
             lastName: a.encounter.patient.lastName,
             mrn: a.encounter.patient.mrn || 'N/A',
-            appointmentTime: a.assignedAt ? new Date(a.assignedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now',
+            assignmentTime: a.assignedAt ? new Date(a.assignedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now',
             status: (a.status === 'PENDING' ? 'waiting' : a.status === 'ACCEPTED' ? 'in-progress' : 'completed') as 'waiting' | 'in-progress' | 'completed',
             urgency: 'routine' as const,
             reason: a.encounter.chiefComplaint || 'Nurse Examination Complete',
@@ -814,7 +814,7 @@ export default function DoctorDashboardPage() {
                       )}
                       <p className="text-sm text-gray-600 flex items-center">
                         <Clock className="h-3 w-3 mr-1" />
-                        {patient.appointmentTime}
+                        {patient.assignmentTime}
                       </p>
                       {patient.spentTime && (
                         <p className="text-sm text-gray-600 flex items-center">

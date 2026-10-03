@@ -35,7 +35,7 @@ interface TriagePatient {
   firstName: string;
   lastName: string;
   mrn: string;
-  appointmentTime: string;
+  assignmentTime: string;
   waitTime: number;
   chiefComplaint: string;
   status: string;
@@ -163,7 +163,7 @@ export default function NurseDashboardPage() {
           firstName: a.encounter.patient.firstName,
           lastName: a.encounter.patient.lastName,
           mrn: a.encounter.patient.mrn,
-          appointmentTime: new Date(a.assignedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          assignmentTime: new Date(a.assignedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           waitTime: Math.floor((Date.now() - new Date(a.assignedAt).getTime()) / 60000),
           chiefComplaint: a.encounter.chiefComplaint || 'Walk-in visit',
           status: a.status,
@@ -509,7 +509,7 @@ export default function NurseDashboardPage() {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center text-gray-500">
                     <Clock className="h-3 w-3 mr-1" />
-                    {patient.appointmentTime}
+                    {patient.assignmentTime}
                   </div>
                   <ChevronRight className="h-5 w-5 text-gray-400" />
                 </div>

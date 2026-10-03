@@ -78,32 +78,10 @@ interface PatientRecord {
   createdAt: string;
 }
 
-type TabType = 'overview' | 'staff' | 'patients' | 'appointments' | 'billing' | 'audit' | 'settings';
+type TabType = 'overview' | 'staff' | 'patients' | 'billing' | 'audit' | 'settings';
 type RoleFilter = 'ALL' | 'DOCTOR' | 'NURSE' | 'ACCOUNTANT' | 'LAB_TECH' | 'RECEPTIONIST' | 'PHARMACIST' | 'ADMIN';
 type StatusFilter = 'all' | 'active' | 'inactive';
 type PatientFilter = 'active' | 'archived' | 'all';
-
-interface Appointment {
-  id: string;
-  dateTime?: string;
-  createdAt: string;
-  patient?: {
-    firstName?: string;
-    lastName?: string;
-    mrn?: string;
-    [key: string]: any;
-  };
-  doctor?: {
-    username?: string;
-    staffProfile?: {
-      fullName?: string;
-      specialization?: string;
-      [key: string]: any;
-    };
-    [key: string]: any;
-  };
-  [key: string]: any;
-}
 
 interface FeeConfig {
   feeType: string;
@@ -132,7 +110,6 @@ interface DashboardStats {
   activeStaff?: number;
   pendingTasks: number;
   patientGrowth: string;
-  appointmentGrowth: string;
 }
 
 interface AuditLog {
@@ -154,17 +131,12 @@ export default function AdminDashboardPage() {
   const { currentStep, setCurrentStep, completedSteps, completeStep, canAccessStep, getNextStep, getPreviousStep } = useWorkflow();
 
   // Active Main Tab synced with Workflow currentStep
-  const validTabs: TabType[] = ['overview', 'staff', 'patients', 'appointments', 'billing', 'audit', 'settings'];
+  const validTabs: TabType[] = ['overview', 'staff', 'patients', 'billing', 'audit', 'settings'];
   const activeTab: TabType = validTabs.includes(currentStep as TabType) ? (currentStep as TabType) : 'overview';
 
   const setActiveTab = (tab: TabType) => {
     setCurrentStep(tab as never);
   };
-
-  // Appointments State
-  const [appointmentsList, setAppointmentsList] = useState<Appointment[]>([]);
-  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
-  const [appointmentStatusFilter, setAppointmentStatusFilter] = useState('ALL');
 
   // Billing & Fees State
   const [feeConfigs, setFeeConfigs] = useState<FeeConfig[]>([
@@ -187,7 +159,6 @@ export default function AdminDashboardPage() {
     activeStaff: 0,
     pendingTasks: 0,
     patientGrowth: '0%',
-    appointmentGrowth: '0%',
   });
 
   // Staff State
@@ -335,7 +306,6 @@ export default function AdminDashboardPage() {
           activeDoctors: response.data!.stats.activeDoctors || 0,
           pendingTasks: response.data!.stats.pendingTasks || 0,
           patientGrowth: response.data!.stats.patientGrowth || '0%',
-          appointmentGrowth: response.data!.stats.appointmentGrowth || '0%',
         }));
       }
     } catch (err) {
@@ -403,20 +373,6 @@ export default function AdminDashboardPage() {
     }
   }, [patientSearch, patientFilterTab]);
 
-  const fetchAppointments = useCallback(async () => {
-    setAppointmentsLoading(true);
-    try {
-      const response = await apiClient.get<{ appointments: Appointment[] }>('/appointments');
-      if (response.data?.appointments) {
-        setAppointmentsList(response.data.appointments);
-      }
-    } catch (err) {
-      console.error('Failed to fetch appointments:', err);
-    } finally {
-      setAppointmentsLoading(false);
-    }
-  }, []);
-
   const fetchFeeConfigs = useCallback(async () => {
     setFeeConfigsLoading(true);
     try {
@@ -470,7 +426,6 @@ export default function AdminDashboardPage() {
     fetchStaff();
     fetchPatients();
     fetchAuditLogs();
-    fetchAppointments();
     fetchFeeConfigs();
     fetchAdminInvoices();
     
@@ -500,7 +455,7 @@ export default function AdminDashboardPage() {
       clearInterval(patientsInterval);
       clearInterval(auditInterval);
     };
-  }, [fetchDashboardStats, fetchStaff, fetchPatients, fetchAuditLogs, fetchAppointments, fetchFeeConfigs, fetchAdminInvoices]);
+  }, [fetchDashboardStats, fetchStaff, fetchPatients, fetchAuditLogs, fetchFeeConfigs, fetchAdminInvoices]);
 
   // Trigger search on filter changes
   useEffect(() => {
@@ -1662,132 +1617,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 5: APPOINTMENTS OPERATIONS */}
-      {/* ========================================================================= */}
-      {activeTab === 'appointments' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-extrabold text-gray-900 flex items-center">
-                <Calendar className="h-7 w-7 mr-3 text-[#D93344]" />
-                Clinic Appointment Operations
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Monitor doctor schedules, patient visit consultations, and booking queues across all clinic departments.
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={fetchAppointments}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors flex items-center space-x-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${appointmentsLoading ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Status Filter Tabs */}
-          <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center space-x-2">
-              {['ALL', 'SCHEDULED', 'COMPLETED', 'CANCELLED'].map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setAppointmentStatusFilter(status)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
-                    appointmentStatusFilter === status
-                      ? 'bg-[#D93344] text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {status}
-                </button>
-              ))}
-            </div>
-            <span className="text-xs text-gray-500 font-medium">
-              Showing {appointmentsList.filter(a => appointmentStatusFilter === 'ALL' || a.status === appointmentStatusFilter).length} appointments
-            </span>
-          </div>
-
-          {/* Appointments Table */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            {appointmentsLoading ? (
-              <div className="p-12 text-center text-gray-500">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D93344] mx-auto mb-3"></div>
-                <p className="text-sm font-medium">Loading clinic appointments...</p>
-              </div>
-            ) : appointmentsList.filter(a => appointmentStatusFilter === 'ALL' || a.status === appointmentStatusFilter).length === 0 ? (
-              <div className="p-12 text-center text-gray-500">
-                <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-base font-semibold text-gray-800">No appointments recorded</p>
-                <p className="text-sm text-gray-500 mt-1">Patients will appear here when scheduled by reception or attending doctors.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50/80 border-b border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider">
-                      <th className="px-6 py-4">Patient</th>
-                      <th className="px-6 py-4">Doctor</th>
-                      <th className="px-6 py-4">Date & Time</th>
-                      <th className="px-6 py-4">Type / Reason</th>
-                      <th className="px-6 py-4">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 text-sm">
-                    {appointmentsList
-                      .filter(a => appointmentStatusFilter === 'ALL' || a.status === appointmentStatusFilter)
-                      .map((apt) => (
-                        <tr key={apt.id} className="hover:bg-red-50/30 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="font-semibold text-gray-900">
-                              {apt.patient ? `${apt.patient.firstName} ${apt.patient.lastName}` : 'Patient'}
-                            </div>
-                            <div className="text-xs text-gray-500 font-mono">
-                              MRN: {apt.patient?.mrn || 'N/A'}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="font-medium text-gray-800">
-                              {apt.doctor?.staffProfile?.fullName || apt.doctor?.username || 'Attending Physician'}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {apt.doctor?.staffProfile?.specialization || 'General Practice'}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="font-medium text-gray-900">
-                              {new Date(apt.dateTime || apt.createdAt).toLocaleDateString()}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {new Date(apt.dateTime || apt.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-gray-600">
-                            {apt.reason || apt.type || 'Consultation'}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                              apt.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
-                              apt.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                              apt.status === 'CANCELLED' ? 'bg-red-100 text-red-800 border border-red-200' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {apt.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 6: BILLING & FEE CONFIGURATIONS */}
+      {/* TAB 5: BILLING & FEE CONFIGURATIONS */}
       {/* ========================================================================= */}
       {activeTab === 'billing' && (
         <div className="space-y-6">

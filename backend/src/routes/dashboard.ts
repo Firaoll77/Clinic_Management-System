@@ -20,19 +20,6 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
       where: { isArchived: false },
     });
 
-    // Today's appointments
-    const todayAppointments = await prisma.appointment.count({
-      where: {
-        scheduledAt: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-        status: {
-          not: 'CANCELLED',
-        },   
-      },
-    });
-
     // Active doctors
     const activeDoctors = await prisma.user.count({
       where: {
@@ -41,17 +28,20 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
       },
     });
 
-    // Pending tasks (cancelled appointments)
-    const cancelledAppointments = await prisma.appointment.count({
+    // Active encounters today
+    const activeEncounters = await prisma.encounter.count({
       where: {
-        status: 'CANCELLED',
-        scheduledAt: {
+        createdAt: {
           gte: startOfDay,
+          lte: endOfDay,
+        },
+        visitStatus: {
+          not: 'COMPLETED',
         },
       },
     });
 
-    const pendingTasks = cancelledAppointments;
+    const pendingTasks = activeEncounters;
 
     // Recent patients (last 7 days)
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -94,41 +84,17 @@ router.get('/stats', authenticate, async (req: Request, res: Response) => {
       },
     });
 
-    const patientGrowth = patientsLastMonth > 0 
+    const patientGrowth = patientsLastMonth > 0
       ? ((patientsThisMonth - patientsLastMonth) / patientsLastMonth * 100).toFixed(1)
-      : '0';
-
-    // Appointment growth
-    const lastMonthAppointments = await prisma.appointment.count({
-      where: {
-        scheduledAt: {
-          gte: lastMonth,
-          lt: weekAgo,
-        },
-      },
-    });
-
-    const todayAppointmentsLastMonth = await prisma.appointment.count({
-      where: {
-        scheduledAt: {
-          gte: new Date(new Date(lastMonth).setHours(0, 0, 0, 0)),
-          lt: new Date(new Date(lastMonth).setHours(23, 59, 59, 999)),
-        },
-      },
-    });
-
-    const appointmentGrowth = todayAppointmentsLastMonth > 0
-      ? ((todayAppointments - todayAppointmentsLastMonth) / todayAppointmentsLastMonth * 100).toFixed(1)
       : '0';
 
     res.json({
       stats: {
         totalPatients,
-        todayAppointments,
+        activeEncounters,
         activeDoctors,
         pendingTasks,
         patientGrowth: `${patientGrowth}%`,
-        appointmentGrowth: `${appointmentGrowth}%`,
       },
       recentPatients: recentPatients.map((patient) => ({
         id: patient.id,

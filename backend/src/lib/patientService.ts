@@ -226,12 +226,6 @@ export class PatientService {
         where: { mrn },
         include: {
           allergies: true,
-          appointments: {
-            orderBy: {
-              scheduledAt: 'desc'
-            },
-            take: 5
-          },
           encounters: {
             orderBy: {
               createdAt: 'desc'
@@ -326,14 +320,6 @@ export class PatientService {
       const patient = await prisma.patient.findUnique({
         where: { mrn },
         include: {
-          appointments: {
-            include: {
-              encounter: true
-            },
-            orderBy: {
-              scheduledAt: 'desc'
-            }
-          },
           encounters: {
             include: {
               vitals: true,
@@ -369,15 +355,6 @@ export class PatientService {
 
       // Create a unified timeline
       const timeline: any[] = [];
-
-      // Add appointments
-      patient.appointments.forEach(apt => {
-        timeline.push({
-          type: 'appointment',
-          date: apt.scheduledAt,
-          data: apt
-        });
-      });
 
       // Add encounters
       patient.encounters.forEach(encounter => {

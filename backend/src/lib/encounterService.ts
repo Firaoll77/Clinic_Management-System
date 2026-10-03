@@ -13,7 +13,6 @@ export class EncounterService {
     patientId: string;
     doctorId?: string;
     nurseId?: string;
-    appointmentId?: string;
     visitStatus: string;
     chiefComplaint: string;
   }) {
@@ -30,10 +29,6 @@ export class EncounterService {
 
       if (encounterData.nurseId) {
         data.nurseId = encounterData.nurseId;
-      }
-
-      if (encounterData.appointmentId) {
-        data.appointmentId = encounterData.appointmentId;
       }
 
       const encounter = await prisma.encounter.create({
@@ -199,8 +194,7 @@ export class EncounterService {
                 }
               }
             }
-          },
-          appointment: true
+          }
         }
       });
 

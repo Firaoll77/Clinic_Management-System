@@ -412,18 +412,6 @@ router.get('/patients/:patientId/encounters', authenticate, async (req: Request,
             allergies: true,
           },
         },
-        appointment: {
-          include: {
-            patient: {
-              select: {
-                id: true,
-                mrn: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
         vitals: true,
         labOrders: {
           include: {
@@ -462,7 +450,6 @@ router.get('/encounters/:id', authenticate, async (req: Request, res: Response) 
       where: { id: Array.isArray(id) ? id[0] : id },
       include: {
         patient: true,
-        appointment: true,
         vitals: true,
         labOrders: {
           include: {
@@ -619,16 +606,15 @@ router.post('/encounters/:id/complete-consultation', authenticate, authorize('DO
 router.post('/patients/:patientId/encounters', authenticate, async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    const { 
-      appointmentId, 
-      doctorId, 
-      chiefComplaint, 
-      subjective, 
-      objective, 
-      assessment, 
-      plan, 
+    const {
+      doctorId,
+      chiefComplaint,
+      subjective,
+      objective,
+      assessment,
+      plan,
       icd10Code,
-      labResultInterpretation 
+      labResultInterpretation
     } = req.body;
 
     const actualPatientId = Array.isArray(patientId) ? patientId[0] : patientId;
@@ -670,7 +656,6 @@ router.post('/patients/:patientId/encounters', authenticate, async (req: Request
     } else {
       encounter = await prisma.encounter.create({
         data: {
-          appointmentId: appointmentId || undefined,
           patientId: actualPatientId,
           doctorId: resolvedDoctorId,
           chiefComplaint: chiefComplaint || undefined,
@@ -711,17 +696,16 @@ router.post('/patients/:patientId/encounters', authenticate, async (req: Request
  */
 router.post('/encounters', authenticate, async (req: Request, res: Response) => {
   try {
-    const { 
-      appointmentId, 
-      patientId, 
-      doctorId, 
-      chiefComplaint, 
-      subjective, 
-      objective, 
-      assessment, 
-      plan, 
+    const {
+      patientId,
+      doctorId,
+      chiefComplaint,
+      subjective,
+      objective,
+      assessment,
+      plan,
       icd10Code,
-      labResultInterpretation 
+      labResultInterpretation
     } = req.body;
 
     // Validate required fields
@@ -732,17 +716,8 @@ router.post('/encounters', authenticate, async (req: Request, res: Response) => 
       });
     }
 
-    // If appointmentId is provided, link to it and update appointment status
-    if (appointmentId) {
-      await prisma.appointment.update({
-        where: { id: Array.isArray(appointmentId) ? appointmentId[0] : appointmentId },
-        data: { status: 'IN_PROGRESS' },
-      });
-    }
-
     const encounter = await prisma.encounter.create({
       data: {
-        appointmentId,
         patientId,
         doctorId,
         chiefComplaint,
