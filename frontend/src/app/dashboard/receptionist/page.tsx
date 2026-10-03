@@ -471,8 +471,7 @@ export default function ReceptionistDashboardPage() {
       }
       
       // First create an encounter
-      const encounterResponse = await apiClient.post('/medical/patients/encounter', {
-        patientId: patientId,
+      const encounterResponse = await apiClient.post(`/medical/patients/${patientId}/encounters`, {
         nurseId: nurseId || undefined,
         visitStatus: 'TRIAGE',
         chiefComplaint: 'Walk-in visit',
@@ -542,8 +541,7 @@ export default function ReceptionistDashboardPage() {
       // Automatically create encounter and send to triage queue
       const patientId = (response.data as any)?.id;
       if (patientId) {
-        const encounterResponse = await apiClient.post('/medical/patients/encounter', {
-          patientId: patientId,
+        const encounterResponse = await apiClient.post(`/medical/patients/${patientId}/encounters`, {
           visitStatus: 'TRIAGE',
           chiefComplaint: 'Walk-in visit',
           subjective: '',
@@ -593,6 +591,7 @@ export default function ReceptionistDashboardPage() {
         attachments: []
       });
       fetchAllPatients(); // Refresh patient list
+      fetchWaitingPatients(); // Refresh waiting list
     } catch (error) {
       console.error('Registration error:', error);
       showError('Registration failed. Please try again.');
