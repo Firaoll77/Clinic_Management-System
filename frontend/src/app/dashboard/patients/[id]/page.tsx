@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -89,16 +89,13 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     emergencyContact: ''
   });
 
-  useEffect(() => {
-    if (params.id) {
-      fetchPatientData(params.id);
-    }
-  }, [params.id]);
-
-  const fetchPatientData = async (patientId: string) => {
+  const fetchPatientData = useCallback(async (patientId: string) => {
     try {
       setLoading(true);
+      console.log('Fetching patient with ID:', patientId);
       const response = await apiClient.get<{ patient: Patient }>(`/patients/${patientId}`);
+
+      console.log('API response:', response);
 
       if (response.data && response.data.patient) {
         setPatient(response.data.patient);
@@ -115,7 +112,17 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     } finally {
       setLoading(false);
     }
-  };
+  }, [showError]);
+
+  useEffect(() => {
+    const loadPatient = async () => {
+      const id = Array.isArray(params.id) ? params.id[0] : params.id;
+      if (id) {
+        await fetchPatientData(id);
+      }
+    };
+    loadPatient();
+  }, [params.id, fetchPatientData]);
 
   const getAge = (dob: string) => {
     const birthDate = new Date(dob);
