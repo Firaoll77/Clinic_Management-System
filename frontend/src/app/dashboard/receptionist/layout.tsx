@@ -17,9 +17,7 @@ import {
   Receipt,
   Database,
   Menu,
-  Bell,
-  Search,
-  LayoutDashboard
+  Bell
 } from 'lucide-react';
 
 export default function ReceptionistDashboardLayout({
@@ -77,16 +75,6 @@ export default function ReceptionistDashboardLayout({
       ]
     }
   ];
-
-  const getBreadcrumb = () => {
-    const labels: Record<string, string> = {
-      queue: 'Patient Queue',
-      registration: 'Registration',
-      patients: 'Patients List',
-      billing: 'Billing',
-    };
-    return `Home › Reception › ${labels[currentStep] || 'Queue'}`;
-  };
 
   return (
     <div className="min-h-screen bg-[#f5f7f9] flex overflow-hidden">
@@ -182,7 +170,7 @@ export default function ReceptionistDashboardLayout({
         {/* Topbar */}
         <header className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
           <div className="flex items-center justify-between px-6 py-3">
-            {/* Left: Toggle & Breadcrumb */}
+            {/* Left: Toggle */}
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -192,31 +180,6 @@ export default function ReceptionistDashboardLayout({
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <nav className="hidden sm:flex items-center space-x-2 text-sm text-gray-600">
-                <span className="text-gray-400">Home</span>
-                <ChevronRight className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-400">Reception</span>
-                <ChevronRight className="h-4 w-4 text-gray-400" />
-                <span className="font-medium text-gray-900">
-                  {currentStep === 'queue' ? 'Patient Queue' :
-                   currentStep === 'registration' ? 'Registration' :
-                   currentStep === 'patients' ? 'Patients List' :
-                   currentStep === 'billing' ? 'Billing' : 'Queue'}
-                </span>
-              </nav>
-            </div>
-
-            {/* Center: Search (decorative) */}
-            <div className="hidden md:flex flex-1 max-w-md mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600"
-                  disabled
-                />
-              </div>
             </div>
 
             {/* Right: Actions */}
