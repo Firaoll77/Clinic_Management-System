@@ -54,7 +54,7 @@ export default function ReceptionistDashboardLayout({
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f5f7f9]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D93344] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
           <div className="text-xl text-gray-600">Loading...</div>
         </div>
       </div>
@@ -107,7 +107,7 @@ export default function ReceptionistDashboardLayout({
         {/* Brand */}
         <div className="p-5 border-b border-gray-700/50">
           <div className="flex items-center space-x-3">
-            <div className="bg-[#D93344] p-2.5 rounded-lg">
+            <div className="bg-green-600 p-2.5 rounded-lg">
               <HeartPulse className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -135,14 +135,14 @@ export default function ReceptionistDashboardLayout({
                       onClick={() => setCurrentStep(item.id)}
                       className={`w-full flex items-center space-x-3 px-5 py-2.5 text-sm transition-all duration-200 relative ${
                         isCurrent
-                          ? 'text-white bg-[#2d3748] border-l-4 border-[#D93344]'
+                          ? 'text-white bg-[#2d3748] border-l-4 border-green-600'
                           : 'text-gray-400 hover:text-white hover:bg-[#2d3748]/50'
                       }`}
                     >
                       <Icon className="h-4 w-4 flex-shrink-0" />
                       <span className="font-medium">{item.label}</span>
                       {isCurrent && (
-                        <ChevronRight className="h-4 w-4 ml-auto text-[#D93344]" />
+                        <ChevronRight className="h-4 w-4 ml-auto text-green-600" />
                       )}
                     </button>
                   );
@@ -155,7 +155,7 @@ export default function ReceptionistDashboardLayout({
         {/* User Section */}
         <div className="p-4 border-t border-gray-700/50 space-y-3">
           <div className="flex items-center space-x-3 px-3 py-2.5 bg-[#2d3748]/50 rounded-lg">
-            <div className="h-8 w-8 rounded-full bg-[#D93344] flex items-center justify-center text-white text-xs font-bold">
+            <div className="h-8 w-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-bold">
               {user?.staffProfile?.fullName
                 ? user.staffProfile.fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
                 : (user?.email ? user.email[0].toUpperCase() : 'R')}
@@ -169,7 +169,7 @@ export default function ReceptionistDashboardLayout({
           </div>
           <button
             onClick={logout}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-[#D93344] hover:bg-[#b92b3a] text-white rounded-lg transition-all duration-200 text-sm font-medium"
+            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 text-sm font-medium"
           >
             <LogOut className="h-4 w-4" />
             <span>Logout</span>
@@ -213,7 +213,7 @@ export default function ReceptionistDashboardLayout({
                 <input
                   type="text"
                   placeholder="Search..."
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344]"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600"
                   disabled
                 />
               </div>
@@ -223,11 +223,11 @@ export default function ReceptionistDashboardLayout({
             <div className="flex items-center space-x-2">
               <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 relative">
                 <Bell className="h-5 w-5" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-[#D93344] rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-green-600 rounded-full"></span>
               </button>
               <div className="h-6 w-px bg-gray-200 mx-2" />
               <div className="flex items-center space-x-2">
-                <div className="h-8 w-8 rounded-full bg-[#D93344] flex items-center justify-center text-white text-xs font-bold">
+                <div className="h-8 w-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-bold">
                   {user?.staffProfile?.fullName
                     ? user.staffProfile.fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
                     : (user?.email ? user.email[0].toUpperCase() : 'R')}
