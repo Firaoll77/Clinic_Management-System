@@ -733,6 +733,18 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const getPageTitle = () => {
+    const titles: Record<string, { title: string; subtitle: string }> = {
+      overview: { title: 'Admin Dashboard', subtitle: 'Manage clinic operations, staff, and patient records' },
+      staff: { title: 'Staff Management', subtitle: 'Manage registered doctors, nurses, and clinic staff' },
+      patients: { title: 'Patient Records', subtitle: 'View active patients, archive records, and restore patients' },
+      billing: { title: 'Billing & Fees', subtitle: 'Configure service pricing and review financial transactions' },
+      audit: { title: 'Audit Logs', subtitle: 'Track system activity and security events' },
+      settings: { title: 'System Settings', subtitle: 'Configure clinic infrastructure and security policies' },
+    };
+    return titles[activeTab] || titles.overview;
+  };
+
   return (
     <div className="space-y-6">
       {/* Toast Notification Banner */}
@@ -742,16 +754,22 @@ export default function AdminDashboardPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className={`p-4 rounded-xl shadow-lg border flex items-center justify-between z-50 ${
-              toast.type === 'success' ? 'bg-emerald-50 text-emerald-900 border-emerald-300' :
-              toast.type === 'error' ? 'bg-red-50 text-red-900 border-red-300' :
-              'bg-red-50 text-red-900 border-red-300'
+            className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border flex items-center justify-between min-w-[300px] ${
+              toast.type === 'success' ? 'bg-white text-gray-900 border-emerald-200' :
+              toast.type === 'error' ? 'bg-white text-gray-900 border-red-200' :
+              'bg-white text-gray-900 border-blue-200'
             }`}
           >
             <div className="flex items-center space-x-3">
-              {toast.type === 'success' ? <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" /> :
-               toast.type === 'error' ? <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" /> :
-               <Activity className="h-5 w-5 text-[#D93344] flex-shrink-0" />}
+              <div className={`p-1.5 rounded-lg ${
+                toast.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
+                toast.type === 'error' ? 'bg-red-100 text-red-600' :
+                'bg-blue-100 text-blue-600'
+              }`}>
+                {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> :
+                 toast.type === 'error' ? <AlertCircle className="h-4 w-4" /> :
+                 <Activity className="h-4 w-4" />}
+              </div>
               <span className="font-medium text-sm">{toast.message}</span>
             </div>
             <button onClick={() => setToast(null)} className="text-gray-400 hover:text-gray-600">
@@ -761,6 +779,50 @@ export default function AdminDashboardPage() {
         )}
       </AnimatePresence>
 
+      {/* Page Header */}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              {activeTab === 'overview' ? 'Administration' :
+               activeTab === 'staff' ? 'Staff Management' :
+               activeTab === 'patients' ? 'Patient Records' :
+               activeTab === 'billing' ? 'Financial' :
+               activeTab === 'audit' ? 'System' :
+               'Configuration'}
+            </p>
+            <h1 className="text-2xl font-bold text-gray-900">{getPageTitle().title}</h1>
+            <p className="text-sm text-gray-600 mt-1">{getPageTitle().subtitle}</p>
+          </div>
+          {(activeTab === 'staff' || activeTab === 'patients') && (
+            <button
+              onClick={() => {
+                if (activeTab === 'staff') {
+                  setStaffForm({
+                    fullName: '',
+                    username: '',
+                    email: '',
+                    password: '',
+                    role: 'DOCTOR',
+                    phone: '',
+                    specialization: '',
+                    licenseNo: '',
+                    departmentId: '',
+                    isActive: true,
+                  });
+                  setFormError('');
+                  setIsAddStaffOpen(true);
+                }
+              }}
+              className="px-4 py-2 bg-[#D93344] hover:bg-[#b92b3a] text-white rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>{activeTab === 'staff' ? 'Add Staff' : 'Refresh'}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
 
       {/* ========================================================================= */}
       {/* TAB 1: OPERATIONAL OVERVIEW */}
@@ -768,71 +830,84 @@ export default function AdminDashboardPage() {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* Key KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow relative overflow-hidden group cursor-pointer"
-              onClick={() => setActiveTab('patients')}
+              className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow"
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
-              <div className="flex items-center justify-between mb-3 relative z-10">
-                <span className="text-sm font-semibold text-gray-500">Active Patients</span>
-                <div className="p-2.5 bg-red-100 rounded-xl text-[#D93344]">
-                  <Users className="h-5 w-5" />
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Patients</span>
+                <div className="p-2 bg-red-50 rounded-lg text-[#D93344]">
+                  <Users className="h-4 w-4" />
                 </div>
               </div>
-              <div className="text-3xl font-extrabold text-gray-900 mb-2">{patientCounts.active}</div>
-              <div className="flex items-center justify-between">
-                <span className="text-emerald-600 font-semibold flex items-center">
-                  +{stats.patientGrowth} growth
-                </span>
-                <span className="text-[#D93344] font-medium group-hover:underline flex items-center">
-                  View directory <ChevronRight className="h-3 w-3 ml-0.5" />
-                </span>
-              </div>
+              <div className="text-2xl font-bold text-gray-900 mb-1">{patientCounts.total}</div>
+              <div className="text-xs text-gray-500">Active: {patientCounts.active}</div>
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.05 }}
-              className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow relative overflow-hidden group cursor-pointer"
-              onClick={() => setActiveTab('staff')}
+              className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow"
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
-              <div className="flex items-center justify-between mb-3 relative z-10">
-                <span className="text-sm font-semibold text-gray-500">Active Registered Staff</span>
-                <div className="p-2.5 bg-emerald-100 rounded-xl text-emerald-600">
-                  <UserCheck className="h-5 w-5" />
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Today's Appointments</span>
+                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                  <Calendar className="h-4 w-4" />
                 </div>
               </div>
-              <p className="text-3xl font-extrabold text-gray-900 relative z-10">{staffCounts.active}</p>
-              <div className="flex items-center justify-between mt-3 text-xs text-gray-500 relative z-10">
-                <span className="text-emerald-700 font-semibold">
-                  {staffCounts.doctors} Doctors • {staffCounts.nurses} Nurses • {staffCounts.labTechs} Lab
-                </span>
-                <span className="text-emerald-600 font-medium group-hover:underline flex items-center">
-                  Manage <ChevronRight className="h-3 w-3 ml-0.5" />
-                </span>
-              </div>
+              <div className="text-2xl font-bold text-gray-900 mb-1">{stats.todayAppointments}</div>
+              <div className="text-xs text-gray-500">Scheduled for today</div>
             </motion.div>
 
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Doctors</span>
+                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                  <Stethoscope className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-gray-900 mb-1">{stats.activeDoctors}</div>
+              <div className="text-xs text-gray-500">Available for consultation</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.15 }}
+              className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Staff</span>
+                <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
+                  <UserCheck className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-gray-900 mb-1">{staffCounts.active}</div>
+              <div className="text-xs text-gray-500">Total: {staffCounts.total}</div>
+            </motion.div>
           </div>
 
           {/* Quick Action Command Shortcuts */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <motion.div
-              whileHover={{ y: -3 }}
-              className="bg-[#D93344] rounded-2xl p-6 text-white shadow-lg flex flex-col justify-between"
+              whileHover={{ y: -2 }}
+              className="bg-[#D93344] rounded-lg p-5 text-white shadow-sm flex flex-col justify-between"
             >
               <div>
-                <div className="inline-flex p-3 bg-white/10 rounded-xl mb-4 backdrop-blur-sm">
-                  <UserPlus className="h-6 w-6 text-red-200" />
+                <div className="inline-flex p-2 bg-white/10 rounded-lg mb-3 backdrop-blur-sm">
+                  <UserPlus className="h-5 w-5 text-red-200" />
                 </div>
-                <h3 className="text-xl font-bold mb-1">Onboard Clinic Staff</h3>
-                <p className="text-sm text-red-200 mb-6">
+                <h3 className="text-base font-bold mb-1">Onboard Clinic Staff</h3>
+                <p className="text-xs text-red-200 mb-4">
                   Add new doctors, nurses, accountants, or lab technicians with instant system credentials.
                 </p>
               </div>
@@ -841,7 +916,7 @@ export default function AdminDashboardPage() {
                   setActiveTab('staff');
                   setIsAddStaffOpen(true);
                 }}
-                className="w-full py-3 bg-white text-[#D93344] font-bold rounded-xl hover:bg-red-50 transition-colors flex items-center justify-center space-x-2"
+                className="w-full py-2 bg-white text-[#D93344] font-semibold rounded-md hover:bg-red-50 transition-colors flex items-center justify-center space-x-2 text-sm"
               >
                 <UserPlus className="h-4 w-4" />
                 <span>Add Staff Member</span>
@@ -849,15 +924,15 @@ export default function AdminDashboardPage() {
             </motion.div>
 
             <motion.div
-              whileHover={{ y: -3 }}
-              className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex flex-col justify-between"
+              whileHover={{ y: -2 }}
+              className="bg-white rounded-lg p-5 border border-gray-200 shadow-sm flex flex-col justify-between"
             >
               <div>
-                <div className="inline-flex p-3 bg-red-50 rounded-xl mb-4 text-[#D93344]">
-                  <FolderArchive className="h-6 w-6" />
+                <div className="inline-flex p-2 bg-red-50 rounded-lg mb-3 text-[#D93344]">
+                  <FolderArchive className="h-5 w-5" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Patient Archival Center</h3>
-                <p className="text-sm text-gray-600 mb-6">
+                <h3 className="text-base font-bold text-gray-900 mb-1">Patient Archival Center</h3>
+                <p className="text-xs text-gray-600 mb-4">
                   Safely archive inactive medical records or restore previously archived patients anytime.
                 </p>
               </div>
@@ -866,7 +941,7 @@ export default function AdminDashboardPage() {
                   setActiveTab('patients');
                   setPatientFilterTab('archived');
                 }}
-                className="w-full py-3 bg-red-50 hover:bg-red-100 text-[#D93344] font-bold rounded-xl transition-colors flex items-center justify-center space-x-2"
+                className="w-full py-2 bg-red-50 hover:bg-red-100 text-[#D93344] font-semibold rounded-md transition-colors flex items-center justify-center space-x-2 text-sm"
               >
                 <span>View {patientCounts.archived} Archived Records</span>
                 <ChevronRight className="h-4 w-4" />
@@ -874,21 +949,21 @@ export default function AdminDashboardPage() {
             </motion.div>
 
             <motion.div
-              whileHover={{ y: -3 }}
-              className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex flex-col justify-between"
+              whileHover={{ y: -2 }}
+              className="bg-white rounded-lg p-5 border border-gray-200 shadow-sm flex flex-col justify-between"
             >
               <div>
-                <div className="inline-flex p-3 bg-red-50 rounded-xl mb-4 text-[#D93344]">
-                  <Shield className="h-6 w-6" />
+                <div className="inline-flex p-2 bg-red-50 rounded-lg mb-3 text-[#D93344]">
+                  <Shield className="h-5 w-5" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">System Audit & Security</h3>
-                <p className="text-sm text-gray-600 mb-6">
+                <h3 className="text-base font-bold text-gray-900 mb-1">System Audit & Security</h3>
+                <p className="text-xs text-gray-600 mb-4">
                   Track real-time security events, staff edits, role changes, and system access logs.
                 </p>
               </div>
               <button
                 onClick={() => setActiveTab('audit')}
-                className="w-full py-3 bg-red-50 hover:bg-red-100 text-[#D93344] font-bold rounded-xl transition-colors flex items-center justify-center space-x-2"
+                className="w-full py-2 bg-red-50 hover:bg-red-100 text-[#D93344] font-semibold rounded-md transition-colors flex items-center justify-center space-x-2 text-sm"
               >
                 <span>Open Audit Log Viewer</span>
                 <ChevronRight className="h-4 w-4" />
@@ -897,24 +972,24 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Department Workloads & Live Audit Feed */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Department Operational Workload */}
-            <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
+            <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg shadow-sm p-5">
+              <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                    <Activity className="h-5 w-5 mr-2 text-[#D93344]" />
+                  <h3 className="text-base font-bold text-gray-900 flex items-center">
+                    <Activity className="h-4 w-4 mr-2 text-[#D93344]" />
                     Department Real-Time Capacity
                   </h3>
                   <p className="text-xs text-gray-500 mt-0.5">Live workload and staffing metrics across clinic wings</p>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">
+                <span className="text-xs font-semibold px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded border border-emerald-200">
                   All Systems Operational
                 </span>
               </div>
 
               {/* Staff Sparsity Visualization */}
-              <div className="mb-6 p-4 bg-gradient-to-br from-gray-50 to-red-50 rounded-xl border border-gray-200">
+              <div className="mb-5 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-bold text-gray-900">Staff Distribution Overview</span>
                   <span className="text-xs text-gray-500">{staffCounts.total} Total Staff</span>
@@ -928,7 +1003,7 @@ export default function AdminDashboardPage() {
                   ].map((staff) => (
                     <div key={staff.role} className="text-center">
                       <div className={`w-full aspect-square rounded-lg ${staff.color} flex items-center justify-center mb-1 relative`}>
-                        <staff.icon className="h-6 w-6 text-gray-700" />
+                        <staff.icon className="h-5 w-5 text-gray-700" />
                         <span className="absolute -top-1 -right-1 bg-[#D93344] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                           {staff.count}
                         </span>
@@ -940,22 +1015,22 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Department Load Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {departmentLoads.map(dept => (
-                  <div key={dept.name} className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                  <div key={dept.name} className="p-4 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-gray-900 text-sm">{dept.name}</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                        dept.status === 'High Load' ? 'bg-amber-100 text-amber-800' : dept.status === 'Moderate' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                        dept.status === 'High Load' ? 'bg-amber-100 text-amber-800' : dept.status === 'Moderate' ? 'bg-yellow-100 text-yellow-800' : 'bg-emerald-100 text-emerald-800'
                       }`}>
                         {dept.status}
                       </span>
                     </div>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex-1 mr-3">
-                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                           <div
-                            className={`h-3 rounded-full bg-gradient-to-r ${dept.color} transition-all duration-700`}
+                            className={`h-2 rounded-full bg-gradient-to-r ${dept.color} transition-all duration-700`}
                             style={{ width: `${dept.load}%` }}
                           />
                         </div>
@@ -976,11 +1051,11 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Quick Live System Feed */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col justify-between">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 flex items-center">
-                    <Terminal className="h-5 w-5 mr-2 text-[#D93344]" />
+                  <h3 className="text-base font-bold text-gray-900 flex items-center">
+                    <Terminal className="h-4 w-4 mr-2 text-[#D93344]" />
                     Live Activity Feed
                   </h3>
                   <button onClick={() => setActiveTab('audit')} className="text-xs text-[#D93344] font-semibold hover:underline">
@@ -988,11 +1063,11 @@ export default function AdminDashboardPage() {
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {auditLogs.slice(0, 5).map(log => (
-                    <div key={log.id} className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start space-x-3 text-xs">
+                    <div key={log.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-start space-x-2 text-xs">
                       <div className="mt-0.5">
-                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                        <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 truncate">{log.action}</p>
@@ -1010,7 +1085,7 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-gray-100 text-center">
+              <div className="mt-4 pt-4 border-t border-gray-200 text-center">
                 <span className="text-xs text-gray-500">Continuous audit streaming active</span>
               </div>
             </div>
@@ -1022,42 +1097,7 @@ export default function AdminDashboardPage() {
       {/* TAB 2: REAL-TIME STAFF CONTROL */}
       {/* ========================================================================= */}
       {activeTab === 'staff' && (
-        <div className="space-y-6">
-          {/* Staff Section Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-            <div>
-              <h2 className="text-2xl font-extrabold text-gray-900 flex items-center">
-                <Users className="h-7 w-7 mr-3 text-[#D93344]" />
-                Real-Time Staff Control
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Manage registered doctors, nurses, accountants, laboratorists, pharmacists, and staff credentials.
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setStaffForm({
-                  fullName: '',
-                  username: '',
-                  email: '',
-                  password: '',
-                  role: 'DOCTOR',
-                  phone: '',
-                  specialization: '',
-                  licenseNo: '',
-                  departmentId: '',
-                  isActive: true,
-                });
-                setFormError('');
-                setIsAddStaffOpen(true);
-              }}
-              className="px-5 py-3 bg-[#D93344] hover:bg-[#c02d3c] text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2"
-            >
-              <UserPlus className="h-5 w-5" />
-              <span>Add New Staff Member</span>
-            </button>
-          </div>
-
+        <div className="space-y-4">
           {/* Role Filter Chips */}
           <div className="flex flex-wrap gap-2">
             {[
@@ -1073,14 +1113,14 @@ export default function AdminDashboardPage() {
               <button
                 key={chip.id}
                 onClick={() => setStaffRoleFilter(chip.id as RoleFilter)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 border ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center space-x-2 border ${
                   staffRoleFilter === chip.id
-                    ? 'bg-[#D93344] text-white border-[#D93344] shadow-sm'
+                    ? 'bg-[#D93344] text-white border-[#D93344]'
                     : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                 }`}
               >
                 <span>{chip.label}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs ${
+                <span className={`px-1.5 py-0.5 rounded text-xs ${
                   staffRoleFilter === chip.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
                 }`}>
                   {chip.count}
@@ -1090,20 +1130,20 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Search & Status Controls */}
-          <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
+          <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search staff by name, email, phone, license number, or specialization..."
                 value={staffSearch}
                 onChange={e => setStaffSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900 bg-gray-50/50"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900 bg-gray-50/50"
               />
               {staffSearch && (
                 <button
                   onClick={() => setStaffSearch('')}
-                  className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
                 >
                   Clear
                 </button>
@@ -1111,22 +1151,22 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="flex items-center space-x-2 w-full md:w-auto">
-              <div className="flex items-center bg-gray-100 rounded-xl p-1 text-xs font-semibold text-gray-700">
+              <div className="flex items-center bg-gray-100 rounded-md p-1 text-xs font-medium text-gray-700">
                 <button
                   onClick={() => setStaffStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${staffStatusFilter === 'all' ? 'bg-white shadow text-[#D93344]' : 'hover:text-gray-900'}`}
+                  className={`px-3 py-1.5 rounded transition-all ${staffStatusFilter === 'all' ? 'bg-white shadow text-[#D93344]' : 'hover:text-gray-900'}`}
                 >
-                  All Status ({staffCounts.total})
+                  All ({staffCounts.total})
                 </button>
                 <button
                   onClick={() => setStaffStatusFilter('active')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${staffStatusFilter === 'active' ? 'bg-white shadow text-emerald-700' : 'hover:text-gray-900'}`}
+                  className={`px-3 py-1.5 rounded transition-all ${staffStatusFilter === 'active' ? 'bg-white shadow text-emerald-700' : 'hover:text-gray-900'}`}
                 >
                   Active ({staffCounts.active})
                 </button>
                 <button
                   onClick={() => setStaffStatusFilter('inactive')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${staffStatusFilter === 'inactive' ? 'bg-white shadow text-amber-700' : 'hover:text-gray-900'}`}
+                  className={`px-3 py-1.5 rounded transition-all ${staffStatusFilter === 'inactive' ? 'bg-white shadow text-amber-700' : 'hover:text-gray-900'}`}
                 >
                   Inactive ({staffCounts.inactive})
                 </button>
@@ -1139,7 +1179,7 @@ export default function AdminDashboardPage() {
                     setStaffRoleFilter('ALL');
                     setStaffStatusFilter('all');
                   }}
-                  className="px-3 py-2 text-xs font-semibold text-[#D93344] hover:bg-red-50 rounded-xl border border-red-200 transition-colors whitespace-nowrap"
+                  className="px-3 py-1.5 text-xs font-medium text-[#D93344] hover:bg-red-50 rounded-md border border-red-200 transition-colors whitespace-nowrap"
                 >
                   Reset Filters
                 </button>
@@ -1148,20 +1188,20 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Staff Table / Roster */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
             {staffLoading ? (
-              <div className="p-16 text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#D93344] mx-auto mb-4" />
+              <div className="p-12 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D93344] mx-auto mb-4" />
                 <p className="text-gray-500 text-sm">Loading staff members...</p>
               </div>
             ) : staffList.length === 0 ? (
               /* No Results Empty State */
-              <div className="p-16 text-center">
-                <div className="w-16 h-16 bg-red-50 text-[#D93344] rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-100">
-                  <UserX className="h-8 w-8" />
+              <div className="p-12 text-center">
+                <div className="w-12 h-12 bg-red-50 text-[#D93344] rounded-lg flex items-center justify-center mx-auto mb-4 border border-red-100">
+                  <UserX className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">No staff members found</h3>
-                <p className="text-gray-500 text-sm max-w-md mx-auto mb-6">
+                <h3 className="text-base font-bold text-gray-900 mb-1">No staff members found</h3>
+                <p className="text-gray-500 text-sm max-w-md mx-auto mb-4">
                   {staffSearch || staffRoleFilter !== 'ALL' || staffStatusFilter !== 'all'
                     ? `No staff match your current search "${staffSearch || staffRoleFilter}". Try resetting your filters.`
                     : 'No staff members are registered in the system yet. Get started by adding your first staff member.'}
@@ -1174,7 +1214,7 @@ export default function AdminDashboardPage() {
                         setStaffRoleFilter('ALL');
                         setStaffStatusFilter('all');
                       }}
-                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md text-sm transition-colors"
                     >
                       Clear All Filters
                     </button>
@@ -1196,7 +1236,7 @@ export default function AdminDashboardPage() {
                       setFormError('');
                       setIsAddStaffOpen(true);
                     }}
-                    className="px-4 py-2 bg-[#D93344] hover:bg-[#c02d3c] text-white font-semibold rounded-xl text-sm transition-colors flex items-center space-x-2"
+                    className="px-3 py-1.5 bg-[#D93344] hover:bg-[#b92b3a] text-white font-medium rounded-md text-sm transition-colors flex items-center space-x-2"
                   >
                     <Plus className="h-4 w-4" />
                     <span>Add Staff Member</span>
@@ -1207,37 +1247,37 @@ export default function AdminDashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50/80 border-b border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider">
-                      <th className="px-6 py-4">Staff Member</th>
-                      <th className="px-6 py-4">Assigned Role</th>
-                      <th className="px-6 py-4">Specialization & License</th>
-                      <th className="px-6 py-4">Contact Info</th>
-                      <th className="px-6 py-4">Account Status</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                    <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-3">Staff Member</th>
+                      <th className="px-4 py-3">Assigned Role</th>
+                      <th className="px-4 py-3">Specialization & License</th>
+                      <th className="px-4 py-3">Contact Info</th>
+                      <th className="px-4 py-3">Account Status</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm">
                     {staffList.map((member, index) => (
-                      <tr key={member.id} className="hover:bg-red-50/30 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                      <tr key={member.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center space-x-3">
-                            <div className="h-10 w-10 rounded-xl bg-[#D93344] flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                            <div className="h-8 w-8 rounded-md bg-[#D93344] flex items-center justify-center text-white font-bold text-xs shadow-sm">
                               {member.staffProfile?.fullName
                                 ? member.staffProfile.fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
                                 : (member.email ? member.email[0].toUpperCase() : 'S')}
                             </div>
                             <div>
-                              <p className="font-bold text-gray-900">
+                              <p className="font-semibold text-gray-900 text-sm">
                                 {member.staffProfile?.fullName || 'Unnamed Staff'}
                               </p>
                               <p className="text-xs text-gray-500">{member.email}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           {getRoleBadge(member.role)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <p className="font-medium text-gray-900 text-xs">
                             {member.staffProfile?.specialization || 'General'}
                           </p>
@@ -1247,7 +1287,7 @@ export default function AdminDashboardPage() {
                             <p className="text-xs text-gray-400">No license listed</p>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <p className="text-xs text-gray-900 flex items-center">
                             <Phone className="h-3 w-3 mr-1 text-gray-400" />
                             {member.staffProfile?.phone || 'No phone'}
@@ -1257,25 +1297,25 @@ export default function AdminDashboardPage() {
                             {member.email}
                           </p>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           {member.isActive ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
                               Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-gray-400 mr-1.5" />
                               Deactivated
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end space-x-1.5">
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end space-x-1">
                             {/* Toggle Active Button */}
                             <button
                               onClick={() => handleToggleStaffStatus(member)}
-                              className={`p-2 rounded-lg transition-colors ${
+                              className={`p-1.5 rounded transition-colors ${
                                 member.isActive
                                   ? 'text-amber-600 hover:bg-amber-50'
                                   : 'text-emerald-600 hover:bg-emerald-50'
@@ -1288,7 +1328,7 @@ export default function AdminDashboardPage() {
                             {/* Edit Button */}
                             <button
                               onClick={() => handleEditStaffOpen(member)}
-                              className="p-2 text-[#D93344] hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-1.5 text-[#D93344] hover:bg-red-50 rounded transition-colors"
                               title="Edit Staff Details"
                             >
                               <Edit3 className="h-4 w-4" />
@@ -1301,7 +1341,7 @@ export default function AdminDashboardPage() {
                                   setSelectedStaff(member);
                                   setIsDeleteStaffOpen(true);
                                 }}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                                 title="Delete Staff Account"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1323,84 +1363,71 @@ export default function AdminDashboardPage() {
       {/* TAB 3: PATIENT ARCHIVE & RECORDS */}
       {/* ========================================================================= */}
       {activeTab === 'patients' && (
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-            <div>
-              <h2 className="text-2xl font-extrabold text-gray-900 flex items-center">
-                <FolderArchive className="h-7 w-7 mr-3 text-[#D93344]" />
-                Patient Management & Archival
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                View active clinic patients, archive inactive records, and restore patients with full audit integrity.
-              </p>
+        <div className="space-y-4">
+          {/* Counters */}
+          <div className="flex items-center space-x-3">
+            <div className="bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-md text-center min-w-[80px]">
+              <p className="text-xs font-semibold text-emerald-700">Active</p>
+              <p className="text-base font-bold text-emerald-900">{patientCounts.active}</p>
             </div>
-
-            {/* Counters */}
-            <div className="flex items-center space-x-2">
-              <div className="bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-xl text-center">
-                <p className="text-xs font-semibold text-emerald-700">Active</p>
-                <p className="text-lg font-bold text-emerald-900">{patientCounts.active}</p>
-              </div>
-              <div className="bg-amber-50 border border-amber-200 px-3.5 py-2 rounded-xl text-center">
-                <p className="text-xs font-semibold text-amber-700">Archived</p>
-                <p className="text-lg font-bold text-amber-900">{patientCounts.archived}</p>
-              </div>
-              <div className="bg-red-50 border border-red-200 px-3.5 py-2 rounded-xl text-center">
-                <p className="text-xs font-semibold text-red-700">Total</p>
-                <p className="text-lg font-bold text-red-900">{patientCounts.total}</p>
-              </div>
+            <div className="bg-amber-50 border border-amber-200 px-3 py-2 rounded-md text-center min-w-[80px]">
+              <p className="text-xs font-semibold text-amber-700">Archived</p>
+              <p className="text-base font-bold text-amber-900">{patientCounts.archived}</p>
+            </div>
+            <div className="bg-red-50 border border-red-200 px-3 py-2 rounded-md text-center min-w-[80px]">
+              <p className="text-xs font-semibold text-red-700">Total</p>
+              <p className="text-base font-bold text-red-900">{patientCounts.total}</p>
             </div>
           </div>
 
           {/* Sub-Tabs: Active / Archived / All */}
-          <div className="flex items-center justify-between bg-white rounded-2xl p-4 border border-gray-200 shadow-sm flex-wrap gap-4">
-            <div className="flex items-center bg-gray-100 rounded-xl p-1 text-xs font-semibold text-gray-700">
+          <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-4 flex-wrap gap-4">
+            <div className="flex items-center bg-gray-100 rounded-md p-1 text-xs font-medium text-gray-700">
               <button
                 onClick={() => setPatientFilterTab('active')}
-                className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-1.5 ${
+                className={`px-3 py-1.5 rounded transition-all flex items-center space-x-1.5 ${
                   patientFilterTab === 'active' ? 'bg-white shadow text-emerald-800' : 'hover:text-gray-900'
                 }`}
               >
-                <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Active Patients ({patientCounts.active})</span>
+                <CheckCircle className="h-3 w-3 text-emerald-600" />
+                <span>Active ({patientCounts.active})</span>
               </button>
 
               <button
                 onClick={() => setPatientFilterTab('archived')}
-                className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-1.5 ${
+                className={`px-3 py-1.5 rounded transition-all flex items-center space-x-1.5 ${
                   patientFilterTab === 'archived' ? 'bg-white shadow text-amber-800' : 'hover:text-gray-900'
                 }`}
               >
-                <Archive className="h-3.5 w-3.5 text-amber-600" />
-                <span>Archived Patients ({patientCounts.archived})</span>
+                <Archive className="h-3 w-3 text-amber-600" />
+                <span>Archived ({patientCounts.archived})</span>
               </button>
 
               <button
                 onClick={() => setPatientFilterTab('all')}
-                className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-1.5 ${
+                className={`px-3 py-1.5 rounded transition-all flex items-center space-x-1.5 ${
                   patientFilterTab === 'all' ? 'bg-white shadow text-[#D93344]' : 'hover:text-gray-900'
                 }`}
               >
-                <Layers className="h-3.5 w-3.5 text-[#D93344]" />
-                <span>All Records ({patientCounts.total})</span>
+                <Layers className="h-3 w-3 text-[#D93344]" />
+                <span>All ({patientCounts.total})</span>
               </button>
             </div>
 
             {/* Search */}
             <div className="relative flex-1 max-w-md w-full">
-              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search by name, MRN, phone, or national ID..."
                 value={patientSearch}
                 onChange={e => setPatientSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D93344] text-xs text-gray-900 bg-gray-50/50"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D93344] text-xs text-gray-900 bg-gray-50/50"
               />
               {patientSearch && (
                 <button
                   onClick={() => setPatientSearch('')}
-                  className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
                 >
                   Clear
                 </button>
@@ -1409,18 +1436,18 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Patients Table */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
             {patientsLoading ? (
-              <div className="p-16 text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#D93344] mx-auto mb-4" />
+              <div className="p-12 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D93344] mx-auto mb-4" />
                 <p className="text-gray-500 text-sm">Loading patient records...</p>
               </div>
             ) : patientsList.length === 0 ? (
-              <div className="p-16 text-center">
-                <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-100">
-                  <Archive className="h-8 w-8" />
+              <div className="p-12 text-center">
+                <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center mx-auto mb-4 border border-amber-100">
+                  <Archive className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">No patient records found</h3>
+                <h3 className="text-base font-bold text-gray-900 mb-1">No patient records found</h3>
                 <p className="text-gray-500 text-sm max-w-md mx-auto mb-4">
                   {patientSearch
                     ? `No patients match "${patientSearch}" under ${patientFilterTab} records.`
@@ -1431,7 +1458,7 @@ export default function AdminDashboardPage() {
                 {patientSearch && (
                   <button
                     onClick={() => setPatientSearch('')}
-                    className="px-4 py-2 bg-[#D93344] text-white font-semibold rounded-xl text-sm hover:bg-[#c02d3c] transition-colors"
+                    className="px-3 py-1.5 bg-[#D93344] text-white font-medium rounded-md text-sm hover:bg-[#b92b3a] transition-colors"
                   >
                     Clear Search Query
                   </button>
@@ -1441,21 +1468,21 @@ export default function AdminDashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50/80 border-b border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider">
-                      <th className="px-6 py-4">Patient</th>
-                      <th className="px-6 py-4">MRN</th>
-                      <th className="px-6 py-4">Contact</th>
-                      <th className="px-6 py-4">Demographics</th>
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4 text-right">Archival Actions</th>
+                    <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <th className="px-4 py-3">Patient</th>
+                      <th className="px-4 py-3">MRN</th>
+                      <th className="px-4 py-3">Contact</th>
+                      <th className="px-4 py-3">Demographics</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm">
                     {patientsList.map(patient => (
-                      <tr key={patient.id} className="hover:bg-red-50/30 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                      <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center space-x-3">
-                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm ${
+                            <div className={`h-8 w-8 rounded-md flex items-center justify-center text-white font-bold text-xs shadow-sm ${
                               patient.isArchived
                                 ? 'bg-gradient-to-br from-gray-400 to-gray-600'
                                 : 'bg-gradient-to-br from-teal-500 to-emerald-600'
@@ -1463,19 +1490,19 @@ export default function AdminDashboardPage() {
                               {patient.firstName[0]}{patient.lastName[0]}
                             </div>
                             <div>
-                              <p className="font-bold text-gray-900">
+                              <p className="font-semibold text-gray-900 text-sm">
                                 {patient.firstName} {patient.lastName}
                               </p>
                               <p className="text-xs text-gray-500">Registered: {new Date(patient.createdAt).toLocaleDateString()}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="font-mono text-xs font-semibold px-2.5 py-1 bg-gray-100 text-gray-800 rounded-lg">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="font-mono text-xs font-medium px-2 py-0.5 bg-gray-100 text-gray-800 rounded">
                             {patient.mrn}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <p className="text-xs text-gray-900 flex items-center">
                             <Phone className="h-3 w-3 mr-1 text-gray-400" />
                             {patient.phone}
@@ -1487,27 +1514,27 @@ export default function AdminDashboardPage() {
                             </p>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <p className="text-xs text-gray-900 font-medium">
                             {patient.gender} • {patient.dob ? new Date().getFullYear() - new Date(patient.dob).getFullYear() : 'N/A'} yrs
                           </p>
                           <p className="text-xs text-gray-500">DOB: {new Date(patient.dob).toLocaleDateString()}</p>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           {patient.isArchived ? (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200">
                               <Archive className="w-3 h-3 mr-1" />
                               Archived
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
                               Active
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end space-x-2">
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end space-x-1">
                             {/* Archive or Restore Action Button */}
                             {patient.isArchived ? (
                               <button
@@ -1515,9 +1542,9 @@ export default function AdminDashboardPage() {
                                   setSelectedPatient(patient);
                                   setIsRestoreModalOpen(true);
                                 }}
-                                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold rounded-lg text-xs transition-colors flex items-center space-x-1"
+                                className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-medium rounded text-xs transition-colors flex items-center space-x-1"
                               >
-                                <RotateCcw className="h-3.5 w-3.5" />
+                                <RotateCcw className="h-3 w-3" />
                                 <span>Restore</span>
                               </button>
                             ) : (
@@ -1526,9 +1553,9 @@ export default function AdminDashboardPage() {
                                   setSelectedPatient(patient);
                                   setIsArchiveModalOpen(true);
                                 }}
-                                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold rounded-lg text-xs transition-colors flex items-center space-x-1"
+                                className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-medium rounded text-xs transition-colors flex items-center space-x-1"
                               >
-                                <Archive className="h-3.5 w-3.5" />
+                                <Archive className="h-3 w-3" />
                                 <span>Archive</span>
                               </button>
                             )}
@@ -1536,7 +1563,7 @@ export default function AdminDashboardPage() {
                             {/* View Profile */}
                             <Link
                               href={`/dashboard/patients/${patient.id}`}
-                              className="p-1.5 text-gray-500 hover:text-[#D93344] hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-500 hover:text-[#D93344] hover:bg-red-50 rounded transition-colors"
                               title="View Patient Record"
                             >
                               <Eye className="h-4 w-4" />
@@ -1557,44 +1584,33 @@ export default function AdminDashboardPage() {
       {/* TAB 4: SYSTEM AUDIT FEED */}
       {/* ========================================================================= */}
       {activeTab === 'audit' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-extrabold text-gray-900 flex items-center">
-                <Terminal className="h-7 w-7 mr-3 text-[#D93344]" />
-                Clinic System Audit Trail
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Immutable, compliant audit log of user actions, patient archiving, authentication, and clinical state changes.
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              {['ALL', 'staff', 'patient', 'system', 'security'].map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setAuditFilter(cat)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
-                    auditFilter === cat
-                      ? 'bg-[#D93344] text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            {['ALL', 'staff', 'patient', 'system', 'security'].map(cat => (
+              <button
+                key={cat}
+                onClick={() => setAuditFilter(cat)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-all ${
+                  auditFilter === cat
+                    ? 'bg-[#D93344] text-white'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-6">
-            <div className="space-y-3 font-mono text-xs">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden p-5">
+            <div className="space-y-2 font-mono text-xs">
               {auditLogs
                 .filter(log => auditFilter === 'ALL' || (log.entityType && log.entityType.toLowerCase() === auditFilter))
                 .map(log => (
-                  <div key={log.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200/70 hover:bg-red-50/30 transition-colors flex items-center justify-between gap-4">
+                  <div key={log.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors flex items-center justify-between gap-4">
                     <div className="flex items-center space-x-3">
-                      <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                      <CheckCircle className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" />
                       <div>
-                        <p className="font-bold text-gray-900">{log.action}</p>
+                        <p className="font-semibold text-gray-900">{log.action}</p>
                         <p className="text-gray-500 text-[11px] mt-0.5">
                           Actor: {log.actorRole} • Entity: {log.entityType}
                           {log.fieldName && ` • Field: ${log.fieldName}`}
@@ -1620,23 +1636,14 @@ export default function AdminDashboardPage() {
       {/* TAB 5: BILLING & FEE CONFIGURATIONS */}
       {/* ========================================================================= */}
       {activeTab === 'billing' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-extrabold text-gray-900 flex items-center">
-                <DollarSign className="h-7 w-7 mr-3 text-[#D93344]" />
-                Clinic Financial & Billing Control
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Configure standard service pricing, review patient invoice settlements, and track revenue collection.
-              </p>
-            </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-end">
             <button
               onClick={() => {
                 fetchFeeConfigs();
                 fetchAdminInvoices();
               }}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors flex items-center space-x-2"
+              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md text-sm transition-colors flex items-center space-x-2"
             >
               <RefreshCw className={`h-4 w-4 ${invoicesLoading || feeConfigsLoading ? 'animate-spin' : ''}`} />
               <span>Refresh Ledger</span>
@@ -1644,52 +1651,52 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Financial Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-500 uppercase">Total Invoices</span>
-                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Invoices</span>
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-md">
                   <Receipt className="h-4 w-4" />
                 </div>
               </div>
-              <p className="text-2xl font-extrabold text-gray-900">{adminInvoices.length}</p>
+              <p className="text-xl font-bold text-gray-900">{adminInvoices.length}</p>
               <span className="text-xs text-gray-500 mt-1 block">Issued by reception</span>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-500 uppercase">Paid Settlements</span>
-                <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Paid Settlements</span>
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-md">
                   <CheckCircle className="h-4 w-4" />
                 </div>
               </div>
-              <p className="text-2xl font-extrabold text-emerald-600">
+              <p className="text-xl font-bold text-emerald-600">
                 {adminInvoices.filter(i => i.status === 'PAID').length}
               </p>
               <span className="text-xs text-emerald-700 font-medium mt-1 block">Fully settled</span>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-500 uppercase">Pending Payments</span>
-                <div className="p-2 bg-amber-100 text-amber-600 rounded-lg">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pending Payments</span>
+                <div className="p-2 bg-amber-50 text-amber-600 rounded-md">
                   <Clock className="h-4 w-4" />
                 </div>
               </div>
-              <p className="text-2xl font-extrabold text-amber-600">
+              <p className="text-xl font-bold text-amber-600">
                 {adminInvoices.filter(i => i.status !== 'PAID').length}
               </p>
               <span className="text-xs text-amber-700 font-medium mt-1 block">Awaiting checkout</span>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-500 uppercase">Revenue Collected</span>
-                <div className="p-2 bg-red-100 text-[#D93344] rounded-lg">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Revenue Collected</span>
+                <div className="p-2 bg-red-50 text-[#D93344] rounded-md">
                   <DollarSign className="h-4 w-4" />
                 </div>
               </div>
-              <p className="text-2xl font-extrabold text-gray-900">
+              <p className="text-xl font-bold text-gray-900">
                 {adminInvoices.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + (Number(curr.total) || 0), 0).toFixed(2)}
               </p>
               <span className="text-xs text-gray-500 mt-1 block">Settled cash & cards</span>
@@ -1697,18 +1704,18 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Standard Service Fee Pricing (Admin Configurable) */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Standard Service Pricing Table</h3>
+                <h3 className="text-base font-bold text-gray-900">Standard Service Pricing Table</h3>
                 <p className="text-xs text-gray-500 mt-0.5">Admin-controlled pricing applied automatically during patient checkout</p>
               </div>
             </div>
             <div className="divide-y divide-gray-100">
               {feeConfigs.map((fee) => (
-                <div key={fee.feeType} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
+                <div key={fee.feeType} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50 transition-colors">
                   <div>
-                    <h4 className="font-bold text-gray-900 text-base">{fee.name}</h4>
+                    <h4 className="font-semibold text-gray-900 text-sm">{fee.name}</h4>
                     <p className="text-xs text-gray-500 mt-0.5">{fee.description}</p>
                     <span className="inline-block mt-2 px-2 py-0.5 bg-gray-100 text-gray-600 font-mono text-xs rounded">
                       {fee.feeType}
@@ -1719,40 +1726,40 @@ export default function AdminDashboardPage() {
                     {editingFeeType === fee.feeType ? (
                       <div className="flex items-center space-x-2">
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">ETB</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-xs">ETB</span>
                           <input
                             type="number"
                             min="0"
                             step="1"
                             value={editingFeeAmount}
                             onChange={(e) => setEditingFeeAmount(Number(e.target.value))}
-                            className="w-28 pl-7 pr-3 py-2 border border-gray-300 rounded-xl text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#D93344]"
+                            className="w-24 pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#D93344]"
                           />
                         </div>
                         <button
                           onClick={() => handleUpdateFee(fee.feeType, fee.name, fee.description, editingFeeAmount)}
-                          className="px-3.5 py-2 bg-[#D93344] hover:bg-[#c02d3c] text-white text-xs font-bold rounded-xl shadow-sm transition-colors"
+                          className="px-3 py-1.5 bg-[#D93344] hover:bg-[#b92b3a] text-white text-xs font-medium rounded-md shadow-sm transition-colors"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => setEditingFeeType(null)}
-                          className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold rounded-xl transition-colors"
+                          className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium rounded-md transition-colors"
                         >
                           Cancel
                         </button>
                       </div>
                     ) : (
                       <div className="flex items-center space-x-4">
-                        <span className="text-2xl font-black text-gray-900">{Number(fee.amount).toFixed(2)}</span>
+                        <span className="text-xl font-bold text-gray-900">{Number(fee.amount).toFixed(2)}</span>
                         <button
                           onClick={() => {
                             setEditingFeeType(fee.feeType);
                             setEditingFeeAmount(Number(fee.amount));
                           }}
-                          className="px-3 py-1.5 border border-gray-200 hover:border-[#D93344] text-[#D93344] text-xs font-semibold rounded-lg transition-colors flex items-center space-x-1"
+                          className="px-2 py-1 border border-gray-200 hover:border-[#D93344] text-[#D93344] text-xs font-medium rounded transition-colors flex items-center space-x-1"
                         >
-                          <Edit3 className="h-3.5 w-3.5" />
+                          <Edit3 className="h-3 w-3" />
                           <span>Edit</span>
                         </button>
                       </div>
@@ -1764,40 +1771,40 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Recent Invoices Ledger */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Recent Invoice Register</h3>
+                <h3 className="text-base font-bold text-gray-900">Recent Invoice Register</h3>
                 <p className="text-xs text-gray-500 mt-0.5">Live billing records created during checkout</p>
               </div>
               <span className="text-xs text-gray-500 font-medium">{adminInvoices.length} entries</span>
             </div>
             {adminInvoices.length === 0 ? (
               <div className="p-12 text-center text-gray-500">
-                <Receipt className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                <Receipt className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                 <p className="text-sm font-medium">No billing transactions recorded yet</p>
               </div>
             ) : (
               <div className="overflow-x-auto max-h-96">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-gray-50/80 border-b border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider sticky top-0">
-                      <th className="px-6 py-3">Invoice #</th>
-                      <th className="px-6 py-3">Patient</th>
-                      <th className="px-6 py-3">Date</th>
-                      <th className="px-6 py-3">Amount</th>
-                      <th className="px-6 py-3">Status</th>
+                    <tr className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider sticky top-0">
+                      <th className="px-4 py-3">Invoice #</th>
+                      <th className="px-4 py-3">Patient</th>
+                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">Amount</th>
+                      <th className="px-4 py-3">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm">
                     {adminInvoices.map((inv) => (
                       <tr key={inv.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-3 font-mono font-bold text-gray-900">{inv.invoiceNo}</td>
-                        <td className="px-6 py-3 text-gray-800">{inv.patient?.firstName} {inv.patient?.lastName}</td>
-                        <td className="px-6 py-3 text-gray-500 text-xs">{new Date(inv.createdAt).toLocaleDateString()}</td>
-                        <td className="px-6 py-3 font-bold text-gray-900">{Number(inv.total).toFixed(2)}</td>
-                        <td className="px-6 py-3">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        <td className="px-4 py-3 font-mono font-semibold text-gray-900">{inv.invoiceNo}</td>
+                        <td className="px-4 py-3 text-gray-800">{inv.patient?.firstName} {inv.patient?.lastName}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{new Date(inv.createdAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 font-semibold text-gray-900">{Number(inv.total).toFixed(2)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
                             inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                           }`}>
                             {inv.status}
@@ -1817,74 +1824,64 @@ export default function AdminDashboardPage() {
       {/* TAB 7: SYSTEM & CLINIC SETTINGS */}
       {/* ========================================================================= */}
       {activeTab === 'settings' && (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-            <h2 className="text-2xl font-extrabold text-gray-900 flex items-center">
-              <Settings className="h-7 w-7 mr-3 text-[#D93344]" />
-              Clinic System Configuration & Environment
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Healthcare infrastructure, security configurations, and active deployment parameters.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* System Status Card */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-              <h3 className="font-bold text-gray-900 text-base flex items-center">
-                <Activity className="h-5 w-5 mr-2 text-[#D93344]" />
+            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-4">
+              <h3 className="font-semibold text-gray-900 text-sm flex items-center">
+                <Activity className="h-4 w-4 mr-2 text-[#D93344]" />
                 Infrastructure & Connectivity
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-500">API Gateway</span>
-                  <span className="font-mono text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">http://localhost:4000/api</span>
+                  <span className="font-mono text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">http://localhost:4000/api</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-500">Frontend Web Host</span>
-                  <span className="font-mono text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">http://localhost:3000 (Next.js 16)</span>
+                  <span className="font-mono text-xs font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded">http://localhost:3000 (Next.js 16)</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-500">Database Engine</span>
-                  <span className="font-mono text-xs font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">PostgreSQL 16 (Healthy)</span>
+                  <span className="font-mono text-xs font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded">PostgreSQL 16 (Healthy)</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-500">Current Operator</span>
-                  <span className="font-semibold text-gray-800">{user?.username} ({user?.role})</span>
+                  <span className="font-medium text-gray-800">{user?.username} ({user?.role})</span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="text-gray-500">Workflow Mode</span>
-                  <span className="font-semibold text-gray-800">Walk-In Triage & Consultation Pipeline</span>
+                  <span className="font-medium text-gray-800">Walk-In Triage & Consultation Pipeline</span>
                 </div>
               </div>
             </div>
 
             {/* Security Policies Card */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-              <h3 className="font-bold text-gray-900 text-base flex items-center">
-                <Shield className="h-5 w-5 mr-2 text-[#D93344]" />
+            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-4">
+              <h3 className="font-semibold text-gray-900 text-sm flex items-center">
+                <Shield className="h-4 w-4 mr-2 text-[#D93344]" />
                 Security & Access Policies
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-500">Token Algorithm</span>
-                  <span className="font-semibold text-gray-800">HS256 JWT</span>
+                  <span className="font-medium text-gray-800">HS256 JWT</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-500">Access Token Lifetime</span>
-                  <span className="font-semibold text-gray-800">15 minutes</span>
+                  <span className="font-medium text-gray-800">15 minutes</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-500">Refresh Token Lifetime</span>
-                  <span className="font-semibold text-gray-800">7 days</span>
+                  <span className="font-medium text-gray-800">7 days</span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-500">Prisma Audit Interceptors</span>
-                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">Active & Logging</span>
+                  <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">Active & Logging</span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="text-gray-500">Password Hashing</span>
-                  <span className="font-semibold text-gray-800">Bcrypt (Salt rounds 10)</span>
+                  <span className="font-medium text-gray-800">Bcrypt (Salt rounds 10)</span>
                 </div>
               </div>
             </div>
@@ -1902,29 +1899,29 @@ export default function AdminDashboardPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col"
+              className="bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col"
             >
               {/* Modal Header */}
-              <div className="p-6 bg-[#D93344] text-white flex items-center justify-between">
+              <div className="p-5 bg-[#D93344] text-white flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold flex items-center">
-                    <UserPlus className="h-6 w-6 mr-2" />
+                  <h3 className="text-lg font-bold flex items-center">
+                    <UserPlus className="h-5 w-5 mr-2" />
                     Onboard New Staff Member
                   </h3>
                   <p className="text-red-100 text-xs mt-1">Create credentials and assign clinic permissions</p>
                 </div>
                 <button
                   onClick={() => setIsAddStaffOpen(false)}
-                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                  className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
               {/* Form Content */}
-              <form onSubmit={handleAddStaffSubmit} className="p-6 overflow-y-auto space-y-4 flex-1">
+              <form onSubmit={handleAddStaffSubmit} className="p-5 overflow-y-auto space-y-4 flex-1">
                 {formError && (
-                  <div className="p-3 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs flex items-center space-x-2">
+                  <div className="p-3 bg-red-50 text-red-800 border border-red-200 rounded-md text-xs flex items-center space-x-2">
                     <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
                     <span>{formError}</span>
                   </div>
@@ -1933,7 +1930,7 @@ export default function AdminDashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Full Name */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                       Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -1942,13 +1939,13 @@ export default function AdminDashboardPage() {
                       placeholder="e.g. Dr. Robert Chen"
                       value={staffForm.fullName}
                       onChange={e => setStaffForm({ ...staffForm, fullName: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   {/* Username */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                       Username <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -1957,13 +1954,13 @@ export default function AdminDashboardPage() {
                       placeholder="e.g. drchen"
                       value={staffForm.username || ''}
                       onChange={e => setStaffForm({ ...staffForm, username: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   {/* Email */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                       Email Address <span className="text-gray-400">(optional)</span>
                     </label>
                     <input
@@ -1971,13 +1968,13 @@ export default function AdminDashboardPage() {
                       placeholder="staff@clinic.com"
                       value={staffForm.email || ''}
                       onChange={e => setStaffForm({ ...staffForm, email: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   {/* Password */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                       Initial Password <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -1986,19 +1983,19 @@ export default function AdminDashboardPage() {
                       placeholder="Min. 8 characters"
                       value={staffForm.password}
                       onChange={e => setStaffForm({ ...staffForm, password: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   {/* Role Selector */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                       Assigned Role <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={staffForm.role}
                       onChange={e => setStaffForm({ ...staffForm, role: e.target.value as UserAccount['role'] })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 text-sm text-gray-900 font-medium"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 text-sm text-gray-900 font-medium"
                     >
                       <option value="DOCTOR">Doctor (Consultations & Prescriptions)</option>
                       <option value="NURSE">Nurse (Triage & Vitals)</option>
@@ -2012,7 +2009,7 @@ export default function AdminDashboardPage() {
 
                   {/* Phone */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                       Phone Number <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -2021,13 +2018,13 @@ export default function AdminDashboardPage() {
                       placeholder="+1 (555) 000-0000"
                       value={staffForm.phone}
                       onChange={e => setStaffForm({ ...staffForm, phone: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   {/* Specialization */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                       Specialization / Title
                     </label>
                     <input
@@ -2035,13 +2032,13 @@ export default function AdminDashboardPage() {
                       placeholder="e.g. Cardiology, Hematology, General Care"
                       value={staffForm.specialization}
                       onChange={e => setStaffForm({ ...staffForm, specialization: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   {/* License No */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                       Professional License #
                     </label>
                     <input
@@ -2049,13 +2046,13 @@ export default function AdminDashboardPage() {
                       placeholder="e.g. MD-982124"
                       value={staffForm.licenseNo}
                       onChange={e => setStaffForm({ ...staffForm, licenseNo: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   {/* Department */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
                       Department / Wing
                     </label>
                     <input
@@ -2063,24 +2060,24 @@ export default function AdminDashboardPage() {
                       placeholder="e.g. Outpatient, Diagnostics, Surgery"
                       value={staffForm.departmentId}
                       onChange={e => setStaffForm({ ...staffForm, departmentId: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="pt-4 border-t border-gray-100 flex items-center justify-end space-x-3">
+                <div className="pt-4 border-t border-gray-200 flex items-center justify-end space-x-3">
                   <button
                     type="button"
                     onClick={() => setIsAddStaffOpen(false)}
-                    className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md text-sm transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={formSubmitting}
-                    className="px-6 py-2.5 bg-[#D93344] hover:bg-[#c02d3c] text-white font-bold rounded-xl text-sm shadow-md transition-all flex items-center space-x-2 disabled:opacity-50"
+                    className="px-4 py-2 bg-[#D93344] hover:bg-[#b92b3a] text-white font-medium rounded-md text-sm shadow-sm transition-all flex items-center space-x-2 disabled:opacity-50"
                   >
                     {formSubmitting ? (
                       <>
@@ -2111,27 +2108,27 @@ export default function AdminDashboardPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col"
+              className="bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col"
             >
-              <div className="p-6 bg-[#D93344] text-white flex items-center justify-between">
+              <div className="p-5 bg-[#D93344] text-white flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold flex items-center">
-                    <Edit3 className="h-6 w-6 mr-2" />
+                  <h3 className="text-lg font-bold flex items-center">
+                    <Edit3 className="h-5 w-5 mr-2" />
                     Edit Staff Profile: {selectedStaff.staffProfile?.fullName || selectedStaff.username}
                   </h3>
                   <p className="text-red-100 text-xs mt-1">Update roles, contact info, and status</p>
                 </div>
                 <button
                   onClick={() => setIsEditStaffOpen(false)}
-                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                  className="p-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
-              <form onSubmit={handleEditStaffSubmit} className="p-6 overflow-y-auto space-y-4 flex-1">
+              <form onSubmit={handleEditStaffSubmit} className="p-5 overflow-y-auto space-y-4 flex-1">
                 {formError && (
-                  <div className="p-3 bg-red-50 text-red-800 border border-red-200 rounded-xl text-xs flex items-center space-x-2">
+                  <div className="p-3 bg-red-50 text-red-800 border border-red-200 rounded-md text-xs flex items-center space-x-2">
                     <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
                     <span>{formError}</span>
                   </div>
@@ -2139,33 +2136,33 @@ export default function AdminDashboardPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Full Name</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Full Name</label>
                     <input
                       type="text"
                       required
                       value={staffForm.fullName}
                       onChange={e => setStaffForm({ ...staffForm, fullName: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Email</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Email</label>
                     <input
                       type="email"
                       required
                       value={staffForm.email}
                       onChange={e => setStaffForm({ ...staffForm, email: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Assigned Role</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Assigned Role</label>
                     <select
                       value={staffForm.role}
                       onChange={e => setStaffForm({ ...staffForm, role: e.target.value as UserAccount['role'] })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900 font-medium"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900 font-medium"
                     >
                       <option value="DOCTOR">Doctor</option>
                       <option value="NURSE">Nurse</option>
@@ -2178,52 +2175,52 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Phone Number</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Phone Number</label>
                     <input
                       type="tel"
                       value={staffForm.phone}
                       onChange={e => setStaffForm({ ...staffForm, phone: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Specialization</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Specialization</label>
                     <input
                       type="text"
                       value={staffForm.specialization}
                       onChange={e => setStaffForm({ ...staffForm, specialization: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">License No</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">License No</label>
                     <input
                       type="text"
                       value={staffForm.licenseNo}
                       onChange={e => setStaffForm({ ...staffForm, licenseNo: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Reset Password (Optional)</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Reset Password (Optional)</label>
                     <input
                       type="password"
                       placeholder="Leave blank to keep unchanged"
                       value={staffForm.password}
                       onChange={e => setStaffForm({ ...staffForm, password: e.target.value })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Account Active Status</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Account Active Status</label>
                     <select
                       value={staffForm.isActive ? 'true' : 'false'}
                       onChange={e => setStaffForm({ ...staffForm, isActive: e.target.value === 'true' })}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900 font-medium"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900 font-medium"
                     >
                       <option value="true">Active (Has system access)</option>
                       <option value="false">Deactivated (Access suspended)</option>
@@ -2231,18 +2228,18 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-gray-100 flex items-center justify-end space-x-3">
+                <div className="pt-4 border-t border-gray-200 flex items-center justify-end space-x-3">
                   <button
                     type="button"
                     onClick={() => setIsEditStaffOpen(false)}
-                    className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md text-sm transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={formSubmitting}
-                    className="px-6 py-2.5 bg-[#D93344] hover:bg-[#c02d3c] text-white font-bold rounded-xl text-sm shadow-md transition-all flex items-center space-x-2 disabled:opacity-50"
+                    className="px-4 py-2 bg-[#D93344] hover:bg-[#b92b3a] text-white font-medium rounded-md text-sm shadow-sm transition-all flex items-center space-x-2 disabled:opacity-50"
                   >
                     {formSubmitting ? <span>Saving...</span> : <span>Save Profile Changes</span>}
                   </button>
@@ -2263,12 +2260,12 @@ export default function AdminDashboardPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md p-6"
+              className="bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-5"
             >
-              <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mb-4">
-                <Trash2 className="h-6 w-6" />
+              <div className="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center mb-4">
+                <Trash2 className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
+              <h3 className="text-base font-bold text-gray-900 mb-2">
                 Delete Staff Member Account?
               </h3>
               <p className="text-sm text-gray-600 mb-6">
@@ -2278,7 +2275,7 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setIsDeleteStaffOpen(false)}
-                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md text-sm transition-colors"
                 >
                   Cancel
                 </button>
@@ -2286,7 +2283,7 @@ export default function AdminDashboardPage() {
                   type="button"
                   onClick={handleDeleteStaffConfirm}
                   disabled={formSubmitting}
-                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md text-sm shadow-sm transition-all disabled:opacity-50"
                 >
                   {formSubmitting ? 'Deleting...' : 'Yes, Delete Account'}
                 </button>
@@ -2306,25 +2303,25 @@ export default function AdminDashboardPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md p-6"
+              className="bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-5"
             >
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
-                <Archive className="h-6 w-6" />
+              <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+                <Archive className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
+              <h3 className="text-base font-bold text-gray-900 mb-2">
                 Archive Patient Record
               </h3>
               <p className="text-sm text-gray-600 mb-4">
                 Are you sure you want to archive the record for <strong className="text-gray-900">{selectedPatient.firstName} {selectedPatient.lastName}</strong> (MRN: {selectedPatient.mrn})?
               </p>
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800 mb-6">
+              <div className="p-3 bg-amber-50 rounded-md border border-amber-200 text-xs text-amber-800 mb-6">
                 Archived patients are excluded from active daily clinic queues, but their full medical history remains securely preserved and can be restored anytime by an Admin.
               </div>
               <div className="flex items-center justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setIsArchiveModalOpen(false)}
-                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md text-sm transition-colors"
                 >
                   Cancel
                 </button>
@@ -2332,7 +2329,7 @@ export default function AdminDashboardPage() {
                   type="button"
                   onClick={handleArchivePatient}
                   disabled={patientActionLoading}
-                  className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50"
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-md text-sm shadow-sm transition-all disabled:opacity-50"
                 >
                   {patientActionLoading ? 'Archiving...' : 'Archive Patient'}
                 </button>
@@ -2352,12 +2349,12 @@ export default function AdminDashboardPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-md p-6"
+              className="bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-5"
             >
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
-                <RotateCcw className="h-6 w-6" />
+              <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+                <RotateCcw className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
+              <h3 className="text-base font-bold text-gray-900 mb-2">
                 Restore Patient to Active Roster
               </h3>
               <p className="text-sm text-gray-600 mb-6">
@@ -2367,7 +2364,7 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setIsRestoreModalOpen(false)}
-                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md text-sm transition-colors"
                 >
                   Cancel
                 </button>
@@ -2375,7 +2372,7 @@ export default function AdminDashboardPage() {
                   type="button"
                   onClick={handleRestorePatient}
                   disabled={patientActionLoading}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-md transition-all disabled:opacity-50"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-md text-sm shadow-sm transition-all disabled:opacity-50"
                 >
                   {patientActionLoading ? 'Restoring...' : 'Yes, Restore to Active'}
                 </button>
