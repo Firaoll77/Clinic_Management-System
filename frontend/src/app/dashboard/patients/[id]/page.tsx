@@ -5,12 +5,13 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useRouter } from 'next/navigation';
-import { 
-  User, 
-  Calendar, 
-  Phone, 
-  Mail, 
-  MapPin, 
+import { apiClient } from '@/lib/api';
+import {
+  User,
+  Calendar,
+  Phone,
+  Mail,
+  MapPin,
   AlertTriangle,
   Activity,
   FileText,
@@ -48,7 +49,9 @@ interface Patient {
     notes?: string;
   }>;
   createdAt: string;
-  lastActivityAt: string;
+  lastActivityAt?: string;
+  isArchived?: boolean;
+  archivedAt?: string;
 }
 
 interface EditablePatient {
@@ -95,55 +98,20 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
   const fetchPatientData = async (patientId: string) => {
     try {
       setLoading(true);
-      // In a real implementation, this would call your API
-      // const response = await apiClient.get(`/patients/${patientId}`);
-      // setPatient(response.data.patient);
-      
-      // For now, using mock data
-      const mockPatient: Patient = {
-        id: patientId,
-        mrn: 'MRN-2024-123456',
-        firstName: 'John',
-        lastName: 'Doe',
-        dob: '1985-05-15',
-        gender: 'MALE',
-        phone: '+1555123456',
-        email: 'john.doe@example.com',
-        nationalId: '1234567890123',
-        address: '123 Main St, City, State',
-        bloodGroup: 'O+',
-        emergencyContact: '+1555987654 (Jane Doe)',
-        allergies: [
-          {
-            id: '1',
-            substance: 'Penicillin',
-            severity: 'SEVERE',
-            notes: 'Anaphylactic reaction'
-          }
-        ],
-        createdAt: '2024-01-15T10:00:00Z',
-        lastActivityAt: '2024-08-17T14:30:00Z'
-      };
-      
-      setPatient(mockPatient);
-      
-      // Mock timeline data
-      const mockTimeline: TimelineEvent[] = [
-        {
-          type: 'encounter',
-          date: new Date('2024-08-17T10:30:00Z'),
-          data: { chiefComplaint: 'Routine examination', assessment: 'Healthy' }
-        },
-        {
-          type: 'invoice',
-          date: new Date('2024-08-17T11:00:00Z'),
-          data: { total: 150.00, status: 'PAID' }
-        }
-      ];
-      
-      setTimeline(mockTimeline);
+      const response = await apiClient.get<{ patient: Patient }>(`/patients/${patientId}`);
+
+      if (response.data && response.data.patient) {
+        setPatient(response.data.patient);
+      } else {
+        throw new Error('Patient data not found');
+      }
+
+      // Note: Timeline data would need a separate API endpoint
+      // For now, keeping it empty or adding mock data if needed
+      setTimeline([]);
     } catch (error) {
       console.error('Error fetching patient data:', error);
+      showError('Failed to load patient data');
     } finally {
       setLoading(false);
     }
@@ -177,19 +145,17 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
 
   const handleSave = async () => {
     try {
-      // In a real implementation, this would call your API
-      // await apiClient.patch(`/patients/mrn/${patient.mrn}`, editForm);
-      
-      // Update local state
-      if (patient) {
-        setPatient({
-          ...patient,
-          ...editForm
-        });
+      if (!patient) return;
+
+      const response = await apiClient.patch<{ patient: Patient }>(`/patients/${patient.id}`, editForm);
+
+      if (response.data && response.data.patient) {
+        setPatient(response.data.patient);
+        setEditing(false);
+        showSuccess('Patient information updated successfully');
+      } else {
+        throw new Error('Failed to update patient');
       }
-      
-      setEditing(false);
-      showSuccess('Patient information updated successfully');
     } catch (error) {
       console.error('Error updating patient:', error);
       showError('Failed to update patient information');
@@ -222,20 +188,20 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f7f9]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D93344]"></div>
       </div>
     );
   }
 
   if (!patient) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f7f9]">
         <div className="text-center">
           <p className="text-gray-600">Patient not found</p>
           <button
             onClick={() => router.back()}
-            className="mt-4 text-blue-600 hover:text-blue-700"
+            className="mt-4 text-[#D93344] hover:text-[#b92b3a]"
           >
             Go Back
           </button>
@@ -245,7 +211,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#f5f7f9]">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -271,7 +237,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
               <button
                 onClick={() => editing ? handleCancel() : handleEdit()}
                 className={`p-2 rounded-lg transition-colors ${
-                  editing ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-blue-600 text-white hover:bg-blue-700'
+                  editing ? 'bg-gray-600 text-white hover:bg-gray-700' : 'bg-[#D93344] text-white hover:bg-[#b92b3a]'
                 }`}
               >
                 {editing ? <ArrowLeft className="h-5 w-5" /> : <Edit className="h-5 w-5" />}
@@ -291,7 +257,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                 onClick={() => setActiveTab(tab)}
                 className={`px-6 py-4 font-medium transition-colors border-b-2 ${
                   activeTab === tab
-                    ? 'border-blue-500 text-blue-600 bg-blue-50'
+                    ? 'border-[#D93344] text-[#D93344] bg-red-50'
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
@@ -328,7 +294,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                           type="text"
                           value={editForm.firstName}
                           onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D93344] focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -337,7 +303,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                           type="text"
                           value={editForm.lastName}
                           onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D93344] focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -346,7 +312,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                           type="tel"
                           value={editForm.phone}
                           onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D93344] focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -355,7 +321,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                           type="email"
                           value={editForm.email}
                           onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D93344] focus:border-transparent"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -364,7 +330,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                           type="text"
                           value={editForm.address}
                           onChange={(e) => setEditForm({...editForm, address: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D93344] focus:border-transparent"
                         />
                       </div>
                       <div>
@@ -372,7 +338,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                         <select
                           value={editForm.bloodGroup}
                           onChange={(e) => setEditForm({...editForm, bloodGroup: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D93344] focus:border-transparent"
                         >
                           <option value="">Select</option>
                           <option value="A+">A+</option>
@@ -391,7 +357,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                           type="text"
                           value={editForm.emergencyContact}
                           onChange={(e) => setEditForm({...editForm, emergencyContact: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D93344] focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -404,7 +370,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                       </button>
                       <button
                         onClick={handleSave}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                        className="px-4 py-2 bg-[#D93344] text-white rounded-lg hover:bg-[#b92b3a] transition-colors flex items-center"
                       >
                         <Save className="h-4 w-4 mr-2" />
                         Save Changes
