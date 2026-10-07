@@ -1565,6 +1565,9 @@ export default function AdminDashboardPage() {
                               href={`/dashboard/patients/${patient.id}`}
                               className="p-1.5 text-gray-500 hover:text-[#D93344] hover:bg-red-50 rounded transition-colors"
                               title="View Patient Record"
+                              onClick={(e) => {
+                                console.log('Navigating to patient:', patient.id);
+                              }}
                             >
                               <Eye className="h-4 w-4" />
                             </Link>

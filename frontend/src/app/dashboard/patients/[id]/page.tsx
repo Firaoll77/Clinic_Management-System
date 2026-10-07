@@ -70,7 +70,7 @@ interface TimelineEvent {
   data: any;
 }
 
-export default function PatientProfilePage({ params }: { params: { id: string } }) {
+export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
   const router = useRouter();
@@ -88,12 +88,13 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
     bloodGroup: '',
     emergencyContact: ''
   });
+  const [patientId, setPatientId] = useState<string | null>(null);
 
-  const fetchPatientData = useCallback(async (patientId: string) => {
+  const fetchPatientData = useCallback(async (id: string) => {
     try {
       setLoading(true);
-      console.log('Fetching patient with ID:', patientId);
-      const response = await apiClient.get<{ patient: Patient }>(`/patients/${patientId}`);
+      console.log('Fetching patient with ID:', id);
+      const response = await apiClient.get<{ patient: Patient }>(`/patients/${id}`);
 
       console.log('API response:', response);
 
@@ -116,13 +117,21 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
 
   useEffect(() => {
     const loadPatient = async () => {
-      const id = Array.isArray(params.id) ? params.id[0] : params.id;
-      if (id) {
-        await fetchPatientData(id);
+      try {
+        const resolvedParams = await params;
+        const id = Array.isArray(resolvedParams.id) ? resolvedParams.id[0] : resolvedParams.id;
+        console.log('Resolved patient ID:', id);
+        setPatientId(id);
+        if (id) {
+          await fetchPatientData(id);
+        }
+      } catch (error) {
+        console.error('Error resolving params:', error);
+        setLoading(false);
       }
     };
     loadPatient();
-  }, [params.id, fetchPatientData]);
+  }, [params, fetchPatientData]);
 
   const getAge = (dob: string) => {
     const birthDate = new Date(dob);
