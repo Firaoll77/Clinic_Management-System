@@ -300,11 +300,8 @@ export default function ReceptionistDashboardPage() {
   const fetchPatientsList = async () => {
     setPatientsListLoading(true);
     try {
-      console.log('Fetching patients list...');
       const response = await apiClient.get<{ patients: any[] }>('/patients');
-      console.log('Patients list response:', response);
       if (response.data) {
-        console.log('Patients data:', response.data.patients);
         const patients = response.data.patients.map((p: any) => ({
           id: p.id,
           mrn: p.mrn,
@@ -322,11 +319,7 @@ export default function ReceptionistDashboardPage() {
           isNewPatient: !p.lastActivityAt || new Date(p.lastActivityAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
           lastVisit: p.lastActivityAt
         }));
-        console.log('Processed patients:', patients);
         setPatientsList(patients);
-      } else {
-        console.error('No patients data in response');
-        showError('Failed to load patients data');
       }
     } catch (error) {
       console.error('Failed to fetch patients list:', error);
@@ -761,328 +754,334 @@ export default function ReceptionistDashboardPage() {
   return (
     <div className="flex-1 flex overflow-hidden">
       {currentStep === 'queue' && (
-      <>
-      {/* Left Side - Live Queue (50%) */}
-      <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
-        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-              <Clock className="h-5 w-5 mr-2 text-green-600" />
-              Live Waiting Room
-            </h2>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">{waitingPatients.length} waiting</span>
-              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-            </div>
-          </div>
-          
-          {/* Search in Waiting Room */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search waiting room..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto">
-          {waitingPatients.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm">No patients in waiting room</p>
-            </div>
-          ) : (
-            waitingPatients.map((patient) => (
-              <motion.div
-                key={patient.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`p-4 border-b border-gray-100 hover:bg-green-50 transition-colors cursor-pointer ${
-                  hasPaidInvoice(patient.id) ? 'bg-gray-200 opacity-75' : ''
-                }`}
-                onClick={() => setSelectedPatient(patient)}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{patient.name}</h3>
-                    <p className="text-xs text-gray-500">MRN: {patient.mrn}</p>
-                    {patient.isNewPatient && (
-                      <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">New</span>
-                    )}
-                  </div>
-                  <span className={`text-xs px-2 py-1 rounded-full border ${getVisitStatusColor(patient.visitStatus)}`}>
-                    {getVisitStatusLabel(patient.visitStatus)}
-                  </span>
+        <>
+          {/* Left Side - Live Queue (50%) */}
+          <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Clock className="h-5 w-5 mr-2 text-[#D93344]" />
+                  Live Waiting Room
+                </h2>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">{waitingPatients.length} waiting</span>
+                  <div className="h-2 w-2 bg-[#D93344] rounded-full animate-pulse"></div>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center text-gray-500">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {new Date(patient.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                  <div className="flex items-center text-gray-500">
-                    <Phone className="h-3 w-3 mr-1" />
-                    {patient.phone}
-                  </div>
-                </div>
-              </motion.div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Right Side - Action Pad (50%) */}
-      <div className="w-1/2 bg-gray-50 flex flex-col">
-        {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {selectedPatient ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">Patient Details</h3>
-                <button
-                  onClick={() => setSelectedPatient(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
               </div>
               
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <User className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{selectedPatient.name}</p>
-                    <p className="text-sm text-gray-600">MRN: {selectedPatient.mrn}</p>
-                    {selectedPatient.isNewPatient && (
-                      <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">New Patient</span>
-                    )}
-                    {selectedPatient.hasHistory && (
-                      <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">Returning Patient</span>
-                    )}
-                  </div>
+              {/* Search in Waiting Room */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search waiting room..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto">
+              {waitingPatients.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No patients in waiting room</p>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">MRN</p>
-                    <p className="font-medium">{selectedPatient.mrn}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Status</p>
-                    <p className="font-medium">{getVisitStatusLabel(selectedPatient.visitStatus)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Phone</p>
-                    <p className="font-medium">{selectedPatient.phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Total Fees</p>
-                    <p className="font-medium text-green-600 font-bold">${selectedPatient.totalExpectedFees || '0.00'}</p>
-                  </div>
-                </div>
-                {selectedPatient.hasPrescription && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="h-4 w-4 text-blue-600" />
-                      <p className="text-sm font-medium text-blue-900">Prescription Ready</p>
+              ) : (
+                filteredPatients.map((patient) => (
+                  <motion.div
+                    key={patient.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
+                      hasPaidInvoice(patient.id) ? 'bg-gray-50 opacity-75' : ''
+                    } ${selectedPatient?.id === patient.id ? 'bg-gray-50 border-l-4 border-l-[#D93344]' : ''}`}
+                    onClick={() => setSelectedPatient(patient)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900 text-sm">{patient.name}</h3>
+                        <p className="text-xs text-gray-500">MRN: {patient.mrn}</p>
+                        {patient.isNewPatient && (
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">New</span>
+                        )}
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full border ${getVisitStatusColor(patient.visitStatus)}`}>
+                        {getVisitStatusLabel(patient.visitStatus)}
+                      </span>
                     </div>
-                    <p className="text-xs text-blue-700 mt-1">Doctor has sent prescription for this patient</p>
-                  </div>
-                )}
-              </div>
-              
-              <div className="mt-4 space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Assign Nurse (Optional)</label>
-                  <select
-                    value={selectedNurse || ''}
-                    onChange={(e) => setSelectedNurse(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="">No specific nurse (any available)</option>
-                    {nurses.map(nurse => (
-                      <option key={nurse.id} value={nurse.id}>{nurse.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleViewFullRecord(selectedPatient.patientId || selectedPatient.id || selectedPatient.mrn)}
-                    className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center font-medium"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    View Full Record
-                  </button>
-                  <button
-                    onClick={() => {
-                      const targetNurseId = selectedNurse || (nurses.length > 0 ? nurses[0].id : undefined);
-                      handleCheckIn(selectedPatient.id, targetNurseId);
-                    }}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Send to Triage
-                  </button>
-                  <button
-                    onClick={() => fetchEncounterFees(selectedPatient.encounterId || selectedPatient.id)}
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
-                  >
-                    <Receipt className="h-4 w-4 mr-2" />
-                    View Fees
-                  </button>
-                </div>
-                {selectedPatient.visitStatus === 'BILLING' && (
-                  <div className="mt-3 space-y-2">
-                    {selectedPatient.hasPrescription && (
-                      <button
-                        onClick={() => handlePrintPrescription(selectedPatient.encounterId || selectedPatient.id)}
-                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center"
-                      >
-                        <Printer className="h-4 w-4 mr-2" />
-                        Print Prescription
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDischargePatient(selectedPatient.encounterId || selectedPatient.id)}
-                      className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center"
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      Discharge Patient
-                    </button>
-                  </div>
-                )}
-              </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {new Date(patient.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      <div className="flex items-center">
+                        <Phone className="h-3 w-3 mr-1" />
+                        {patient.phone}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-gray-500">Select a patient from the waiting room</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  )}
+          </div>
 
-  {currentStep === 'registration' && (
+          {/* Right Side - Action Panel (50%) */}
+          <div className="w-1/2 bg-gray-50 flex flex-col">
+            <div className="flex-1 overflow-y-auto p-6">
+              {selectedPatient ? (
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <div className="p-5 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-gray-900">Patient Details</h3>
+                      <button
+                        onClick={() => setSelectedPatient(null)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-5 space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-[#D93344]/10 p-2.5 rounded-lg">
+                        <User className="h-5 w-5 text-[#D93344]" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{selectedPatient.name}</p>
+                        <p className="text-sm text-gray-500">MRN: {selectedPatient.mrn}</p>
+                        {selectedPatient.isNewPatient && (
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">New Patient</span>
+                        )}
+                        {selectedPatient.hasHistory && (
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-purple-50 text-purple-700 text-xs rounded-full border border-purple-200">Returning Patient</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Status</p>
+                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getVisitStatusColor(selectedPatient.visitStatus)}`}>
+                          {getVisitStatusLabel(selectedPatient.visitStatus)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Phone</p>
+                        <p className="font-medium text-gray-900">{selectedPatient.phone}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Total Fees</p>
+                        <p className="font-semibold text-[#D93344]">{formatCurrency(selectedPatient.totalExpectedFees || 0)}</p>
+                      </div>
+                    </div>
+                    
+                    {selectedPatient.hasPrescription && (
+                      <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center space-x-2">
+                          <FileText className="h-4 w-4 text-blue-600" />
+                          <p className="text-sm font-medium text-blue-900">Prescription Ready</p>
+                        </div>
+                        <p className="text-xs text-blue-700 mt-1">Doctor has sent prescription for this patient</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="p-5 pt-0 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Assign Nurse (Optional)</label>
+                      <select
+                        value={selectedNurse || ''}
+                        onChange={(e) => setSelectedNurse(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm"
+                      >
+                        <option value="">No specific nurse (any available)</option>
+                        {nurses.map(nurse => (
+                          <option key={nurse.id} value={nurse.id}>{nurse.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => handleViewFullRecord(selectedPatient.patientId || selectedPatient.id || selectedPatient.mrn)}
+                        className="px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center justify-center"
+                      >
+                        <FileText className="h-4 w-4 mr-1.5" />
+                        View Record
+                      </button>
+                      <button
+                        onClick={() => {
+                          const targetNurseId = selectedNurse || (nurses.length > 0 ? nurses[0].id : undefined);
+                          handleCheckIn(selectedPatient.id, targetNurseId);
+                        }}
+                        className="px-3 py-2 bg-[#D93344] text-white rounded-lg hover:bg-[#b92b3a] transition-colors text-sm font-medium"
+                      >
+                        Send to Triage
+                      </button>
+                      <button
+                        onClick={() => fetchEncounterFees(selectedPatient.encounterId || selectedPatient.id)}
+                        className="px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center justify-center"
+                      >
+                        <Receipt className="h-4 w-4 mr-1.5" />
+                        Fees
+                      </button>
+                    </div>
+                    {selectedPatient.visitStatus === 'BILLING' && (
+                      <div className="pt-2 space-y-2">
+                        {selectedPatient.hasPrescription && (
+                          <button
+                            onClick={() => handlePrintPrescription(selectedPatient.encounterId || selectedPatient.id)}
+                            className="w-full px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center justify-center"
+                          >
+                            <Printer className="h-4 w-4 mr-2" />
+                            Print Prescription
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDischargePatient(selectedPatient.encounterId || selectedPatient.id)}
+                          className="w-full px-4 py-2 bg-[#D93344] text-white rounded-lg hover:bg-[#b92b3a] transition-colors text-sm font-medium flex items-center justify-center"
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Discharge Patient
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500">Select a patient from the waiting room</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {currentStep === 'registration' && (
         <div className="w-full bg-gray-50 flex flex-col p-6 overflow-y-auto">
           {!showPatientForm ? (
             <button
               onClick={() => setShowPatientForm(true)}
-              className="w-full bg-white rounded-lg border border-gray-200 p-6 flex items-center justify-center space-x-2 hover:bg-green-50 transition-colors"
+              className="w-full bg-white rounded-lg border border-gray-200 p-8 flex items-center justify-center space-x-3 hover:bg-gray-50 transition-colors shadow-sm"
             >
-              <Plus className="h-5 w-5 text-green-600" />
-              <span className="font-medium text-gray-900">Register New Patient</span>
+              <Plus className="h-6 w-6 text-[#D93344]" />
+              <span className="font-medium text-gray-900 text-lg">Register New Patient</span>
             </button>
           ) : (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900 flex items-center">
-                  <UserPlus className="h-5 w-5 mr-2 text-green-600" />
-                  New Patient Registration
-                </h3>
-                <button
-                  onClick={() => setShowPatientForm(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+              <div className="p-5 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900 flex items-center">
+                    <UserPlus className="h-5 w-5 mr-2 text-[#D93344]" />
+                    New Patient Registration
+                  </h3>
+                  <button
+                    onClick={() => setShowPatientForm(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
               
-              <form onSubmit={handlePatientRegister} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={handlePatientRegister} className="p-5 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
                     <input 
                       type="text" 
                       required
                       value={newPatient.firstName}
                       onChange={(e) => setNewPatient({...newPatient, firstName: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
                     <input 
                       type="text" 
                       required
                       value={newPatient.lastName}
                       onChange={(e) => setNewPatient({...newPatient, lastName: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm" 
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                  <input 
-                    type="date" 
-                    required
-                    value={newPatient.dob}
-                    onChange={(e) => setNewPatient({...newPatient, dob: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                    <input 
+                      type="date" 
+                      required
+                      value={newPatient.dob}
+                      onChange={(e) => setNewPatient({...newPatient, dob: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                    <select 
+                      required
+                      value={newPatient.gender}
+                      onChange={(e) => setNewPatient({...newPatient, gender: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm"
+                    >
+                      <option value="">Select gender...</option>
+                      <option value="MALE">Male</option>
+                      <option value="FEMALE">Female</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                  <select 
-                    required
-                    value={newPatient.gender}
-                    onChange={(e) => setNewPatient({...newPatient, gender: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="">Select gender...</option>
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                  <input 
-                    type="tel" 
-                    required
-                    value={newPatient.phone}
-                    onChange={(e) => setNewPatient({...newPatient, phone: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input 
-                    type="email" 
-                    value={newPatient.email}
-                    onChange={(e) => setNewPatient({...newPatient, email: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" 
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                    <input 
+                      type="tel" 
+                      required
+                      value={newPatient.phone}
+                      onChange={(e) => setNewPatient({...newPatient, phone: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input 
+                      type="email" 
+                      value={newPatient.email}
+                      onChange={(e) => setNewPatient({...newPatient, email: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm" 
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                   <textarea
                     value={newPatient.address}
                     onChange={(e) => setNewPatient({...newPatient, address: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent h-20"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] h-20 text-sm"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">National ID</label>
                     <input
                       type="text"
                       value={newPatient.nationalId}
                       onChange={(e) => setNewPatient({...newPatient, nationalId: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm"
                     />
                   </div>
                   <div>
@@ -1090,7 +1089,7 @@ export default function ReceptionistDashboardPage() {
                     <select
                       value={newPatient.bloodGroup}
                       onChange={(e) => setNewPatient({...newPatient, bloodGroup: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm"
                     >
                       <option value="">Select blood group...</option>
                       <option value="A+">A+</option>
@@ -1106,7 +1105,7 @@ export default function ReceptionistDashboardPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Attachments (Optional)</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
+                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:border-[#D93344] transition-colors">
                     <input
                       type="file"
                       multiple
@@ -1132,7 +1131,7 @@ export default function ReceptionistDashboardPage() {
                     {newPatient.attachments && newPatient.attachments.length > 0 && (
                       <div className="mt-2 space-y-1">
                         {newPatient.attachments.map((file: File, index: number) => (
-                          <div key={index} className="text-xs text-gray-600 flex items-center justify-between bg-gray-100 p-2 rounded">
+                          <div key={index} className="text-xs text-gray-600 flex items-center justify-between bg-gray-50 p-2 rounded">
                             <span className="truncate">{file.name}</span>
                             <span className="text-gray-500">{(file.size / 1024).toFixed(1)} KB</span>
                           </div>
@@ -1147,15 +1146,17 @@ export default function ReceptionistDashboardPage() {
                     type="tel"
                     value={newPatient.emergencyContact}
                     onChange={(e) => setNewPatient({...newPatient, emergencyContact: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm"
                   />
                 </div>
-                <button 
-                  type="submit"
-                  className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                  Register Patient
-                </button>
+                <div className="pt-4">
+                  <button 
+                    type="submit"
+                    className="w-full bg-[#D93344] text-white py-3 rounded-lg hover:bg-[#b92b3a] transition-colors font-medium"
+                  >
+                    Register Patient
+                  </button>
+                </div>
               </form>
             </div>
           )}
@@ -1164,41 +1165,43 @@ export default function ReceptionistDashboardPage() {
 
       {currentStep === 'patients' && (
         <div className="w-full bg-gray-50 flex flex-col p-6 overflow-y-auto">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                <Database className="h-6 w-6 mr-2 text-purple-600" />
-                Patients List
-              </h2>
-              <button
-                onClick={() => fetchPatientsList()}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </button>
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="p-5 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Database className="h-5 w-5 mr-2 text-[#D93344]" />
+                  Patients List
+                </h2>
+                <button
+                  onClick={() => fetchPatientsList()}
+                  className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center text-sm font-medium"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </button>
+              </div>
             </div>
 
-            {/* Search and Filters */}
-            <div className="mb-6 space-y-4">
+            <div className="p-5 space-y-4">
+              {/* Search and Filters */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search by name, MRN, phone, email, or national ID..."
                   value={patientsListSearch}
                   onChange={(e) => setPatientsListSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#D93344]/20 focus:border-[#D93344] text-sm"
                 />
               </div>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-600">Sort by:</span>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handleSort('name')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      patientsListSort === 'name' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      patientsListSort === 'name' ? 'bg-[#D93344] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     Name
@@ -1209,7 +1212,7 @@ export default function ReceptionistDashboardPage() {
                   <button
                     onClick={() => handleSort('mrn')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      patientsListSort === 'mrn' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      patientsListSort === 'mrn' ? 'bg-[#D93344] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     MRN
@@ -1220,7 +1223,7 @@ export default function ReceptionistDashboardPage() {
                   <button
                     onClick={() => handleSort('registrationDate')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      patientsListSort === 'registrationDate' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      patientsListSort === 'registrationDate' ? 'bg-[#D93344] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     Registration Date
@@ -1230,131 +1233,130 @@ export default function ReceptionistDashboardPage() {
                   </button>
                 </div>
               </div>
-            </div>
 
-            {/* Patient Cards */}
-            {patientsListLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                <p className="text-gray-500">Loading patients...</p>
-              </div>
-            ) : getPaginatedPatients().length === 0 ? (
-              <div className="text-center py-12">
-                <Database className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-gray-500">No patients found</p>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {getPaginatedPatients().map((patient) => (
-                    <motion.div
-                      key={patient.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => {
-                        setFullRecordPatient(patient);
-                        setShowFullRecordModal(true);
-                        setFullRecordTab('overview');
-                      }}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="bg-purple-100 p-2 rounded-full">
-                            <User className="h-5 w-5 text-purple-600" />
+              {/* Patient Cards */}
+              {patientsListLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D93344] mx-auto mb-4"></div>
+                  <p className="text-gray-500 text-sm">Loading patients...</p>
+                </div>
+              ) : getPaginatedPatients().length === 0 ? (
+                <div className="text-center py-12">
+                  <Database className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500">No patients found</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {getPaginatedPatients().map((patient) => (
+                      <motion.div
+                        key={patient.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => {
+                          setFullRecordPatient(patient);
+                          setShowFullRecordModal(true);
+                          setFullRecordTab('overview');
+                        }}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="bg-[#D93344]/10 p-2 rounded-lg">
+                              <User className="h-5 w-5 text-[#D93344]" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900 text-sm">{patient.firstName} {patient.lastName}</h3>
+                              <p className="text-xs text-gray-500">{patient.mrn}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{patient.firstName} {patient.lastName}</h3>
-                            <p className="text-sm text-gray-500">{patient.mrn}</p>
-                          </div>
+                          {patient.isNewPatient && (
+                            <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">New</span>
+                          )}
                         </div>
-                        {patient.isNewPatient && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">New</span>
-                        )}
-                      </div>
 
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center text-gray-600">
-                          <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                          {patient.phone}
-                        </div>
-                        {patient.email && (
+                        <div className="space-y-2 text-xs">
                           <div className="flex items-center text-gray-600">
-                            <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                            {patient.email}
+                            <Phone className="h-3.5 w-3.5 mr-2 text-gray-400" />
+                            {patient.phone}
                           </div>
-                        )}
-                        <div className="flex items-center text-gray-600">
-                          <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                          DOB: {new Date(patient.dob).toLocaleDateString()}
+                          {patient.email && (
+                            <div className="flex items-center text-gray-600">
+                              <Mail className="h-3.5 w-3.5 mr-2 text-gray-400" />
+                              {patient.email}
+                            </div>
+                          )}
+                          <div className="flex items-center text-gray-600">
+                            <Calendar className="h-3.5 w-3.5 mr-2 text-gray-400" />
+                            DOB: {new Date(patient.dob).toLocaleDateString()}
+                          </div>
+                          <div className="flex items-center text-gray-600">
+                            <MapPin className="h-3.5 w-3.5 mr-2 text-gray-400" />
+                            {patient.gender}
+                          </div>
                         </div>
-                        <div className="flex items-center text-gray-600">
-                          <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                          {patient.gender}
-                        </div>
-                      </div>
 
-                      <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                        <div className="text-xs text-gray-500">
-                          Registered: {new Date(patient.createdAt).toLocaleDateString()}
+                        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                          <div className="text-xs text-gray-500">
+                            Registered: {new Date(patient.createdAt).toLocaleDateString()}
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePrintPatient(patient);
+                            }}
+                            className="px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-xs font-medium flex items-center transition-colors"
+                          >
+                            <Printer className="h-3.5 w-3.5 mr-1" />
+                            Print
+                          </button>
                         </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {getTotalPages() > 1 && (
+                    <div className="mt-6 flex items-center justify-between">
+                      <div className="text-sm text-gray-600">
+                        Showing {((patientsListPage - 1) * patientsListPerPage) + 1} to {Math.min(patientsListPage * patientsListPerPage, getFilteredAndSortedPatients().length)} of {getFilteredAndSortedPatients().length} patients
+                      </div>
+                      <div className="flex items-center space-x-2">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePrintPatient(patient);
-                          }}
-                          className="px-3 py-1.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg text-xs font-medium flex items-center transition-colors"
+                          onClick={() => setPatientsListPage(Math.max(1, patientsListPage - 1))}
+                          disabled={patientsListPage === 1}
+                          className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                         >
-                          <Printer className="h-3.5 w-3.5 mr-1" />
-                          Print
+                          Previous
+                        </button>
+                        <span className="text-sm text-gray-600">
+                          Page {patientsListPage} of {getTotalPages()}
+                        </span>
+                        <button
+                          onClick={() => setPatientsListPage(Math.min(getTotalPages(), patientsListPage + 1))}
+                          disabled={patientsListPage === getTotalPages()}
+                          className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                        >
+                          Next
                         </button>
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {getTotalPages() > 1 && (
-                  <div className="mt-6 flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Showing {((patientsListPage - 1) * patientsListPerPage) + 1} to {Math.min(patientsListPage * patientsListPerPage, getFilteredAndSortedPatients().length)} of {getFilteredAndSortedPatients().length} patients
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setPatientsListPage(Math.max(1, patientsListPage - 1))}
-                        disabled={patientsListPage === 1}
-                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Previous
-                      </button>
-                      <span className="text-sm text-gray-600">
-                        Page {patientsListPage} of {getTotalPages()}
-                      </span>
-                      <button
-                        onClick={() => setPatientsListPage(Math.min(getTotalPages(), patientsListPage + 1))}
-                        disabled={patientsListPage === getTotalPages()}
-                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-
       {currentStep === 'billing' && (
         <div className="w-full bg-gray-50 flex flex-col p-6 overflow-y-auto">
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900 flex items-center">
-                  <DollarSign className="h-5 w-5 mr-2 text-green-600" />
+                  <DollarSign className="h-5 w-5 mr-2 text-[#D93344]" />
                   Patient Invoices
                 </h3>
                 <span className="text-sm text-gray-500">{invoices.length} invoices</span>
@@ -1371,9 +1373,9 @@ export default function ReceptionistDashboardPage() {
                   <div key={invoice.id} className="p-4 hover:bg-gray-50">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-full ${
-                          invoice.status === 'PAID' ? 'bg-green-100' : 
-                          invoice.status === 'ISSUED' ? 'bg-blue-100' : 'bg-yellow-100'
+                        <div className={`p-2 rounded-lg ${
+                          invoice.status === 'PAID' ? 'bg-green-50' : 
+                          invoice.status === 'ISSUED' ? 'bg-blue-50' : 'bg-yellow-50'
                         }`}>
                           <Receipt className={`h-4 w-4 ${
                             invoice.status === 'PAID' ? 'text-green-600' : 
@@ -1381,15 +1383,15 @@ export default function ReceptionistDashboardPage() {
                           }`} />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{invoice.invoiceNo}</p>
+                          <p className="font-medium text-gray-900 text-sm">{invoice.invoiceNo}</p>
                           <p className="text-sm text-gray-600">{invoice.patient?.firstName} {invoice.patient?.lastName}</p>
                           <p className="text-xs text-gray-500">{new Date(invoice.createdAt).toLocaleDateString()}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                          invoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 
-                          invoice.status === 'ISSUED' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                          invoice.status === 'PAID' ? 'bg-green-50 text-green-700 border border-green-200' : 
+                          invoice.status === 'ISSUED' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
                         }`}>
                           {invoice.status}
                         </span>
@@ -1401,14 +1403,14 @@ export default function ReceptionistDashboardPage() {
                     <div className="mt-3 flex space-x-2">
                       <button
                         onClick={() => handleViewInvoice(invoice.id)}
-                        className="w-24 px-2 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs font-medium shadow-sm"
+                        className="px-3 py-1.5 bg-[#D93344] text-white rounded-md hover:bg-[#b92b3a] transition-colors text-xs font-medium"
                       >
                         View Invoice
                       </button>
                       {invoice.status !== 'PAID' && (
                         <button
                           onClick={() => handleMarkAsPaid(invoice.id)}
-                          className="w-24 px-2 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs font-medium shadow-sm"
+                          className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs font-medium"
                         >
                           Mark Paid
                         </button>
@@ -1424,12 +1426,12 @@ export default function ReceptionistDashboardPage() {
 
       {/* Fees Modal */}
       {showFees && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Receipt className="h-5 w-5 mr-2 text-purple-600" />
+                  <Receipt className="h-5 w-5 mr-2 text-[#D93344]" />
                   Encounter Fees
                 </h3>
                 <button
@@ -1450,8 +1452,8 @@ export default function ReceptionistDashboardPage() {
                   {encounterFees.map((fee, index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <div>
-                        <p className="font-medium text-gray-900">{fee.description}</p>
-                        <p className="text-sm text-gray-500">{new Date(fee.loggedAt).toLocaleString()}</p>
+                        <p className="font-medium text-gray-900 text-sm">{fee.description}</p>
+                        <p className="text-xs text-gray-500">{new Date(fee.loggedAt).toLocaleString()}</p>
                       </div>
                       <div className="flex items-center">
                         <span className="font-semibold text-gray-900">{formatCurrency(fee.amount)}</span>
@@ -1466,7 +1468,7 @@ export default function ReceptionistDashboardPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-900">Total</span>
                     <div className="flex items-center">
-                      <span className="text-2xl font-bold text-purple-600">{formatCurrency(totalFees)}</span>
+                      <span className="text-2xl font-bold text-[#D93344]">{formatCurrency(totalFees)}</span>
                     </div>
                   </div>
                 </div>
@@ -1474,7 +1476,7 @@ export default function ReceptionistDashboardPage() {
 
               <button
                 onClick={() => setShowFees(false)}
-                className="mt-6 w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                className="mt-6 w-full bg-[#D93344] text-white py-3 rounded-lg hover:bg-[#b92b3a] transition-colors font-medium"
               >
                 Close
               </button>
@@ -1485,12 +1487,12 @@ export default function ReceptionistDashboardPage() {
 
       {/* Invoice Modal */}
       {showInvoiceModal && selectedInvoice && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Receipt className="h-5 w-5 mr-2 text-green-600" />
+                  <Receipt className="h-5 w-5 mr-2 text-[#D93344]" />
                   Invoice Details
                 </h3>
                 <button
@@ -1509,9 +1511,9 @@ export default function ReceptionistDashboardPage() {
                   </div>
                   <div>
                     <p className="text-gray-500">Status</p>
-                    <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-                      selectedInvoice.status === 'PAID' ? 'bg-green-100 text-green-700' : 
-                      selectedInvoice.status === 'ISSUED' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                      selectedInvoice.status === 'PAID' ? 'bg-green-50 text-green-700 border border-green-200' : 
+                      selectedInvoice.status === 'ISSUED' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
                     }`}>
                       {selectedInvoice.status}
                     </span>
@@ -1527,13 +1529,13 @@ export default function ReceptionistDashboardPage() {
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
-                  <h4 className="font-semibold text-gray-900 mb-3">Service Breakdown</h4>
+                  <h4 className="font-semibold text-gray-900 mb-3 text-sm">Service Breakdown</h4>
                   <div className="space-y-2">
                     {selectedInvoice.items?.map((item: any, index: number) => (
                       <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <div>
-                          <p className="font-medium text-gray-900">{item.description}</p>
-                          <p className="text-sm text-gray-500">Qty: {item.quantity} × {formatCurrency(item.unitPrice)}</p>
+                          <p className="font-medium text-gray-900 text-sm">{item.description}</p>
+                          <p className="text-xs text-gray-500">Qty: {item.quantity} × {formatCurrency(item.unitPrice)}</p>
                         </div>
                         <div className="flex items-center">
                           <span className="font-semibold text-gray-900">{formatCurrency(item.lineTotal)}</span>
@@ -1545,13 +1547,13 @@ export default function ReceptionistDashboardPage() {
 
                 <div className="border-t border-gray-200 pt-4 space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">{formatCurrency(selectedInvoice.subtotal)}</span>
+                    <span className="text-gray-600 text-sm">Subtotal</span>
+                    <span className="font-medium text-sm">{formatCurrency(selectedInvoice.subtotal)}</span>
                   </div>
                   {selectedInvoice.discountAmount && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Discount</span>
-                      <span className="font-medium text-red-600">-{formatCurrency(selectedInvoice.discountAmount)}</span>
+                      <span className="text-gray-600 text-sm">Discount</span>
+                      <span className="font-medium text-red-600 text-sm">-{formatCurrency(selectedInvoice.discountAmount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center text-lg font-bold">
@@ -1560,21 +1562,21 @@ export default function ReceptionistDashboardPage() {
                   </div>
                   {selectedInvoice.balance > 0 && (
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Balance Due</span>
-                      <span className="font-medium text-red-600">{formatCurrency(selectedInvoice.balance)}</span>
+                      <span className="text-gray-600 text-sm">Balance Due</span>
+                      <span className="font-medium text-red-600 text-sm">{formatCurrency(selectedInvoice.balance)}</span>
                     </div>
                   )}
                 </div>
 
                 {selectedInvoice.payments && selectedInvoice.payments.length > 0 && (
                   <div className="border-t border-gray-200 pt-4">
-                    <h4 className="font-semibold text-gray-900 mb-3">Payment History</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3 text-sm">Payment History</h4>
                     <div className="space-y-2">
                       {selectedInvoice.payments.map((payment: any, index: number) => (
                         <div key={index} className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                           <div>
-                            <p className="font-medium text-gray-900">{payment.method}</p>
-                            <p className="text-sm text-gray-500">{new Date(payment.receivedAt).toLocaleString()}</p>
+                            <p className="font-medium text-gray-900 text-sm">{payment.method}</p>
+                            <p className="text-xs text-gray-500">{new Date(payment.receivedAt).toLocaleString()}</p>
                           </div>
                           <div className="flex items-center">
                             <span className="font-semibold text-green-600">{formatCurrency(payment.amount)}</span>
@@ -1602,26 +1604,26 @@ export default function ReceptionistDashboardPage() {
       {/* Full Patient Record Modal */}
       {showFullRecordModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-lg shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-gray-200">
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-700 text-white flex items-center justify-between shadow-md">
+            <div className="px-6 py-4 bg-white border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="p-2.5 bg-white/15 backdrop-blur-md rounded-xl">
-                  <FileText className="h-6 w-6 text-white" />
+                <div className="bg-[#D93344]/10 p-2.5 rounded-lg">
+                  <FileText className="h-6 w-6 text-[#D93344]" />
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <h2 className="text-xl font-bold tracking-tight">
+                    <h2 className="text-xl font-bold text-gray-900">
                       {fullRecordPatient ? `${fullRecordPatient.firstName} ${fullRecordPatient.lastName}` : 'Patient Record'}
                     </h2>
                     {fullRecordPatient?.bloodGroup && (
-                      <span className="px-2.5 py-0.5 bg-white/20 text-white rounded-full text-xs font-semibold">
+                      <span className="px-2.5 py-0.5 bg-red-50 text-red-700 rounded-full text-xs font-semibold border border-red-200">
                         {fullRecordPatient.bloodGroup}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-white/80 font-mono mt-0.5">
-                    MRN: {fullRecordPatient?.mrn || 'Loading...'} &bull; Phone: {fullRecordPatient?.phone || 'N/A'}
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    MRN: {fullRecordPatient?.mrn || 'Loading...'} • Phone: {fullRecordPatient?.phone || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -1630,7 +1632,7 @@ export default function ReceptionistDashboardPage() {
                 {fullRecordPatient && (
                   <button
                     onClick={() => window.print()}
-                    className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex items-center text-xs font-medium"
+                    className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center text-xs font-medium"
                     title="Print Record"
                   >
                     <Printer className="h-4 w-4 mr-1.5" />
@@ -1639,7 +1641,7 @@ export default function ReceptionistDashboardPage() {
                 )}
                 <button
                   onClick={() => setShowFullRecordModal(false)}
-                  className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -1652,57 +1654,57 @@ export default function ReceptionistDashboardPage() {
                 onClick={() => setFullRecordTab('overview')}
                 className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-1.5 ${
                   fullRecordTab === 'overview'
-                    ? 'border-emerald-600 text-emerald-700'
+                    ? 'border-[#D93344] text-[#D93344]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 <User className="h-4 w-4" />
-                <span>Demographics & Overview</span>
+                <span>Overview</span>
               </button>
 
               <button
                 onClick={() => setFullRecordTab('encounters')}
                 className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-1.5 ${
                   fullRecordTab === 'encounters'
-                    ? 'border-emerald-600 text-emerald-700'
+                    ? 'border-[#D93344] text-[#D93344]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 <Activity className="h-4 w-4" />
-                <span>Visits & Vitals ({fullRecordPatient?.encounters?.length || 0})</span>
+                <span>Encounters ({fullRecordPatient?.encounters?.length || 0})</span>
               </button>
 
               <button
                 onClick={() => setFullRecordTab('labs')}
                 className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-1.5 ${
                   fullRecordTab === 'labs'
-                    ? 'border-emerald-600 text-emerald-700'
+                    ? 'border-[#D93344] text-[#D93344]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 <FlaskConical className="h-4 w-4" />
-                <span>Lab Orders & Results</span>
+                <span>Labs</span>
               </button>
 
               <button
                 onClick={() => setFullRecordTab('billing')}
                 className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-1.5 ${
                   fullRecordTab === 'billing'
-                    ? 'border-emerald-600 text-emerald-700'
+                    ? 'border-[#D93344] text-[#D93344]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 <DollarSign className="h-4 w-4" />
-                <span>Invoices & Billing ({fullRecordPatient?.invoices?.length || 0})</span>
+                <span>Billing ({fullRecordPatient?.invoices?.length || 0})</span>
               </button>
             </div>
 
             {/* Modal Content Body */}
-            <div className="p-6 overflow-y-auto flex-1 bg-gray-50/50">
+            <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
               {fullRecordLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-                  <RefreshCw className="h-8 w-8 animate-spin text-emerald-600 mb-3" />
-                  <p className="text-sm font-medium">Loading comprehensive patient record...</p>
+                  <RefreshCw className="h-8 w-8 animate-spin text-[#D93344] mb-3" />
+                  <p className="text-sm font-medium">Loading patient record...</p>
                 </div>
               ) : !fullRecordPatient ? (
                 <div className="text-center py-16 text-gray-500">
@@ -1717,21 +1719,21 @@ export default function ReceptionistDashboardPage() {
                     <div className="space-y-6">
                       {/* Top quick summary cards */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                           <p className="text-xs text-gray-500 font-medium">Total Encounters</p>
                           <p className="text-2xl font-bold text-gray-900 mt-1">{fullRecordPatient.encounters?.length || 0}</p>
                         </div>
-                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                           <p className="text-xs text-gray-500 font-medium">Invoices Count</p>
                           <p className="text-2xl font-bold text-gray-900 mt-1">{fullRecordPatient.invoices?.length || 0}</p>
                         </div>
-                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                           <p className="text-xs text-gray-500 font-medium">Total Invoiced</p>
-                          <p className="text-xl font-bold text-emerald-600 mt-1">
+                          <p className="text-xl font-bold text-[#D93344] mt-1">
                             {formatCurrency(fullRecordPatient.invoices?.reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0))}
                           </p>
                         </div>
-                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                           <p className="text-xs text-gray-500 font-medium">Outstanding Balance</p>
                           <p className="text-xl font-bold text-amber-600 mt-1">
                             {formatCurrency(fullRecordPatient.invoices?.reduce((sum: number, inv: any) => sum + Number(inv.balance || 0), 0))}
@@ -1742,8 +1744,8 @@ export default function ReceptionistDashboardPage() {
                       {/* Patient Information Cards */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Demographics Card */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
-                          <h3 className="text-sm font-semibold uppercase tracking-wider text-emerald-700 flex items-center">
+                        <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm space-y-4">
+                          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-700 flex items-center">
                             <User className="h-4 w-4 mr-2" /> Demographics & Identity
                           </h3>
                           <div className="grid grid-cols-2 gap-y-3 text-sm">
@@ -1753,7 +1755,7 @@ export default function ReceptionistDashboardPage() {
                             </div>
                             <div>
                               <span className="text-xs text-gray-500 block">MRN</span>
-                              <span className="font-mono font-semibold text-emerald-700">{fullRecordPatient.mrn}</span>
+                              <span className="font-mono font-semibold text-[#D93344]">{fullRecordPatient.mrn}</span>
                             </div>
                             <div>
                               <span className="text-xs text-gray-500 block">Date of Birth</span>
@@ -1769,7 +1771,7 @@ export default function ReceptionistDashboardPage() {
                             </div>
                             <div>
                               <span className="text-xs text-gray-500 block">Blood Group</span>
-                              <span className="inline-block px-2 py-0.5 bg-red-50 text-red-700 font-semibold rounded text-xs">
+                              <span className="inline-block px-2 py-0.5 bg-red-50 text-red-700 font-semibold rounded text-xs border border-red-200">
                                 {fullRecordPatient.bloodGroup || 'Unknown'}
                               </span>
                             </div>
@@ -1789,8 +1791,8 @@ export default function ReceptionistDashboardPage() {
                         </div>
 
                         {/* Contact & Address Card */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
-                          <h3 className="text-sm font-semibold uppercase tracking-wider text-teal-700 flex items-center">
+                        <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm space-y-4">
+                          <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-700 flex items-center">
                             <Phone className="h-4 w-4 mr-2" /> Contact & Emergency
                           </h3>
                           <div className="space-y-3 text-sm">
@@ -1808,7 +1810,7 @@ export default function ReceptionistDashboardPage() {
                             </div>
                             <div className="pt-2 border-t border-gray-100">
                               <span className="text-xs text-gray-500 block">Emergency Contact</span>
-                              <span className="font-semibold text-amber-800 bg-amber-50 px-2.5 py-1 rounded inline-block mt-0.5">
+                              <span className="font-semibold text-amber-800 bg-amber-50 px-2.5 py-1 rounded inline-block mt-0.5 border border-amber-200">
                                 {fullRecordPatient.emergencyContact || 'None provided'}
                               </span>
                             </div>
@@ -1817,8 +1819,8 @@ export default function ReceptionistDashboardPage() {
                       </div>
 
                       {/* Allergies & Alerts */}
-                      <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-3">
-                        <h3 className="text-sm font-semibold uppercase tracking-wider text-rose-700 flex items-center">
+                      <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm space-y-3">
+                        <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-700 flex items-center">
                           <ShieldAlert className="h-4 w-4 mr-2 text-rose-600" /> Allergies & Clinical Alerts
                         </h3>
                         {(!fullRecordPatient.allergies || fullRecordPatient.allergies.length === 0) ? (
@@ -1853,17 +1855,17 @@ export default function ReceptionistDashboardPage() {
                   {fullRecordTab === 'encounters' && (
                     <div className="space-y-4">
                       {(!fullRecordPatient.encounters || fullRecordPatient.encounters.length === 0) ? (
-                        <div className="text-center py-12 bg-white rounded-xl border border-gray-200 text-gray-500">
+                        <div className="text-center py-12 bg-white rounded-lg border border-gray-200 text-gray-500">
                           <Activity className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                           <p>No encounters or clinical visits on record.</p>
                         </div>
                       ) : (
                         fullRecordPatient.encounters.map((enc: any, idx: number) => (
-                          <div key={enc.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+                          <div key={enc.id} className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm space-y-4">
                             <div className="flex items-start justify-between border-b border-gray-100 pb-3">
                               <div>
                                 <div className="flex items-center space-x-2">
-                                  <span className="font-bold text-gray-900">Visit #{fullRecordPatient.encounters.length - idx}</span>
+                                  <span className="font-bold text-gray-900 text-sm">Visit #{fullRecordPatient.encounters.length - idx}</span>
                                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${getVisitStatusColor(enc.visitStatus)}`}>
                                     {getVisitStatusLabel(enc.visitStatus)}
                                   </span>
@@ -1874,7 +1876,7 @@ export default function ReceptionistDashboardPage() {
                                 </p>
                               </div>
                               {enc.signedAt && (
-                                <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded font-medium flex items-center">
+                                <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded font-medium flex items-center">
                                   <CheckCircle className="h-3 w-3 mr-1" />
                                   Signed by {enc.signedBy || 'Doctor'}
                                 </span>
@@ -1883,8 +1885,8 @@ export default function ReceptionistDashboardPage() {
 
                             {/* Vitals summary if recorded */}
                             {enc.vitals && enc.vitals.length > 0 && (
-                              <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
-                                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center">
+                              <div className="bg-gray-50 p-3.5 rounded-lg border border-gray-200">
+                                <p className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center">
                                   <HeartPulse className="h-3.5 w-3.5 mr-1.5 text-rose-500" />
                                   Recorded Vitals
                                 </p>
@@ -1930,11 +1932,11 @@ export default function ReceptionistDashboardPage() {
                                 </div>
                               )}
                               {enc.assessment && (
-                                <div className="p-3 bg-emerald-50 rounded-lg">
-                                  <span className="font-bold text-emerald-800 block mb-1">Assessment / Diagnosis</span>
-                                  <p className="text-emerald-950">{enc.assessment}</p>
+                                <div className="p-3 bg-green-50 rounded-lg">
+                                  <span className="font-bold text-green-800 block mb-1">Assessment / Diagnosis</span>
+                                  <p className="text-green-950">{enc.assessment}</p>
                                   {enc.icd10Code && (
-                                    <span className="inline-block mt-1 font-mono font-bold text-emerald-700 bg-white px-1.5 py-0.5 rounded text-[10px]">
+                                    <span className="inline-block mt-1 font-mono font-bold text-green-700 bg-white px-1.5 py-0.5 rounded text-[10px]">
                                       ICD-10: {enc.icd10Code}
                                     </span>
                                   )}
@@ -1978,21 +1980,21 @@ export default function ReceptionistDashboardPage() {
                         const allLabOrders = fullRecordPatient.encounters?.flatMap((e: any) => e.labOrders || []) || [];
                         if (allLabOrders.length === 0) {
                           return (
-                            <div className="text-center py-12 bg-white rounded-xl border border-gray-200 text-gray-500">
+                            <div className="text-center py-12 bg-white rounded-lg border border-gray-200 text-gray-500">
                               <FlaskConical className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                               <p>No laboratory orders or results found for this patient.</p>
                             </div>
                           );
                         }
                         return allLabOrders.map((order: any) => (
-                          <div key={order.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-3">
+                          <div key={order.id} className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm space-y-3">
                             <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                               <div>
                                 <span className="font-semibold text-sm text-gray-900">Lab Order #{order.id.substring(0, 8)}</span>
                                 <span className="text-xs text-gray-500 ml-2">{new Date(order.orderedAt).toLocaleString()}</span>
                               </div>
                               <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                                order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                order.status === 'COMPLETED' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                               }`}>
                                 {order.status}
                               </span>
@@ -2046,20 +2048,20 @@ export default function ReceptionistDashboardPage() {
                   {fullRecordTab === 'billing' && (
                     <div className="space-y-4">
                       {(!fullRecordPatient.invoices || fullRecordPatient.invoices.length === 0) ? (
-                        <div className="text-center py-12 bg-white rounded-xl border border-gray-200 text-gray-500">
+                        <div className="text-center py-12 bg-white rounded-lg border border-gray-200 text-gray-500">
                           <Receipt className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                           <p>No invoices or payments recorded for this patient.</p>
                         </div>
                       ) : (
                         fullRecordPatient.invoices.map((inv: any) => (
-                          <div key={inv.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-3">
+                          <div key={inv.id} className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm space-y-3">
                             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                               <div>
                                 <div className="flex items-center space-x-2">
-                                  <span className="font-bold text-gray-900">{inv.invoiceNo}</span>
+                                  <span className="font-bold text-gray-900 text-sm">{inv.invoiceNo}</span>
                                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                                    inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' :
-                                    inv.status === 'ISSUED' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                                    inv.status === 'PAID' ? 'bg-green-50 text-green-700 border border-green-200' :
+                                    inv.status === 'ISSUED' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                                   }`}>
                                     {inv.status}
                                   </span>
@@ -2068,7 +2070,7 @@ export default function ReceptionistDashboardPage() {
                               </div>
                               <div className="text-right">
                                 <span className="text-xs text-gray-500 block">Total</span>
-                                <span className="text-base font-bold text-emerald-700">{formatCurrency(inv.total)}</span>
+                                <span className="text-base font-bold text-[#D93344]">{formatCurrency(inv.total)}</span>
                                 {inv.balance > 0 && (
                                   <span className="text-xs font-semibold text-rose-600 block">Due: {formatCurrency(inv.balance)}</span>
                                 )}
@@ -2089,10 +2091,10 @@ export default function ReceptionistDashboardPage() {
 
                             {/* Payments recorded */}
                             {inv.payments && inv.payments.length > 0 && (
-                              <div className="bg-emerald-50/50 p-2 rounded text-xs">
-                                <span className="font-semibold text-emerald-800 block mb-1">Payments:</span>
+                              <div className="bg-green-50/50 p-2 rounded text-xs">
+                                <span className="font-semibold text-green-800 block mb-1">Payments:</span>
                                 {inv.payments.map((p: any) => (
-                                  <div key={p.id} className="flex justify-between text-emerald-900">
+                                  <div key={p.id} className="flex justify-between text-green-900">
                                     <span>{p.method} on {new Date(p.receivedAt).toLocaleDateString()}</span>
                                     <span className="font-bold">{formatCurrency(p.amount)}</span>
                                   </div>
@@ -2109,7 +2111,7 @@ export default function ReceptionistDashboardPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-3 bg-gray-100 border-t border-gray-200 flex justify-end space-x-2">
+            <div className="px-6 py-3 bg-white border-t border-gray-200 flex justify-end">
               <button
                 onClick={() => setShowFullRecordModal(false)}
                 className="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium transition-colors"
