@@ -7,7 +7,6 @@ import { useToast } from '@/contexts/ToastContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 import { useWorkflow } from '@/contexts/WorkflowContext';
 import { apiClient } from '@/lib/api';
-import { formatCurrency } from '@/lib/currency';
 import { 
   HeartPulse, 
   Thermometer, 
@@ -138,13 +137,13 @@ export default function NurseDashboardPage() {
       });
 
       if (response.error) {
-        showError(`Failed to toggle availability: {formatCurrency({response.error}`);
+        showError(`Failed to toggle availability: ${response.error}`);
         return;
       }
 
       setIsAvailable(newAvailability);
       localStorage.setItem('nurseAvailability', JSON.stringify(newAvailability));
-      showSuccess(`Availability {formatCurrency({newAvailability ? 'enabled' : 'disabled'} successfully!`);
+      showSuccess(`Availability ${newAvailability ? 'enabled' : 'disabled'} successfully!`);
     } catch (error) {
       console.error('Toggle availability error:', error);
       showError('Failed to toggle availability. Please try again.');
@@ -200,7 +199,7 @@ export default function NurseDashboardPage() {
     if (!selectedPatient) return;
 
     try {
-      const response = await apiClient.post(`/medical/encounters/{formatCurrency({selectedPatient.encounterId}/vitals`, {
+      const response = await apiClient.post(`/medical/encounters/${selectedPatient.encounterId}/vitals`, {
         temperatureC: parseFloat(vitalsData.temperature),
         systolic: parseInt(vitalsData.bloodPressureSystolic),
         diastolic: parseInt(vitalsData.bloodPressureDiastolic),
@@ -212,7 +211,7 @@ export default function NurseDashboardPage() {
       });
 
       if (response.error) {
-        showError(`Failed to record vitals: {formatCurrency({response.error}`);
+        showError(`Failed to record vitals: ${response.error}`);
         return;
       }
 
@@ -245,13 +244,13 @@ export default function NurseDashboardPage() {
     });
 
     try {
-      const encRes = await apiClient.get<{ encounter: any }>(`/medical/encounters/{formatCurrency({patient.encounterId}`);
+      const encRes = await apiClient.get<{ encounter: any }>(`/medical/encounters/${patient.encounterId}`);
       if (encRes.data && encRes.data.encounter) {
         const enc = encRes.data.encounter;
         const sub = enc.subjective || '';
 
         const extractField = (text: string, label: string) => {
-          const regex = new RegExp(`{formatCurrency({label}:\\s*([\\s\\S]*?)(?=(?:Chief Complaint|Current Medications|Allergies|Medical History|Nurse Notes):|{formatCurrency()`, 'i');
+          const regex = new RegExp(`${label}:\\s*([\\s\\S]*?)(?=(?:Chief Complaint|Current Medications|Allergies|Medical History|Nurse Notes):|$)`, 'i');
           const m = text.match(regex);
           return m && m[1] ? m[1].trim() : '';
         };
@@ -295,14 +294,14 @@ export default function NurseDashboardPage() {
 
     try {
       const formattedSubjective = [
-        intakeData.chiefComplaint ? `Chief Complaint: {formatCurrency({intakeData.chiefComplaint.trim()}` : '',
-        intakeData.currentMedications ? `Current Medications: {formatCurrency({intakeData.currentMedications.trim()}` : '',
-        intakeData.allergies ? `Allergies: {formatCurrency({intakeData.allergies.trim()}` : '',
-        intakeData.medicalHistory ? `Medical History: {formatCurrency({intakeData.medicalHistory.trim()}` : '',
-        intakeData.notes ? `Nurse Notes: {formatCurrency({intakeData.notes.trim()}` : '',
+        intakeData.chiefComplaint ? `Chief Complaint: ${intakeData.chiefComplaint.trim()}` : '',
+        intakeData.currentMedications ? `Current Medications: ${intakeData.currentMedications.trim()}` : '',
+        intakeData.allergies ? `Allergies: ${intakeData.allergies.trim()}` : '',
+        intakeData.medicalHistory ? `Medical History: ${intakeData.medicalHistory.trim()}` : '',
+        intakeData.notes ? `Nurse Notes: ${intakeData.notes.trim()}` : '',
       ].filter(Boolean).join('\n');
 
-      const response = await apiClient.patch(`/medical/encounters/{formatCurrency({selectedPatient.encounterId}`, {
+      const response = await apiClient.patch(`/medical/encounters/${selectedPatient.encounterId}`, {
         chiefComplaint: intakeData.chiefComplaint,
         subjective: formattedSubjective,
         objective: '',
@@ -311,7 +310,7 @@ export default function NurseDashboardPage() {
       });
 
       if (response.error) {
-        showError(`Failed to record intake: {formatCurrency({response.error}`);
+        showError(`Failed to record intake: ${response.error}`);
         return;
       }
 
@@ -339,15 +338,15 @@ export default function NurseDashboardPage() {
       if (vitalsData.height && !isNaN(parseFloat(vitalsData.height))) vitalsPayload.heightCm = parseFloat(vitalsData.height);
 
       const objectiveNotes = Object.keys(vitalsPayload).length > 0
-        ? `Vitals recorded: BP {formatCurrency({vitalsData.bloodPressureSystolic || '-'}/{formatCurrency({vitalsData.bloodPressureDiastolic || '-'}, HR {formatCurrency({vitalsData.heartRate || '-'}, Temp {formatCurrency({vitalsData.temperature || '-'}°C, SpO2 {formatCurrency({vitalsData.spo2 || '-'}%, Weight {formatCurrency({vitalsData.weight || '-'}kg, Height {formatCurrency({vitalsData.height || '-'}cm`
+        ? `Vitals recorded: BP ${vitalsData.bloodPressureSystolic || '-'}/${vitalsData.bloodPressureDiastolic || '-'}, HR ${vitalsData.heartRate || '-'}, Temp ${vitalsData.temperature || '-'}°C, SpO2 ${vitalsData.spo2 || '-'}%, Weight ${vitalsData.weight || '-'}kg, Height ${vitalsData.height || '-'}cm`
         : 'Triage examination completed';
 
       const formattedSubjective = [
-        intakeData.chiefComplaint ? `Chief Complaint: {formatCurrency({intakeData.chiefComplaint.trim()}` : '',
-        intakeData.currentMedications ? `Current Medications: {formatCurrency({intakeData.currentMedications.trim()}` : '',
-        intakeData.allergies ? `Allergies: {formatCurrency({intakeData.allergies.trim()}` : '',
-        intakeData.medicalHistory ? `Medical History: {formatCurrency({intakeData.medicalHistory.trim()}` : '',
-        intakeData.notes ? `Nurse Notes: {formatCurrency({intakeData.notes.trim()}` : '',
+        intakeData.chiefComplaint ? `Chief Complaint: ${intakeData.chiefComplaint.trim()}` : '',
+        intakeData.currentMedications ? `Current Medications: ${intakeData.currentMedications.trim()}` : '',
+        intakeData.allergies ? `Allergies: ${intakeData.allergies.trim()}` : '',
+        intakeData.medicalHistory ? `Medical History: ${intakeData.medicalHistory.trim()}` : '',
+        intakeData.notes ? `Nurse Notes: ${intakeData.notes.trim()}` : '',
       ].filter(Boolean).join('\n');
 
       const response = await apiClient.post('/assignments/nurse/examination/complete', {
@@ -364,7 +363,7 @@ export default function NurseDashboardPage() {
       });
 
       if (response.error) {
-        showError(`Failed to route patient: {formatCurrency({response.error}`);
+        showError(`Failed to route patient: ${response.error}`);
         return;
       }
 
@@ -391,7 +390,7 @@ export default function NurseDashboardPage() {
         medicalHistory: '',
         notes: ''
       });
-      showSuccess(`Patient successfully sent to Dr. {formatCurrency({doctorName}!`);
+      showSuccess(`Patient successfully sent to Dr. ${doctorName}!`);
       fetchTriagePatients(); // Refresh the triage list immediately
     } catch (error) {
       console.error('Route to doctor error:', error);
