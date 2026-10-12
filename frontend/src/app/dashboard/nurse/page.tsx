@@ -425,46 +425,47 @@ export default function NurseDashboardPage() {
       {currentStep === 'triage' && (
       <>
       {/* Left Side - Triage Queue (50%) */}
-      <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
-        <div className="p-4 border-b border-gray-200 bg-white">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center">
-              <HeartPulse className="h-5 w-5 mr-2 text-blue-600" />
-              Triage Queue
+      <div className="w-1/2 border-r border-slate-200 bg-white flex flex-col">
+        <div className="p-5 sm:p-6 border-b border-slate-200 bg-white">
+          <div className="flex items-center justify-between mb-3.5">
+            <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center uppercase tracking-wider">
+              <HeartPulse className="h-5 w-5 mr-2 text-teal-600" />
+              Triage Assessment Queue
             </h2>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
               <button
                 onClick={handleToggleAvailability}
-                className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded text-xs font-semibold transition-colors border ${
                   isAvailable 
-                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' 
-                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                 }`}
               >
-                {isAvailable ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+                {isAvailable ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
                 <span>{isAvailable ? 'Available' : 'Unavailable'}</span>
               </button>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">{triagePatients.length} patients</span>
-                <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <div className="flex items-center space-x-1.5 text-xs text-slate-500">
+                <span className="font-bold text-slate-900">{triagePatients.length}</span>
+                <span>waiting</span>
+                <div className="h-2 w-2 bg-teal-500 rounded-full animate-pulse"></div>
               </div>
             </div>
           </div>
           
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search patients..."
+              placeholder="Search triage patients by name or MRN..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 bg-slate-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-sm text-slate-900"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -474,40 +475,40 @@ export default function NurseDashboardPage() {
         
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="text-center py-8 text-gray-500 flex flex-col items-center">
-              <Activity className="h-6 w-6 animate-spin text-pink-500 mb-2" />
-              <span className="text-sm">Loading patients...</span>
+            <div className="text-center py-10 text-slate-500 flex flex-col items-center">
+              <Activity className="h-6 w-6 animate-spin text-teal-600 mb-2" />
+              <span className="text-sm">Loading triage patients...</span>
             </div>
           ) : filteredPatients.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm">No patients in triage queue</p>
+            <div className="text-center py-12 text-slate-500">
+              <User className="h-10 w-10 mx-auto mb-2.5 text-slate-300" />
+              <p className="text-sm font-semibold">No patients in triage queue</p>
             </div>
           ) : (
             filteredPatients.map((patient) => (
               <motion.div
                 key={patient.id}
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
-                  selectedPatient?.id === patient.id ? 'bg-pink-50 border-l-4 border-l-pink-600' : ''
+                transition={{ duration: 0.2 }}
+                className={`p-4 sm:p-5 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer ${
+                  selectedPatient?.id === patient.id ? 'bg-teal-50/80 border-l-4 border-l-teal-600' : ''
                 }`}
                 onClick={() => handleSelectPatient(patient)}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <h3 className="text-sm font-medium text-gray-900">{patient.firstName} {patient.lastName}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border ${getPriorityColor(patient.priority)}`}>
+                      <h3 className="text-base font-bold text-slate-900">{patient.firstName} {patient.lastName}</h3>
+                      <span className={`text-xs px-2.5 py-0.5 rounded-md border font-semibold ${getPriorityColor(patient.priority)}`}>
                         {getPriorityIcon(patient.priority)}
                         <span className="ml-1 capitalize">{patient.priority}</span>
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">{patient.chiefComplaint}</p>
-                    <p className="text-xs text-gray-500">MRN: {patient.mrn}</p>
+                    <p className="text-sm text-slate-600 mt-1">{patient.chiefComplaint}</p>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">MRN: {patient.mrn}</p>
                   </div>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs font-medium text-slate-500">
                     {patient.waitTime > 0 ? `${patient.waitTime}m wait` : 'On time'}
                   </span>
                 </div>

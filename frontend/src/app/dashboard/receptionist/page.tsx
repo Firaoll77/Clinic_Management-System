@@ -756,36 +756,36 @@ export default function ReceptionistDashboardPage() {
       {currentStep === 'queue' && (
         <>
           {/* Left Side - Live Queue (50%) */}
-          <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-3xl font-black text-gray-900 flex items-center tracking-tight">
-                  <Clock className="h-8 w-8 mr-3 text-green-600" />
+          <div className="w-1/2 border-r border-slate-200 bg-white flex flex-col">
+            <div className="p-5 sm:p-6 border-b border-slate-200 bg-white">
+              <div className="flex items-center justify-between mb-3.5">
+                <h2 className="text-lg font-bold text-slate-900 flex items-center tracking-tight">
+                  <Clock className="h-5 w-5 mr-2.5 text-emerald-600" />
                   Waiting Room
                 </h2>
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl font-black text-gray-900">{waitingPatients.length}</span>
-                  <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Waiting</span>
-                  <div className="h-3 w-3 bg-green-600 rounded-full animate-pulse"></div>
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-2xl font-bold text-slate-900">{waitingPatients.length}</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Waiting</span>
+                  <div className="h-2.5 w-2.5 bg-emerald-600 rounded-full animate-pulse"></div>
                 </div>
               </div>
 
-              {/* Search in Waiting Room - Bold */}
+              {/* Search in Waiting Room */}
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search waiting room..."
+                  placeholder="Search waiting room by name, phone, or MRN..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-600/20 text-base"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-600/20 text-sm text-slate-900"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    <X className="h-5 w-5" />
+                    <X className="h-4 w-4" />
                   </button>
                 )}
               </div>
@@ -793,41 +793,41 @@ export default function ReceptionistDashboardPage() {
 
             <div className="flex-1 overflow-y-auto">
               {waitingPatients.length === 0 ? (
-                <div className="text-center py-16 text-gray-500">
-                  <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-base font-medium">No patients in waiting room</p>
+                <div className="text-center py-14 text-slate-500">
+                  <User className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                  <p className="text-sm font-medium">No patients in waiting room</p>
                 </div>
               ) : (
                 filteredPatients.map((patient) => (
                   <motion.div
                     key={patient.id}
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
-                      hasPaidInvoice(patient.id) ? 'bg-gray-50 opacity-75' : ''
-                    } ${selectedPatient?.id === patient.id ? 'bg-green-50 border-l-4 border-l-green-600' : ''}`}
+                    transition={{ duration: 0.2 }}
+                    className={`p-4 sm:p-5 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer ${
+                      hasPaidInvoice(patient.id) ? 'bg-slate-50 opacity-75' : ''
+                    } ${selectedPatient?.id === patient.id ? 'bg-emerald-50/70 border-l-4 border-l-emerald-600' : ''}`}
                     onClick={() => setSelectedPatient(patient)}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-bold text-gray-900 text-lg">{patient.name}</h3>
-                        <p className="text-sm text-gray-500 font-medium">MRN: {patient.mrn}</p>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <h3 className="font-bold text-slate-900 text-base truncate">{patient.name}</h3>
+                        <p className="text-sm text-slate-500 font-medium mt-0.5">MRN: {patient.mrn}</p>
                         {patient.isNewPatient && (
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">New</span>
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200">New Patient</span>
                         )}
                       </div>
-                      <span className={`text-xs px-2 py-1 rounded-full border ${getVisitStatusColor(patient.visitStatus)}`}>
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded border ${getVisitStatusColor(patient.visitStatus)}`}>
                         {getVisitStatusLabel(patient.visitStatus)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center justify-between text-xs text-slate-500 mt-2">
                       <div className="flex items-center">
-                        <Clock className="h-3 w-3 mr-1" />
+                        <Clock className="h-3.5 w-3.5 mr-1.5 text-slate-400" />
                         {new Date(patient.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                       <div className="flex items-center">
-                        <Phone className="h-3 w-3 mr-1" />
+                        <Phone className="h-3.5 w-3.5 mr-1.5 text-slate-400" />
                         {patient.phone}
                       </div>
                     </div>

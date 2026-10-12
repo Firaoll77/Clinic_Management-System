@@ -741,27 +741,27 @@ export default function DoctorDashboardPage() {
     <div className="flex-1 flex overflow-hidden">
       {navTab === 'doctor-patients' && (
       <>
-      {/* Left Sidebar - Patient Queue (30%) */}
-      <div className="w-[30%] border-r border-gray-200 bg-white flex flex-col">
-        <div className="p-4 border-b border-gray-200 bg-white">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center">
+      {/* Left Sidebar - Patient Queue (Clean clinical density) */}
+      <div className="w-88 sm:w-96 border-r border-slate-200 bg-white flex flex-col shrink-0">
+        <div className="p-4 sm:p-5 border-b border-slate-200 bg-white">
+          <div className="flex items-center justify-between mb-2.5">
+            <h2 className="text-sm font-bold text-slate-900 flex items-center uppercase tracking-wider">
               <Calendar className="h-4 w-4 mr-2 text-blue-600" />
-              Today's Patients
+              Assigned Patients
             </h2>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => fetchDoctorPatients(false)}
                 title="Refresh patient queue"
-                className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors"
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
               </button>
               <button
                 onClick={handleToggleAvailability}
-                title={isAvailable ? 'Status: Available (Click to change)' : 'Status: Unavailable (Click to change)'}
-                className={`flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors border ${
-                  isAvailable ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                title={isAvailable ? 'Status: Available' : 'Status: Unavailable'}
+                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded text-xs font-semibold transition-colors border ${
+                  isAvailable ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 {isAvailable ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
@@ -769,42 +769,42 @@ export default function DoctorDashboardPage() {
               </button>
             </div>
           </div>
-          <div className="flex items-center justify-between text-xs text-gray-600">
-            <span>{patients.length} assigned patient{patients.length === 1 ? '' : 's'}</span>
-            <span className="flex items-center text-green-600 font-medium">
-              <span className="h-2 w-2 rounded-full bg-green-500 mr-1.5 animate-pulse"></span>
-              Live Sync
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>{patients.length} active patient{patients.length === 1 ? '' : 's'}</span>
+            <span className="flex items-center text-emerald-600 font-medium">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+              Live Queue
             </span>
           </div>
         </div>
         
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="text-center py-8 text-gray-500 flex flex-col items-center">
+            <div className="text-center py-10 text-gray-500 flex flex-col items-center">
               <RefreshCw className="h-6 w-6 animate-spin text-blue-500 mb-2" />
-              <span className="text-sm">Loading patients...</span>
+              <span className="text-sm font-medium">Loading patients...</span>
             </div>
           ) : patients.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm font-medium">No patients waiting</p>
+            <div className="text-center py-10 text-gray-500">
+              <User className="h-10 w-10 mx-auto mb-2.5 text-gray-300" />
+              <p className="text-sm font-semibold">No patients waiting</p>
               <p className="text-xs text-gray-400 mt-1">Patients assigned by triage nurse will appear here</p>
             </div>
           ) : (
             patients.map((patient) => (
               <motion.div
                 key={patient.id}
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
                 onClick={() => handlePatientSelect(patient)}
-                className={`p-4 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
-                  selectedPatient?.id === patient.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                className={`p-4 sm:p-5 border-b border-gray-100 cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
+                  selectedPatient?.id === patient.id ? 'bg-blue-50/80 border-l-4 border-l-blue-600' : ''
                 }`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <h3 className="text-sm font-medium text-gray-900">{patient.firstName} {patient.lastName}</h3>
+                    <h3 className="text-base font-bold text-gray-900">{patient.firstName} {patient.lastName}</h3>
                     <div className="flex items-center space-x-3 mt-1">
                       {patient.arrivalTime && (
                         <p className="text-xs text-gray-600 flex items-center">

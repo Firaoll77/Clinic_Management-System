@@ -220,28 +220,31 @@ export default function LaboratoristDashboardPage() {
   };
 
   return (
-    <div className="flex-1 overflow-x-auto p-4 lg:p-6">
+    <div className="flex-1 overflow-x-auto">
       {currentStep === 'pending' && (
       <>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-lg font-bold text-gray-900">Lab Technician Dashboard</h1>
+      <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-base font-bold text-slate-900 tracking-tight">Diagnostic Specimen & Test Orders</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Manage doctor orders, pending specimens, and verify results</p>
+        </div>
         <button
           onClick={handleToggleAvailability}
-          className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors border text-sm ${
+          className={`self-start sm:self-auto flex items-center px-3 py-1.5 rounded-lg font-semibold transition-colors border text-xs ${
             isAvailable
-              ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-              : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
           }`}
         >
           {isAvailable ? (
             <>
-              <ToggleRight className="h-4 w-4 mr-2" />
-              Available
+              <ToggleRight className="h-4 w-4 mr-1.5" />
+              Lab Station Active
             </>
           ) : (
             <>
-              <ToggleLeft className="h-4 w-4 mr-2" />
-              Unavailable
+              <ToggleLeft className="h-4 w-4 mr-1.5" />
+              Station Inactive
             </>
           )}
         </button>
@@ -258,80 +261,80 @@ export default function LaboratoristDashboardPage() {
           <p className="text-sm">No lab assignments found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {assignments.map((assignment) => (
-            <div key={assignment.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
-                <div className="flex items-center justify-between mb-2">
+            <div key={assignment.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:border-slate-300 transition-colors">
+              <div className="p-5 border-b border-slate-100 bg-slate-50/60">
+                <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(assignment.status)}`}>
+                    <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${getStatusColor(assignment.status)}`}>
                       {assignment.status}
                     </span>
                     {assignment.labOrder.priority && (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(assignment.labOrder.priority)}`}>
+                      <span className={`px-2.5 py-0.5 rounded-md text-xs font-semibold border ${getPriorityColor(assignment.labOrder.priority)}`}>
                         {assignment.labOrder.priority}
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-gray-500">
-                    {new Date(assignment.assignedAt).toLocaleString()}
+                  <span className="text-xs text-slate-500">
+                    {new Date(assignment.assignedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
-                <h3 className="text-sm font-semibold text-gray-900">
+                <h3 className="text-base font-bold text-slate-900">
                   {assignment.labOrder.encounter.patient.firstName} {assignment.labOrder.encounter.patient.lastName}
                 </h3>
-                <p className="text-xs text-gray-500">MRN: {assignment.labOrder.encounter.patient.mrn}</p>
-                <div className="mt-2 flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded-full text-xs border ${getEncounterStatusColor(assignment.labOrder.encounter.visitStatus)}`}>
+                <p className="text-sm text-slate-500 font-medium mt-0.5">MRN: {assignment.labOrder.encounter.patient.mrn}</p>
+                <div className="mt-2.5 flex items-center space-x-2">
+                  <span className={`px-2 py-0.5 rounded text-xs border font-medium ${getEncounterStatusColor(assignment.labOrder.encounter.visitStatus)}`}>
                     {assignment.labOrder.encounter.visitStatus.replace('_', ' ')}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-slate-500">
                     {assignment.labOrder.encounter.patient.gender}, {new Date(assignment.labOrder.encounter.patient.dob).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                   </span>
                 </div>
               </div>
-              <div className="p-4">
-                <div className="space-y-2 text-xs">
+              <div className="p-5">
+                <div className="space-y-2.5 text-xs sm:text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Lab Order ID:</span>
-                    <span className="font-medium">{assignment.labOrderId.substring(0, 8)}...</span>
+                    <span className="text-slate-500 font-medium">Lab Order ID:</span>
+                    <span className="font-semibold text-slate-900">{assignment.labOrderId.substring(0, 8)}...</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Order Status:</span>
-                    <span className="font-medium">{assignment.labOrder.status}</span>
+                    <span className="text-slate-500 font-medium">Order Status:</span>
+                    <span className="font-semibold text-slate-900">{assignment.labOrder.status}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Chief Complaint:</span>
-                    <p className="font-medium text-gray-900 mt-1">{assignment.labOrder.encounter.chiefComplaint}</p>
+                    <span className="text-slate-500 font-medium">Chief Complaint:</span>
+                    <p className="font-medium text-slate-900 mt-0.5">{assignment.labOrder.encounter.chiefComplaint}</p>
                   </div>
                   {assignment.labOrder.notes && (
                     <div>
-                      <span className="text-gray-500">Order Notes:</span>
-                      <p className="font-medium text-gray-900 mt-1">{assignment.labOrder.notes}</p>
+                      <span className="text-slate-500 font-medium">Order Notes:</span>
+                      <p className="font-medium text-slate-900 mt-0.5">{assignment.labOrder.notes}</p>
                     </div>
                   )}
                 </div>
                 {assignment.status === 'PENDING' && (
-                  <div className="mt-4 flex space-x-2">
+                  <div className="mt-5 flex space-x-2.5">
                     <button
                       onClick={() => handleAcceptAssignment(assignment.id)}
-                      className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
+                      className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-xs sm:text-sm font-semibold shadow-sm"
                     >
                       Accept
                     </button>
                     <button
                       onClick={() => handleRejectAssignment(assignment.id)}
-                      className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
+                      className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-xs sm:text-sm font-semibold border border-slate-200"
                     >
                       Reject
                     </button>
                   </div>
                 )}
                 {assignment.status === 'ACCEPTED' && (
-                  <div className="mt-4">
+                  <div className="mt-5">
                     <button
                       onClick={() => handleOpenResultModal(assignment)}
-                      className="w-full px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-xs font-medium flex items-center justify-center space-x-2"
+                      className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs sm:text-sm font-semibold flex items-center justify-center space-x-2 shadow-sm"
                     >
                       <Beaker className="h-4 w-4" />
                       <span>Enter Results</span>
