@@ -191,56 +191,56 @@ export default function LaboratoristDashboardPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PENDING': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-      case 'ACCEPTED': return 'bg-blue-100 text-blue-700 border-blue-300';
-      case 'COMPLETED': return 'bg-green-100 text-green-700 border-green-300';
-      case 'REJECTED': return 'bg-red-100 text-red-700 border-red-300';
-      default: return 'bg-gray-100 text-gray-700 border-gray-300';
+      case 'PENDING': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      case 'ACCEPTED': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'COMPLETED': return 'bg-green-50 text-green-700 border-green-200';
+      case 'REJECTED': return 'bg-red-50 text-red-700 border-red-200';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'ROUTINE': return 'bg-gray-100 text-gray-700';
-      case 'URGENT': return 'bg-orange-100 text-orange-700';
-      case 'STAT': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'ROUTINE': return 'bg-gray-50 text-gray-700 border-gray-200';
+      case 'URGENT': return 'bg-orange-50 text-orange-700 border-orange-200';
+      case 'STAT': return 'bg-red-50 text-red-700 border-red-200';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
   const getEncounterStatusColor = (status: string) => {
     switch (status) {
-      case 'TRIAGE': return 'bg-blue-50 text-blue-700';
-      case 'DOCTOR_CONSULT': return 'bg-green-50 text-green-700';
-      case 'LAB_PENDING': return 'bg-yellow-50 text-yellow-700';
-      case 'LAB_READY': return 'bg-purple-50 text-purple-700';
-      case 'BILLING': return 'bg-orange-50 text-orange-700';
-      default: return 'bg-gray-50 text-gray-700';
+      case 'TRIAGE': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'DOCTOR_CONSULT': return 'bg-green-50 text-green-700 border-green-200';
+      case 'LAB_PENDING': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      case 'LAB_READY': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'BILLING': return 'bg-orange-50 text-orange-700 border-orange-200';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
   return (
-    <div className="flex-1 overflow-x-auto p-6">
+    <div className="flex-1 overflow-x-auto p-4 lg:p-6">
       {currentStep === 'pending' && (
       <>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Lab Technician Dashboard</h1>
+        <h1 className="text-lg font-bold text-gray-900">Lab Technician Dashboard</h1>
         <button
           onClick={handleToggleAvailability}
-          className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
+          className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors border text-sm ${
             isAvailable
-              ? 'bg-green-100 text-green-700 hover:bg-green-200'
-              : 'bg-red-100 text-red-700 hover:bg-red-200'
+              ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+              : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
           }`}
         >
           {isAvailable ? (
             <>
-              <ToggleRight className="h-5 w-5 mr-2" />
+              <ToggleRight className="h-4 w-4 mr-2" />
               Available
             </>
           ) : (
             <>
-              <ToggleLeft className="h-5 w-5 mr-2" />
+              <ToggleLeft className="h-4 w-4 mr-2" />
               Unavailable
             </>
           )}
@@ -248,21 +248,27 @@ export default function LaboratoristDashboardPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading assignments...</div>
+        <div className="text-center py-12 text-gray-500 flex flex-col items-center">
+          <Clock className="h-6 w-6 animate-spin text-orange-500 mb-2" />
+          <span className="text-sm">Loading assignments...</span>
+        </div>
       ) : assignments.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">No lab assignments found</div>
+        <div className="text-center py-12 text-gray-500">
+          <Beaker className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+          <p className="text-sm">No lab assignments found</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {assignments.map((assignment) => (
-            <div key={assignment.id} className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+            <div key={assignment.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
               <div className="p-4 border-b border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(assignment.status)}`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(assignment.status)}`}>
                       {assignment.status}
                     </span>
                     {assignment.labOrder.priority && (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(assignment.labOrder.priority)}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(assignment.labOrder.priority)}`}>
                         {assignment.labOrder.priority}
                       </span>
                     )}
@@ -271,12 +277,12 @@ export default function LaboratoristDashboardPage() {
                     {new Date(assignment.assignedAt).toLocaleString()}
                   </span>
                 </div>
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="text-sm font-semibold text-gray-900">
                   {assignment.labOrder.encounter.patient.firstName} {assignment.labOrder.encounter.patient.lastName}
                 </h3>
-                <p className="text-sm text-gray-500">MRN: {assignment.labOrder.encounter.patient.mrn}</p>
+                <p className="text-xs text-gray-500">MRN: {assignment.labOrder.encounter.patient.mrn}</p>
                 <div className="mt-2 flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded-full text-xs ${getEncounterStatusColor(assignment.labOrder.encounter.visitStatus)}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs border ${getEncounterStatusColor(assignment.labOrder.encounter.visitStatus)}`}>
                     {assignment.labOrder.encounter.visitStatus.replace('_', ' ')}
                   </span>
                   <span className="text-xs text-gray-500">
@@ -285,7 +291,7 @@ export default function LaboratoristDashboardPage() {
                 </div>
               </div>
               <div className="p-4">
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Lab Order ID:</span>
                     <span className="font-medium">{assignment.labOrderId.substring(0, 8)}...</span>
@@ -309,13 +315,13 @@ export default function LaboratoristDashboardPage() {
                   <div className="mt-4 flex space-x-2">
                     <button
                       onClick={() => handleAcceptAssignment(assignment.id)}
-                      className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                      className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium"
                     >
                       Accept
                     </button>
                     <button
                       onClick={() => handleRejectAssignment(assignment.id)}
-                      className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                      className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs font-medium"
                     >
                       Reject
                     </button>
@@ -325,7 +331,7 @@ export default function LaboratoristDashboardPage() {
                   <div className="mt-4">
                     <button
                       onClick={() => handleOpenResultModal(assignment)}
-                      className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center space-x-2"
+                      className="w-full px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-xs font-medium flex items-center justify-center space-x-2"
                     >
                       <Beaker className="h-4 w-4" />
                       <span>Enter Results</span>
@@ -341,64 +347,64 @@ export default function LaboratoristDashboardPage() {
       {/* Enter Lab Results Modal */}
       {selectedAssignmentForResults && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl">
+          <div className="bg-white rounded-lg max-w-lg w-full p-6 shadow-lg">
             <div className="flex justify-between items-center mb-4 border-b pb-3">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Enter Lab Results</h3>
-                <p className="text-sm text-gray-500">
+                <h3 className="text-base font-semibold text-gray-900">Enter Lab Results</h3>
+                <p className="text-xs text-gray-500">
                   Patient: {selectedAssignmentForResults.labOrder.encounter.patient.firstName} {selectedAssignmentForResults.labOrder.encounter.patient.lastName} (MRN: {selectedAssignmentForResults.labOrder.encounter.patient.mrn})
                 </p>
               </div>
               <button
                 onClick={() => setSelectedAssignmentForResults(null)}
-                className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                className="text-gray-400 hover:text-gray-600"
               >
-                &times;
+                <Clock className="h-5 w-5" />
               </button>
             </div>
 
             <form onSubmit={handleResultSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Result Value *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Result Value *</label>
                 <input
                   type="text"
                   required
                   value={resultForm.value}
                   onChange={(e) => setResultForm({ ...resultForm, value: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm"
                   placeholder="e.g., 14.2"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Unit</label>
                   <input
                     type="text"
                     value={resultForm.unit}
                     onChange={(e) => setResultForm({ ...resultForm, unit: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm"
                     placeholder="e.g., g/dL, mg/dL"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reference Range</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Reference Range</label>
                   <input
                     type="text"
                     value={resultForm.referenceRange}
                     onChange={(e) => setResultForm({ ...resultForm, referenceRange: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm"
                     placeholder="e.g., 12.0 - 16.0"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Flag Indicator</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Flag Indicator</label>
                 <select
                   value={resultForm.flag}
                   onChange={(e) => setResultForm({ ...resultForm, flag: e.target.value as 'N' | 'H' | 'L' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none text-sm"
                 >
                   <option value="N">Normal (N)</option>
                   <option value="H">High (H)</option>
@@ -407,11 +413,11 @@ export default function LaboratoristDashboardPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Technician Notes</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Technician Notes</label>
                 <textarea
                   value={resultForm.notes}
                   onChange={(e) => setResultForm({ ...resultForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none h-20"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none h-20 text-sm"
                   placeholder="Sample observations or notes..."
                 />
               </div>
@@ -423,14 +429,14 @@ export default function LaboratoristDashboardPage() {
                     const prevStep = getPreviousStep('pending');
                     if (prevStep) setCurrentStep(prevStep);
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium text-sm"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium text-xs"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
                   disabled={submittingResult}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm flex items-center justify-center space-x-2 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium text-xs flex items-center justify-center space-x-2 disabled:opacity-50"
                 >
                   <Beaker className="h-4 w-4" />
                   <span>{submittingResult ? 'Saving...' : 'Save & Continue'}</span>
@@ -446,7 +452,7 @@ export default function LaboratoristDashboardPage() {
       {currentStep !== 'pending' && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center text-gray-500">
-            <p className="text-lg font-medium">{currentStep.charAt(0).toUpperCase() + currentStep.slice(1)} view coming soon</p>
+            <p className="text-sm font-medium">{currentStep.charAt(0).toUpperCase() + currentStep.slice(1)} view coming soon</p>
           </div>
         </div>
       )}

@@ -416,7 +416,7 @@ export default function NurseDashboardPage() {
   };
 
   const filteredPatients = triagePatients.filter(patient =>
-    `{formatCurrency({patient.firstName} {formatCurrency({patient.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    `${patient.firstName} ${patient.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     patient.mrn.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -435,10 +435,10 @@ export default function NurseDashboardPage() {
             <div className="flex items-center space-x-3">
               <button
                 onClick={handleToggleAvailability}
-                className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors {formatCurrency({
+                className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
                   isAvailable 
-                    ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' 
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
                 }`}
               >
                 {isAvailable ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
@@ -474,7 +474,10 @@ export default function NurseDashboardPage() {
         
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading patients...</div>
+            <div className="text-center py-8 text-gray-500 flex flex-col items-center">
+              <Activity className="h-6 w-6 animate-spin text-pink-500 mb-2" />
+              <span className="text-sm">Loading patients...</span>
+            </div>
           ) : filteredPatients.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
@@ -487,31 +490,33 @@ export default function NurseDashboardPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
-                className="p-4 border-b border-gray-100 hover:bg-blue-50 transition-colors cursor-pointer"
+                className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
+                  selectedPatient?.id === patient.id ? 'bg-pink-50 border-l-4 border-l-pink-600' : ''
+                }`}
                 onClick={() => handleSelectPatient(patient)}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <h3 className="font-medium text-gray-900">{patient.firstName} {patient.lastName}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border {formatCurrency({getPriorityColor(patient.priority)}`}>
+                      <h3 className="text-sm font-medium text-gray-900">{patient.firstName} {patient.lastName}</h3>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${getPriorityColor(patient.priority)}`}>
                         {getPriorityIcon(patient.priority)}
                         <span className="ml-1 capitalize">{patient.priority}</span>
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">{patient.chiefComplaint}</p>
+                    <p className="text-xs text-gray-600 mt-1">{patient.chiefComplaint}</p>
                     <p className="text-xs text-gray-500">MRN: {patient.mrn}</p>
                   </div>
                   <span className="text-xs text-gray-500">
-                    {patient.waitTime > 0 ? `{formatCurrency({patient.waitTime}m wait` : 'On time'}
+                    {patient.waitTime > 0 ? `${patient.waitTime}m wait` : 'On time'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center text-gray-500">
                     <Clock className="h-3 w-3 mr-1" />
                     {patient.assignmentTime}
                   </div>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
                 </div>
               </motion.div>
             ))
@@ -526,21 +531,21 @@ export default function NurseDashboardPage() {
             {/* Patient Header */}
             <div className="p-4 border-b border-gray-200 bg-white">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-900">Patient Details</h3>
+                <h3 className="text-sm font-semibold text-gray-900">Patient Details</h3>
                 <button
                   onClick={() => setSelectedPatient(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
               <div className="flex items-center space-x-3">
-                <div className="bg-blue-100 p-2 rounded-full">
-                  <User className="h-4 w-4 text-blue-600" />
+                <div className="bg-pink-50 p-2 rounded-full">
+                  <User className="h-4 w-4 text-pink-600" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">{selectedPatient.firstName} {selectedPatient.lastName}</p>
-                  <p className="text-sm text-gray-600">MRN: {selectedPatient.mrn}</p>
+                  <p className="text-sm font-medium text-gray-900">{selectedPatient.firstName} {selectedPatient.lastName}</p>
+                  <p className="text-xs text-gray-600">MRN: {selectedPatient.mrn}</p>
                 </div>
               </div>
             </div>
@@ -549,16 +554,16 @@ export default function NurseDashboardPage() {
             <div className="p-4 border-b border-gray-200 bg-white space-y-2">
               <button
                 onClick={() => setShowVitalsForm(!showVitalsForm)}
-                className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
+                className="w-full px-4 py-2.5 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
               >
-                <HeartPulse className="h-5 w-5" />
+                <HeartPulse className="h-4 w-4" />
                 <span>Record Vitals</span>
               </button>
               <button
                 onClick={() => setShowIntakeForm(!showIntakeForm)}
-                className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center space-x-2"
+                className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
               >
-                <FileText className="h-5 w-5" />
+                <FileText className="h-4 w-4" />
                 <span>Record Intake</span>
               </button>
             </div>
@@ -567,15 +572,15 @@ export default function NurseDashboardPage() {
             {showVitalsForm && (
               <div className="p-4 border-b border-gray-200 bg-white">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-gray-900 flex items-center">
-                    <HeartPulse className="h-5 w-5 mr-2 text-blue-600" />
+                  <h4 className="text-sm font-semibold text-gray-900 flex items-center">
+                    <HeartPulse className="h-4 w-4 mr-2 text-pink-600" />
                     Record Vitals
                   </h4>
                   <button
                     onClick={() => setShowVitalsForm(false)}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <X className="h-5 w-5" />
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
                 <form onSubmit={handleVitalsSubmit} className="space-y-3">
@@ -587,7 +592,7 @@ export default function NurseDashboardPage() {
                         required
                         value={vitalsData.bloodPressureSystolic}
                         onChange={(e) => setVitalsData({...vitalsData, bloodPressureSystolic: e.target.value})}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm"
                         placeholder="120"
                       />
                     </div>
@@ -598,7 +603,7 @@ export default function NurseDashboardPage() {
                         required
                         value={vitalsData.bloodPressureDiastolic}
                         onChange={(e) => setVitalsData({...vitalsData, bloodPressureDiastolic: e.target.value})}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm"
                         placeholder="80"
                       />
                     </div>
@@ -611,7 +616,7 @@ export default function NurseDashboardPage() {
                         required
                         value={vitalsData.heartRate}
                         onChange={(e) => setVitalsData({...vitalsData, heartRate: e.target.value})}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm"
                         placeholder="72"
                       />
                     </div>
@@ -623,7 +628,7 @@ export default function NurseDashboardPage() {
                         required
                         value={vitalsData.temperature}
                         onChange={(e) => setVitalsData({...vitalsData, temperature: e.target.value})}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm"
                         placeholder="37.0"
                       />
                     </div>
@@ -636,7 +641,7 @@ export default function NurseDashboardPage() {
                         required
                         value={vitalsData.spo2}
                         onChange={(e) => setVitalsData({...vitalsData, spo2: e.target.value})}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm"
                         placeholder="98"
                       />
                     </div>
@@ -647,7 +652,7 @@ export default function NurseDashboardPage() {
                         required
                         value={vitalsData.respiratoryRate}
                         onChange={(e) => setVitalsData({...vitalsData, respiratoryRate: e.target.value})}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm"
                         placeholder="16"
                       />
                     </div>
@@ -661,7 +666,7 @@ export default function NurseDashboardPage() {
                         required
                         value={vitalsData.weight}
                         onChange={(e) => setVitalsData({...vitalsData, weight: e.target.value})}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm"
                         placeholder="70"
                       />
                     </div>
@@ -672,14 +677,14 @@ export default function NurseDashboardPage() {
                         required
                         value={vitalsData.height}
                         onChange={(e) => setVitalsData({...vitalsData, height: e.target.value})}
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm"
                         placeholder="175"
                       />
                     </div>
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                    className="w-full bg-pink-600 text-white py-2 rounded-lg hover:bg-pink-700 transition-colors font-medium text-sm"
                   >
                     Save Vitals
                   </button>
