@@ -757,44 +757,45 @@ export default function ReceptionistDashboardPage() {
         <>
           {/* Left Side - Live Queue (50%) */}
           <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Clock className="h-5 w-5 mr-2 text-[green-600]" />
-                  Live Waiting Room
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-3xl font-black text-gray-900 flex items-center tracking-tight">
+                  <Clock className="h-8 w-8 mr-3 text-green-600" />
+                  Waiting Room
                 </h2>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">{waitingPatients.length} waiting</span>
-                  <div className="h-2 w-2 bg-[green-600] rounded-full animate-pulse"></div>
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl font-black text-gray-900">{waitingPatients.length}</span>
+                  <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Waiting</span>
+                  <div className="h-3 w-3 bg-green-600 rounded-full animate-pulse"></div>
                 </div>
               </div>
-              
-              {/* Search in Waiting Room */}
+
+              {/* Search in Waiting Room - Bold */}
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search waiting room..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-600/20 text-base"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-5 w-5" />
                   </button>
                 )}
               </div>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto">
               {waitingPatients.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <User className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm">No patients in waiting room</p>
+                <div className="text-center py-16 text-gray-500">
+                  <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-base font-medium">No patients in waiting room</p>
                 </div>
               ) : (
                 filteredPatients.map((patient) => (
@@ -803,15 +804,15 @@ export default function ReceptionistDashboardPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3 }}
-                    className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
+                    className={`p-6 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
                       hasPaidInvoice(patient.id) ? 'bg-gray-50 opacity-75' : ''
-                    } ${selectedPatient?.id === patient.id ? 'bg-gray-50 border-l-4 border-l-[green-600]' : ''}`}
+                    } ${selectedPatient?.id === patient.id ? 'bg-green-50 border-l-4 border-l-green-600' : ''}`}
                     onClick={() => setSelectedPatient(patient)}
                   >
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 text-sm">{patient.name}</h3>
-                        <p className="text-xs text-gray-500">MRN: {patient.mrn}</p>
+                        <h3 className="font-bold text-gray-900 text-lg">{patient.name}</h3>
+                        <p className="text-sm text-gray-500 font-medium">MRN: {patient.mrn}</p>
                         {patient.isNewPatient && (
                           <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">New</span>
                         )}
