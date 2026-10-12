@@ -426,9 +426,9 @@ export default function NurseDashboardPage() {
       <>
       {/* Left Side - Triage Queue (50%) */}
       <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
-        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div className="p-4 border-b border-gray-200 bg-white">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+            <h2 className="text-sm font-semibold text-gray-900 flex items-center">
               <HeartPulse className="h-5 w-5 mr-2 text-blue-600" />
               Triage Queue
             </h2>
