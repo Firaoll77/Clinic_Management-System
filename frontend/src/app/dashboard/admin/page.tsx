@@ -779,11 +779,11 @@ export default function AdminDashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* Page Header */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+      {/* Page Header - Bold, Distinctive */}
+      <div className="mb-8">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
               {activeTab === 'overview' ? 'Administration' :
                activeTab === 'staff' ? 'Staff Management' :
                activeTab === 'patients' ? 'Patient Records' :
@@ -791,8 +791,8 @@ export default function AdminDashboardPage() {
                activeTab === 'audit' ? 'System' :
                'Configuration'}
             </p>
-            <h1 className="text-2xl font-bold text-gray-900">{getPageTitle().title}</h1>
-            <p className="text-sm text-gray-600 mt-1">{getPageTitle().subtitle}</p>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tight">{getPageTitle().title}</h1>
+            <p className="text-lg text-gray-500 mt-2 font-medium">{getPageTitle().subtitle}</p>
           </div>
           {(activeTab === 'staff' || activeTab === 'patients') && (
             <button
@@ -814,9 +814,9 @@ export default function AdminDashboardPage() {
                   setIsAddStaffOpen(true);
                 }
               }}
-              className="px-4 py-2 bg-[#D93344] hover:bg-[#b92b3a] text-white rounded-md text-sm font-medium transition-colors flex items-center space-x-2"
+              className="px-6 py-3 bg-[#D93344] hover:bg-[#b92b3a] text-white rounded-xl text-base font-bold transition-colors flex items-center space-x-2 shadow-lg"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-5 w-5" />
               <span>{activeTab === 'staff' ? 'Add Staff' : 'Refresh'}</span>
             </button>
           )}
@@ -828,86 +828,87 @@ export default function AdminDashboardPage() {
       {/* TAB 1: OPERATIONAL OVERVIEW */}
       {/* ========================================================================= */}
       {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* Key KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="space-y-8">
+          {/* Key KPI Cards - Bold, Distinctive Design */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow"
+              transition={{ duration: 0.4 }}
+              className="bg-white p-6 shadow-lg hover:shadow-xl transition-shadow"
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Patients</span>
-                <div className="p-2 bg-red-50 rounded-lg text-[#D93344]">
-                  <Users className="h-4 w-4" />
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-red-50 rounded-xl">
+                  <Users className="h-6 w-6 text-[#D93344]" />
                 </div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900 mb-1">{patientCounts.total}</div>
-              <div className="text-xs text-gray-500">Active: {patientCounts.active}</div>
+              <div className="text-5xl font-black text-gray-900 mb-2">{patientCounts.total}</div>
+              <div className="text-sm font-medium text-gray-500">Active patients</div>
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.05 }}
-              className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow"
+              transition={{ duration: 0.4, delay: 0.05 }}
+              className="bg-white p-6 shadow-lg hover:shadow-xl transition-shadow"
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Today's Appointments</span>
-                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                  <Calendar className="h-4 w-4" />
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-blue-50 rounded-xl">
+                  <Calendar className="h-6 w-6 text-blue-600" />
                 </div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Today</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900 mb-1">{stats.todayAppointments}</div>
-              <div className="text-xs text-gray-500">Scheduled for today</div>
+              <div className="text-5xl font-black text-gray-900 mb-2">{stats.todayAppointments}</div>
+              <div className="text-sm font-medium text-gray-500">Appointments</div>
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow"
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="bg-white p-6 shadow-lg hover:shadow-xl transition-shadow"
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Doctors</span>
-                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                  <Stethoscope className="h-4 w-4" />
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-emerald-50 rounded-xl">
+                  <Stethoscope className="h-6 w-6 text-emerald-600" />
                 </div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900 mb-1">{stats.activeDoctors}</div>
-              <div className="text-xs text-gray-500">Available for consultation</div>
+              <div className="text-5xl font-black text-gray-900 mb-2">{stats.activeDoctors}</div>
+              <div className="text-sm font-medium text-gray-500">Doctors</div>
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.15 }}
-              className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow"
+              transition={{ duration: 0.4, delay: 0.15 }}
+              className="bg-white p-6 shadow-lg hover:shadow-xl transition-shadow"
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Staff</span>
-                <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
-                  <UserCheck className="h-4 w-4" />
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-purple-50 rounded-xl">
+                  <UserCheck className="h-6 w-6 text-purple-600" />
                 </div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Staff</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900 mb-1">{staffCounts.active}</div>
-              <div className="text-xs text-gray-500">Total: {staffCounts.total}</div>
+              <div className="text-5xl font-black text-gray-900 mb-2">{staffCounts.active}</div>
+              <div className="text-sm font-medium text-gray-500">Active / {staffCounts.total} total</div>
             </motion.div>
           </div>
 
-          {/* Quick Action Command Shortcuts */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Quick Action Command Shortcuts - Bold CTAs */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <motion.div
-              whileHover={{ y: -2 }}
-              className="bg-[#D93344] rounded-lg p-5 text-white shadow-sm flex flex-col justify-between"
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+              className="bg-[#D93344] rounded-2xl p-8 text-white shadow-xl flex flex-col justify-between"
             >
               <div>
-                <div className="inline-flex p-2 bg-white/10 rounded-lg mb-3 backdrop-blur-sm">
-                  <UserPlus className="h-5 w-5 text-red-200" />
+                <div className="inline-flex p-4 bg-white/10 rounded-2xl mb-6 backdrop-blur-sm">
+                  <UserPlus className="h-8 w-8 text-red-200" />
                 </div>
-                <h3 className="text-base font-bold mb-1">Onboard Clinic Staff</h3>
-                <p className="text-xs text-red-200 mb-4">
+                <h3 className="text-2xl font-black mb-3">Onboard Staff</h3>
+                <p className="text-sm text-red-100 mb-6 leading-relaxed">
                   Add new doctors, nurses, accountants, or lab technicians with instant system credentials.
                 </p>
               </div>
@@ -916,23 +917,24 @@ export default function AdminDashboardPage() {
                   setActiveTab('staff');
                   setIsAddStaffOpen(true);
                 }}
-                className="w-full py-2 bg-white text-[#D93344] font-semibold rounded-md hover:bg-red-50 transition-colors flex items-center justify-center space-x-2 text-sm"
+                className="w-full py-4 bg-white text-[#D93344] font-bold rounded-xl hover:bg-red-50 transition-colors flex items-center justify-center space-x-3 text-base shadow-lg"
               >
-                <UserPlus className="h-4 w-4" />
+                <UserPlus className="h-5 w-5" />
                 <span>Add Staff Member</span>
               </button>
             </motion.div>
 
             <motion.div
-              whileHover={{ y: -2 }}
-              className="bg-white rounded-lg p-5 border border-gray-200 shadow-sm flex flex-col justify-between"
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+              className="bg-gray-900 rounded-2xl p-8 text-white shadow-xl flex flex-col justify-between"
             >
               <div>
-                <div className="inline-flex p-2 bg-red-50 rounded-lg mb-3 text-[#D93344]">
-                  <FolderArchive className="h-5 w-5" />
+                <div className="inline-flex p-4 bg-white/10 rounded-2xl mb-6 backdrop-blur-sm">
+                  <FolderArchive className="h-8 w-8 text-red-200" />
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-1">Patient Archival Center</h3>
-                <p className="text-xs text-gray-600 mb-4">
+                <h3 className="text-2xl font-black mb-3">Patient Archives</h3>
+                <p className="text-sm text-gray-300 mb-6 leading-relaxed">
                   Safely archive inactive medical records or restore previously archived patients anytime.
                 </p>
               </div>
@@ -941,40 +943,41 @@ export default function AdminDashboardPage() {
                   setActiveTab('patients');
                   setPatientFilterTab('archived');
                 }}
-                className="w-full py-2 bg-red-50 hover:bg-red-100 text-[#D93344] font-semibold rounded-md transition-colors flex items-center justify-center space-x-2 text-sm"
+                className="w-full py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors flex items-center justify-center space-x-3 text-base border border-white/20"
               >
-                <span>View {patientCounts.archived} Archived Records</span>
-                <ChevronRight className="h-4 w-4" />
+                <span>View {patientCounts.archived} Archived</span>
+                <ChevronRight className="h-5 w-5" />
               </button>
             </motion.div>
 
             <motion.div
-              whileHover={{ y: -2 }}
-              className="bg-white rounded-lg p-5 border border-gray-200 shadow-sm flex flex-col justify-between"
+              whileHover={{ y: -4, scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-2xl p-8 shadow-xl flex flex-col justify-between border-2 border-gray-100"
             >
               <div>
-                <div className="inline-flex p-2 bg-red-50 rounded-lg mb-3 text-[#D93344]">
-                  <Shield className="h-5 w-5" />
+                <div className="inline-flex p-4 bg-gray-100 rounded-2xl mb-6">
+                  <Shield className="h-8 w-8 text-gray-700" />
                 </div>
-                <h3 className="text-base font-bold text-gray-900 mb-1">System Audit & Security</h3>
-                <p className="text-xs text-gray-600 mb-4">
+                <h3 className="text-2xl font-black mb-3 text-gray-900">Audit & Security</h3>
+                <p className="text-sm text-gray-600 mb-6 leading-relaxed">
                   Track real-time security events, staff edits, role changes, and system access logs.
                 </p>
               </div>
               <button
                 onClick={() => setActiveTab('audit')}
-                className="w-full py-2 bg-red-50 hover:bg-red-100 text-[#D93344] font-semibold rounded-md transition-colors flex items-center justify-center space-x-2 text-sm"
+                className="w-full py-4 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition-colors flex items-center justify-center space-x-3 text-base shadow-lg"
               >
-                <span>Open Audit Log Viewer</span>
-                <ChevronRight className="h-4 w-4" />
+                <span>Open Audit Logs</span>
+                <ChevronRight className="h-5 w-5" />
               </button>
             </motion.div>
           </div>
 
           {/* Department Workloads & Live Audit Feed */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Department Operational Workload */}
-            <div className="lg:col-span-2 bg-white border border-gray-200 rounded-lg shadow-sm p-5">
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-8">
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h3 className="text-base font-bold text-gray-900 flex items-center">
@@ -1097,9 +1100,9 @@ export default function AdminDashboardPage() {
       {/* TAB 2: REAL-TIME STAFF CONTROL */}
       {/* ========================================================================= */}
       {activeTab === 'staff' && (
-        <div className="space-y-4">
-          {/* Role Filter Chips */}
-          <div className="flex flex-wrap gap-2">
+        <div className="space-y-6">
+          {/* Role Filter - Bold, Not Pills */}
+          <div className="flex flex-wrap gap-3">
             {[
               { id: 'ALL', label: 'All Roles', count: staffCounts.total },
               { id: 'DOCTOR', label: 'Doctors', count: staffCounts.doctors },
@@ -1113,37 +1116,32 @@ export default function AdminDashboardPage() {
               <button
                 key={chip.id}
                 onClick={() => setStaffRoleFilter(chip.id as RoleFilter)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center space-x-2 border ${
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                   staffRoleFilter === chip.id
-                    ? 'bg-[#D93344] text-white border-[#D93344]'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    ? 'bg-[#D93344] text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                <span>{chip.label}</span>
-                <span className={`px-1.5 py-0.5 rounded text-xs ${
-                  staffRoleFilter === chip.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {chip.count}
-                </span>
+                {chip.label} <span className="opacity-60">({chip.count})</span>
               </button>
             ))}
           </div>
 
-          {/* Search & Status Controls */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
+          {/* Search & Status Controls - Clean, Bold */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col md:flex-row items-center gap-4">
             <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search staff by name, email, phone, license number, or specialization..."
                 value={staffSearch}
                 onChange={e => setStaffSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D93344] text-sm text-gray-900 bg-gray-50/50"
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D93344] text-base text-gray-900"
               />
               {staffSearch && (
                 <button
                   onClick={() => setStaffSearch('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm font-bold"
                 >
                   Clear
                 </button>
@@ -1151,22 +1149,22 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="flex items-center space-x-2 w-full md:w-auto">
-              <div className="flex items-center bg-gray-100 rounded-md p-1 text-xs font-medium text-gray-700">
+              <div className="flex items-center bg-gray-100 rounded-xl p-1 text-sm font-bold text-gray-700">
                 <button
                   onClick={() => setStaffStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded transition-all ${staffStatusFilter === 'all' ? 'bg-white shadow text-[#D93344]' : 'hover:text-gray-900'}`}
+                  className={`px-4 py-2 rounded-lg transition-all ${staffStatusFilter === 'all' ? 'bg-white shadow text-[#D93344]' : 'hover:text-gray-900'}`}
                 >
                   All ({staffCounts.total})
                 </button>
                 <button
                   onClick={() => setStaffStatusFilter('active')}
-                  className={`px-3 py-1.5 rounded transition-all ${staffStatusFilter === 'active' ? 'bg-white shadow text-emerald-700' : 'hover:text-gray-900'}`}
+                  className={`px-4 py-2 rounded-lg transition-all ${staffStatusFilter === 'active' ? 'bg-white shadow text-emerald-700' : 'hover:text-gray-900'}`}
                 >
                   Active ({staffCounts.active})
                 </button>
                 <button
                   onClick={() => setStaffStatusFilter('inactive')}
-                  className={`px-3 py-1.5 rounded transition-all ${staffStatusFilter === 'inactive' ? 'bg-white shadow text-amber-700' : 'hover:text-gray-900'}`}
+                  className={`px-4 py-2 rounded-lg transition-all ${staffStatusFilter === 'inactive' ? 'bg-white shadow text-amber-700' : 'hover:text-gray-900'}`}
                 >
                   Inactive ({staffCounts.inactive})
                 </button>
@@ -1179,20 +1177,20 @@ export default function AdminDashboardPage() {
                     setStaffRoleFilter('ALL');
                     setStaffStatusFilter('all');
                   }}
-                  className="px-3 py-1.5 text-xs font-medium text-[#D93344] hover:bg-red-50 rounded-md border border-red-200 transition-colors whitespace-nowrap"
+                  className="px-4 py-2 text-sm font-bold text-[#D93344] hover:bg-red-50 rounded-xl border border-red-200 transition-colors whitespace-nowrap"
                 >
-                  Reset Filters
+                  Reset
                 </button>
               )}
             </div>
           </div>
 
-          {/* Staff Table / Roster */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          {/* Staff Table / Roster - Bold, No Borders */}
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             {staffLoading ? (
-              <div className="p-12 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#D93344] mx-auto mb-4" />
-                <p className="text-gray-500 text-sm">Loading staff members...</p>
+              <div className="p-16 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#D93344] mx-auto mb-4" />
+                <p className="text-gray-500 text-base font-medium">Loading staff members...</p>
               </div>
             ) : staffList.length === 0 ? (
               /* No Results Empty State */
