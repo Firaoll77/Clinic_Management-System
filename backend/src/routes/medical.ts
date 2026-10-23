@@ -535,9 +535,21 @@ router.post('/encounters/:id/complete-consultation', authenticate, authorize('DO
     const { medications, instructions } = req.body;
     const userId = req.user?.userId || (req as any)?.user?.id || '';
 
+    const encounterId = Array.isArray(id) ? id[0] : id;
+
+    // Log doctor consultation fee
+    try {
+      await FeeService.logEncounterFee(
+        encounterId,
+        FeeType.DOCTOR_CONSULTATION,
+        userId || 'system'
+      );
+    } catch (consultErr) {
+      console.warn('Could not log doctor consultation fee:', consultErr);
+    }
+
     // Create or update prescription
     if (medications) {
-      const encounterId = Array.isArray(id) ? id[0] : id;
       await prisma.prescription.upsert({
         where: { encounterId },
         create: {
@@ -553,20 +565,14 @@ router.post('/encounters/:id/complete-consultation', authenticate, authorize('DO
       });
 
       // Add prescription fee to encounter fees
-      const prescriptionFee = await prisma.feeConfiguration.findUnique({
-        where: { feeType: 'PRESCRIPTION' }
-      });
-
-      if (prescriptionFee && prescriptionFee.isActive) {
-        await prisma.encounterFee.create({
-          data: {
-            encounterId,
-            feeType: 'PRESCRIPTION',
-            description: 'Prescription fee',
-            amount: prescriptionFee.amount,
-            loggedBy: userId || 'system'
-          }
-        });
+      try {
+        await FeeService.logEncounterFee(
+          encounterId,
+          'PRESCRIPTION',
+          userId || 'system'
+        );
+      } catch (rxFeeErr) {
+        console.warn('Could not log prescription fee:', rxFeeErr);
       }
     }
 

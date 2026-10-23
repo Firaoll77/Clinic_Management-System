@@ -203,7 +203,9 @@ export default function ReceptionistDashboardPage() {
           isNewPatient: !p.patient?.lastActivityAt || new Date(p.patient.lastActivityAt) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
           hasHistory: !!p.patient?.lastActivityAt,
           hasPrescription: !!p.prescription,
-          totalExpectedFees: p.patient?.totalExpectedFees || 0
+          totalExpectedFees: (p.encounterFees && Array.isArray(p.encounterFees) && p.encounterFees.length > 0)
+            ? p.encounterFees.reduce((sum: number, f: any) => sum + Number(f.amount || 0), 0)
+            : (Number(p.patient?.totalExpectedFees) || 0)
         }));
         setWaitingPatients(patients);
       }

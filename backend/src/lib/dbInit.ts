@@ -206,6 +206,15 @@ export async function checkAndInitDatabase() {
     } else {
       console.log(`✅ Database ready with ${userCount} existing users.`);
     }
+
+    // Always ensure predetermined fee configurations exist
+    try {
+      const { FeeService } = await import('./feeService');
+      await FeeService.initializeDefaultFees();
+      console.log('✅ Predetermined fee configurations verified and loaded.');
+    } catch (feeInitErr: any) {
+      console.warn('⚠️ Fee configuration init:', feeInitErr.message);
+    }
   } catch (error: any) {
     console.error('⚠️ Database init check:', error.message);
   }

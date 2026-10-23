@@ -472,6 +472,13 @@ export class VisitRoutingService {
             printedAt: true,
           },
         },
+        encounterFees: {
+          select: {
+            id: true,
+            amount: true,
+            isPaid: true,
+          },
+        },
         invoices: {
           where: {
             status: { in: ['DRAFT', 'ISSUED', 'PARTIALLY_PAID'] }
