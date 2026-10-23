@@ -109,11 +109,6 @@ export default function NurseDashboardPage() {
 
   const [selectedDoctor, setSelectedDoctor] = useState<string>('');
 
-  useEffect(() => {
-    fetchTriagePatients();
-    fetchDoctors();
-    fetchMyAvailability();
-  }, []);
 
   const fetchMyAvailability = async () => {
     try {
@@ -150,31 +145,33 @@ export default function NurseDashboardPage() {
     }
   };
 
-  const fetchTriagePatients = async () => {
-    setLoading(true);
+  const fetchTriagePatients = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await apiClient.get<{ assignments: any[] }>('/assignments/nurse/my-assignments');
-      if (response.data) {
-        const patients = response.data.assignments.map((a: any) => ({
-          id: a.id,
-          assignmentId: a.id,
-          patientId: a.encounter.patient.id,
-          firstName: a.encounter.patient.firstName,
-          lastName: a.encounter.patient.lastName,
-          mrn: a.encounter.patient.mrn,
-          assignmentTime: new Date(a.assignedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          waitTime: Math.floor((Date.now() - new Date(a.assignedAt).getTime()) / 60000),
-          chiefComplaint: a.encounter.chiefComplaint || 'Walk-in visit',
-          status: a.status,
-          priority: 'routine' as const,
-          encounterId: a.encounterId
-        }));
+      if (response.data && Array.isArray(response.data.assignments)) {
+        const patients = response.data.assignments
+          .filter((a: any) => a && a.encounter && a.encounter.patient)
+          .map((a: any) => ({
+            id: a.id,
+            assignmentId: a.id,
+            patientId: a.encounter.patient.id,
+            firstName: a.encounter.patient.firstName,
+            lastName: a.encounter.patient.lastName,
+            mrn: a.encounter.patient.mrn || 'N/A',
+            assignmentTime: new Date(a.assignedAt || a.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            waitTime: Math.max(0, Math.floor((Date.now() - new Date(a.assignedAt || a.createdAt).getTime()) / 60000)),
+            chiefComplaint: a.encounter.chiefComplaint || 'Walk-in visit',
+            status: a.status,
+            priority: 'routine' as const,
+            encounterId: a.encounterId
+          }));
         setTriagePatients(patients);
       }
     } catch (error) {
       console.error('Failed to fetch nurse assignments:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -193,6 +190,19 @@ export default function NurseDashboardPage() {
       console.error('Failed to fetch available doctors:', error);
     }
   };
+
+  useEffect(() => {
+    fetchTriagePatients();
+    fetchDoctors();
+    fetchMyAvailability();
+
+    // Auto-poll nurse triage queue every 10 seconds so new patients appear immediately
+    const pollInterval = setInterval(() => {
+      fetchTriagePatients(true);
+    }, 10000);
+
+    return () => clearInterval(pollInterval);
+  }, []);
 
   const handleVitalsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -428,7 +438,7 @@ export default function NurseDashboardPage() {
         <div className="p-5 sm:p-6 border-b border-slate-200 bg-white">
           <div className="flex items-center justify-between mb-3.5">
             <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center uppercase tracking-wider">
-              <HeartPulse className="h-5 w-5 mr-2 text-teal-600" />
+              <HeartPulse className="h-5 w-5 mr-2 text-pink-600" />
               Triage Assessment Queue
             </h2>
             <div className="flex items-center space-x-2">
@@ -436,7 +446,7 @@ export default function NurseDashboardPage() {
                 onClick={handleToggleAvailability}
                 className={`flex items-center space-x-1.5 px-2.5 py-1 rounded text-xs font-semibold transition-colors border ${
                   isAvailable 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
+                    ? 'bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100' 
                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                 }`}
               >
@@ -446,7 +456,7 @@ export default function NurseDashboardPage() {
               <div className="flex items-center space-x-1.5 text-xs text-slate-500">
                 <span className="font-bold text-slate-900">{triagePatients.length}</span>
                 <span>waiting</span>
-                <div className="h-2 w-2 bg-teal-500 rounded-full animate-pulse"></div>
+                <div className="h-2 w-2 bg-pink-500 rounded-full animate-pulse"></div>
               </div>
             </div>
           </div>
@@ -459,7 +469,7 @@ export default function NurseDashboardPage() {
               placeholder="Search triage patients by name or MRN..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-200 bg-slate-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 text-sm text-slate-900"
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 bg-slate-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/20 text-sm text-slate-900"
             />
             {searchQuery && (
               <button
@@ -475,7 +485,7 @@ export default function NurseDashboardPage() {
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="text-center py-10 text-slate-500 flex flex-col items-center">
-              <Activity className="h-6 w-6 animate-spin text-teal-600 mb-2" />
+              <Activity className="h-6 w-6 animate-spin text-pink-600 mb-2" />
               <span className="text-sm">Loading triage patients...</span>
             </div>
           ) : filteredPatients.length === 0 ? (
@@ -491,7 +501,7 @@ export default function NurseDashboardPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2 }}
                 className={`p-4 sm:p-5 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer ${
-                  selectedPatient?.id === patient.id ? 'bg-teal-50/80 border-l-4 border-l-teal-600' : ''
+                  selectedPatient?.id === patient.id ? 'bg-pink-50/80 border-l-4 border-l-pink-600' : ''
                 }`}
                 onClick={() => handleSelectPatient(patient)}
               >
@@ -554,14 +564,14 @@ export default function NurseDashboardPage() {
             <div className="p-4 border-b border-gray-200 bg-white space-y-2">
               <button
                 onClick={() => setShowVitalsForm(!showVitalsForm)}
-                className="w-full px-4 py-2.5 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
+                className="w-full px-4 py-2.5 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors flex items-center justify-center space-x-2 text-sm font-medium shadow-sm"
               >
                 <HeartPulse className="h-4 w-4" />
                 <span>Record Vitals</span>
               </button>
               <button
                 onClick={() => setShowIntakeForm(!showIntakeForm)}
-                className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center space-x-2 text-sm font-medium"
+                className="w-full px-4 py-2.5 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors flex items-center justify-center space-x-2 text-sm font-medium shadow-sm"
               >
                 <FileText className="h-4 w-4" />
                 <span>Record Intake</span>
@@ -706,7 +716,7 @@ export default function NurseDashboardPage() {
                         const nextStep = getNextStep('vitals');
                         if (nextStep) setCurrentStep(nextStep);
                       }}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                      className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-medium text-sm shadow-sm"
                     >
                       Complete & Continue
                     </button>
@@ -720,7 +730,7 @@ export default function NurseDashboardPage() {
               <div className="p-4 border-b border-gray-200 bg-white">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-semibold text-gray-900 flex items-center">
-                    <FileText className="h-5 w-5 mr-2 text-indigo-600" />
+                    <FileText className="h-5 w-5 mr-2 text-pink-600" />
                     Record Intake
                   </h4>
                   <button
@@ -737,7 +747,7 @@ export default function NurseDashboardPage() {
                       required
                       value={intakeData.chiefComplaint}
                       onChange={(e) => setIntakeData({...intakeData, chiefComplaint: e.target.value})}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm h-16"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm h-16"
                       placeholder="Patient's main concern..."
                     />
                   </div>
@@ -746,7 +756,7 @@ export default function NurseDashboardPage() {
                     <textarea
                       value={intakeData.currentMedications}
                       onChange={(e) => setIntakeData({...intakeData, currentMedications: e.target.value})}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm h-12"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm h-12"
                       placeholder="List current medications..."
                     />
                   </div>
@@ -755,7 +765,7 @@ export default function NurseDashboardPage() {
                     <textarea
                       value={intakeData.allergies}
                       onChange={(e) => setIntakeData({...intakeData, allergies: e.target.value})}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm h-12"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm h-12"
                       placeholder="Known allergies..."
                     />
                   </div>
@@ -764,7 +774,7 @@ export default function NurseDashboardPage() {
                     <textarea
                       value={intakeData.medicalHistory}
                       onChange={(e) => setIntakeData({...intakeData, medicalHistory: e.target.value})}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm h-12"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm h-12"
                       placeholder="Relevant medical history..."
                     />
                   </div>
@@ -773,13 +783,13 @@ export default function NurseDashboardPage() {
                     <textarea
                       value={intakeData.notes}
                       onChange={(e) => setIntakeData({...intakeData, notes: e.target.value})}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm h-12"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 text-sm h-12"
                       placeholder="Additional notes..."
                     />
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+                    className="w-full bg-pink-600 text-white py-2 rounded-lg hover:bg-pink-700 transition-colors font-medium text-sm shadow-sm"
                   >
                     Save Intake
                   </button>
@@ -800,7 +810,7 @@ export default function NurseDashboardPage() {
                         completeStep('intake');
                         showSuccess('Nurse workflow completed!');
                       }}
-                      className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+                      className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-medium text-sm shadow-sm"
                     >
                       Complete Workflow
                     </button>
@@ -813,7 +823,7 @@ export default function NurseDashboardPage() {
             <div className="p-4 flex-1 overflow-y-auto">
               <div className="bg-white rounded-lg border border-gray-200 p-4">
                 <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                  <Stethoscope className="h-5 w-5 mr-2 text-green-600" />
+                  <Stethoscope className="h-5 w-5 mr-2 text-pink-600" />
                   Route to Doctor
                 </h4>
                 <div className="space-y-3">
@@ -823,7 +833,7 @@ export default function NurseDashboardPage() {
                       required
                       value={selectedDoctor}
                       onChange={(e) => setSelectedDoctor(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
                     >
                       <option value="">Choose a doctor...</option>
                       {doctors.map(doctor => (
@@ -836,7 +846,7 @@ export default function NurseDashboardPage() {
                   <button
                     onClick={handleRouteToDoctor}
                     disabled={!selectedDoctor}
-                    className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-pink-600 text-white py-3 rounded-lg hover:bg-pink-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   >
                     Send to Doctor
                   </button>

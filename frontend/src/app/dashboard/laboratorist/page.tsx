@@ -66,6 +66,20 @@ export default function LaboratoristDashboardPage() {
     notes: ''
   });
 
+  const fetchAssignments = async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const response = await apiClient.get<{ assignments: LabAssignment[] }>('/assignments/lab-tech/my-assignments');
+      if (response.data && Array.isArray(response.data.assignments)) {
+        setAssignments(response.data.assignments);
+      }
+    } catch (error) {
+      console.error('Failed to fetch lab assignments:', error);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Load availability from localStorage
     const savedAvailability = localStorage.getItem('labTechAvailability');
@@ -73,20 +87,14 @@ export default function LaboratoristDashboardPage() {
       setIsAvailable(JSON.parse(savedAvailability));
     }
     fetchAssignments();
-  }, []);
 
-  const fetchAssignments = async () => {
-    try {
-      const response = await apiClient.get<{ assignments: LabAssignment[] }>('/assignments/lab-tech/my-assignments');
-      if (response.data) {
-        setAssignments(response.data.assignments);
-      }
-    } catch (error) {
-      console.error('Failed to fetch lab assignments:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Auto-poll lab technician queue every 10 seconds so new lab orders appear automatically
+    const pollInterval = setInterval(() => {
+      fetchAssignments(true);
+    }, 10000);
+
+    return () => clearInterval(pollInterval);
+  }, []);
 
   const handleToggleAvailability = async () => {
     try {

@@ -59,6 +59,22 @@ export default function RegisterPatientPage() {
       setError(response.error);
       setLoading(false);
     } else {
+      const patientId = (response.data as any)?.patient?.id || (response.data as any)?.id;
+      if (patientId) {
+        try {
+          await apiClient.post('/medical/patients/encounter', {
+            patientId,
+            visitStatus: 'TRIAGE',
+            chiefComplaint: 'Walk-in visit',
+            subjective: '',
+            objective: '',
+            assessment: '',
+            plan: ''
+          });
+        } catch (encounterErr) {
+          console.error('Failed to create initial triage encounter:', encounterErr);
+        }
+      }
       router.push('/dashboard/patients');
     }
   };

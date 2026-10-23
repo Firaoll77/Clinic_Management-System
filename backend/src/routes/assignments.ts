@@ -203,24 +203,52 @@ router.post('/nurse/assign', async (req, res) => {
       return res.status(404).json({ error: 'Encounter not found' });
     }
 
-    // Check if nurse is available
-    const nurse = await prisma.staffProfile.findUnique({
+    // Resolve nurse: support staffProfile.id OR userId
+    let nurse = await prisma.staffProfile.findUnique({
       where: { id: nurseId },
       include: { user: true },
     });
 
-    console.log('Nurse found:', { nurse, isAvailable: nurse?.isAvailable, role: nurse?.user?.role });
+    if (!nurse) {
+      nurse = await prisma.staffProfile.findUnique({
+        where: { userId: nurseId },
+        include: { user: true },
+      });
+    }
 
-    if (!nurse || !nurse.isAvailable || nurse.user.role !== 'NURSE') {
-      console.error('Nurse not available:', { nurse, isAvailable: nurse?.isAvailable, role: nurse?.user?.role });
+    if (!nurse) {
+      const user = await prisma.user.findUnique({ where: { id: nurseId } });
+      if (user && user.role === 'NURSE') {
+        nurse = await prisma.staffProfile.create({
+          data: {
+            userId: user.id,
+            fullName: user.username,
+            specialization: 'Triage Nurse',
+            isAvailable: true,
+          },
+          include: { user: true },
+        });
+      }
+    }
+
+    if (!nurse || nurse.user.role !== 'NURSE') {
+      console.error('Nurse not available or not found:', { nurse, nurseId });
       return res.status(400).json({ error: 'Nurse is not available or not found' });
     }
 
-    // Create nurse assignment
+    // Auto-mark nurse available if currently false
+    if (!nurse.isAvailable) {
+      await prisma.staffProfile.update({
+        where: { id: nurse.id },
+        data: { isAvailable: true },
+      });
+    }
+
+    // Create nurse assignment using canonical nurse.id
     const assignment = await prisma.nurseAssignment.create({
       data: {
         encounterId,
-        nurseId,
+        nurseId: nurse.id,
         assignedBy: userId || '',
         status: 'PENDING',
       },
@@ -239,7 +267,7 @@ router.post('/nurse/assign', async (req, res) => {
     await prisma.encounter.update({
       where: { id: encounterId },
       data: {
-        nurseId,
+        nurseId: nurse.id,
         visitStatus: 'NURSE_EXAMINATION',
       },
     });
@@ -266,17 +294,37 @@ router.post('/nurse/assign', async (req, res) => {
 router.get('/nurse/my-assignments', async (req, res) => {
   try {
     const userId = req.user?.userId;
-    const staffProfile = await prisma.staffProfile.findUnique({
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    let staffProfile = await prisma.staffProfile.findUnique({
       where: { userId },
     });
 
     if (!staffProfile) {
-      return res.status(404).json({ error: 'Staff profile not found' });
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && user.role === 'NURSE') {
+        staffProfile = await prisma.staffProfile.create({
+          data: {
+            userId: user.id,
+            fullName: user.username,
+            specialization: 'Triage Nurse',
+            isAvailable: true,
+          },
+        });
+      }
     }
 
+    const nurseIds = [userId];
+    if (staffProfile) {
+      nurseIds.push(staffProfile.id);
+    }
+
+    // 1. Fetch all nurse assignments that are PENDING or ACCEPTED
     const assignments = await prisma.nurseAssignment.findMany({
       where: {
-        nurseId: staffProfile.id,
+        nurseId: { in: nurseIds },
         status: {
           in: ['PENDING', 'ACCEPTED'],
         },
@@ -294,7 +342,48 @@ router.get('/nurse/my-assignments', async (req, res) => {
       },
     });
 
-    res.json({ assignments });
+    // 2. Also fetch active encounters assigned directly to this nurse or waiting in TRIAGE without assignment
+    const assignedEncounterIds = new Set(assignments.map(a => a.encounterId));
+
+    const directEncounters = await prisma.encounter.findMany({
+      where: {
+        OR: [
+          // Assigned directly to this nurse on encounter table
+          { nurseId: { in: nurseIds }, visitStatus: { in: ['TRIAGE', 'NURSE_EXAMINATION'] } },
+          // OR general triage queue patients (unassigned) so all nurses on duty can see and attend to them
+          { nurseId: null, visitStatus: { in: ['TRIAGE', 'NURSE_EXAMINATION'] } },
+        ],
+        id: { notIn: Array.from(assignedEncounterIds) },
+      },
+      include: {
+        patient: true,
+        vitals: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    const directAssignments = directEncounters.map(encounter => ({
+      id: `enc-${encounter.id}`,
+      encounterId: encounter.id,
+      nurseId: staffProfile ? staffProfile.id : userId,
+      assignedBy: 'System',
+      assignedAt: encounter.createdAt,
+      acceptedAt: encounter.visitStatus === 'NURSE_EXAMINATION' ? encounter.createdAt : null,
+      rejectedAt: null,
+      rejectionReason: null,
+      completedAt: null,
+      status: encounter.visitStatus === 'NURSE_EXAMINATION' ? 'ACCEPTED' : 'PENDING',
+      createdAt: encounter.createdAt,
+      updatedAt: encounter.updatedAt,
+      encounter,
+    }));
+
+    const allAssignments = [...assignments, ...directAssignments];
+    const validAssignments = allAssignments.filter(a => a.encounter && a.encounter.patient);
+
+    res.json({ assignments: validAssignments });
   } catch (error) {
     console.error('Error fetching nurse assignments:', error);
     res.status(500).json({ error: 'Failed to fetch assignments' });
@@ -308,41 +397,70 @@ router.post('/nurse/assignment/:id/respond', async (req, res) => {
     const { action, rejectionReason } = req.body; // action: 'accept' or 'reject'
     const userId = req.user?.userId;
 
-    const assignment = await prisma.nurseAssignment.findUnique({
-      where: { id },
-      include: { encounter: true },
-    });
-
-    if (!assignment) {
-      return res.status(404).json({ error: 'Assignment not found' });
+    let staffProfile = null;
+    if (userId) {
+      staffProfile = await prisma.staffProfile.findUnique({ where: { userId } });
     }
 
-    if (action === 'accept') {
-      await prisma.nurseAssignment.update({
+    let encounterId: string | null = null;
+
+    if (id.startsWith('enc-')) {
+      encounterId = id.replace('enc-', '');
+      if (action === 'accept') {
+        await prisma.encounter.update({
+          where: { id: encounterId },
+          data: {
+            nurseId: staffProfile ? staffProfile.id : userId,
+            visitStatus: 'NURSE_EXAMINATION',
+          },
+        });
+      }
+    } else {
+      const assignment = await prisma.nurseAssignment.findUnique({
         where: { id },
-        data: {
-          status: 'ACCEPTED',
-          acceptedAt: new Date(),
-        },
-      });
-    } else if (action === 'reject') {
-      await prisma.nurseAssignment.update({
-        where: { id },
-        data: {
-          status: 'REJECTED',
-          rejectedAt: new Date(),
-          rejectionReason,
-        },
+        include: { encounter: true },
       });
 
-      // Reset encounter status
-      await prisma.encounter.update({
-        where: { id: assignment.encounterId },
-        data: {
-          nurseId: null,
-          visitStatus: 'TRIAGE',
-        },
-      });
+      if (!assignment) {
+        return res.status(404).json({ error: 'Assignment not found' });
+      }
+
+      encounterId = assignment.encounterId;
+
+      if (action === 'accept') {
+        await prisma.nurseAssignment.update({
+          where: { id },
+          data: {
+            status: 'ACCEPTED',
+            acceptedAt: new Date(),
+          },
+        });
+        await prisma.encounter.update({
+          where: { id: encounterId },
+          data: {
+            nurseId: assignment.nurseId,
+            visitStatus: 'NURSE_EXAMINATION',
+          },
+        });
+      } else if (action === 'reject') {
+        await prisma.nurseAssignment.update({
+          where: { id },
+          data: {
+            status: 'REJECTED',
+            rejectedAt: new Date(),
+            rejectionReason,
+          },
+        });
+
+        // Reset encounter status
+        await prisma.encounter.update({
+          where: { id: assignment.encounterId },
+          data: {
+            nurseId: null,
+            visitStatus: 'TRIAGE',
+          },
+        });
+      }
     }
 
     res.json({ success: true });
@@ -424,19 +542,48 @@ router.post('/lab-tech/assign', async (req, res) => {
       return res.status(404).json({ error: 'Lab order not found' });
     }
 
-    const labTech = await prisma.staffProfile.findUnique({
+    let labTech = await prisma.staffProfile.findUnique({
       where: { id: labTechId },
       include: { user: true },
     });
 
-    if (!labTech || !labTech.isAvailable || labTech.user.role !== 'LAB_TECH') {
+    if (!labTech) {
+      labTech = await prisma.staffProfile.findUnique({
+        where: { userId: labTechId },
+        include: { user: true },
+      });
+    }
+
+    if (!labTech) {
+      const user = await prisma.user.findUnique({ where: { id: labTechId } });
+      if (user && user.role === 'LAB_TECH') {
+        labTech = await prisma.staffProfile.create({
+          data: {
+            userId: user.id,
+            fullName: user.username,
+            specialization: 'Laboratory',
+            isAvailable: true,
+          },
+          include: { user: true },
+        });
+      }
+    }
+
+    if (!labTech || labTech.user?.role !== 'LAB_TECH') {
       return res.status(400).json({ error: 'Lab technician is not available or not found' });
+    }
+
+    if (!labTech.isAvailable) {
+      await prisma.staffProfile.update({
+        where: { id: labTech.id },
+        data: { isAvailable: true },
+      });
     }
 
     const assignment = await prisma.labAssignment.create({
       data: {
         labOrderId,
-        labTechId,
+        labTechId: labTech.id,
         assignedBy: userId || '',
         status: 'PENDING',
       },
@@ -464,17 +611,37 @@ router.post('/lab-tech/assign', async (req, res) => {
 router.get('/lab-tech/my-assignments', async (req, res) => {
   try {
     const userId = req.user?.userId;
-    const staffProfile = await prisma.staffProfile.findUnique({
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    let staffProfile = await prisma.staffProfile.findUnique({
       where: { userId },
     });
 
     if (!staffProfile) {
-      return res.status(404).json({ error: 'Staff profile not found' });
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && user.role === 'LAB_TECH') {
+        staffProfile = await prisma.staffProfile.create({
+          data: {
+            userId: user.id,
+            fullName: user.username,
+            specialization: 'Laboratory',
+            isAvailable: true,
+          },
+        });
+      }
     }
 
+    const labTechIds = [userId];
+    if (staffProfile) {
+      labTechIds.push(staffProfile.id);
+    }
+
+    // 1. Fetch assigned lab orders
     const assignments = await prisma.labAssignment.findMany({
       where: {
-        labTechId: staffProfile.id,
+        labTechId: { in: labTechIds },
         status: {
           in: ['PENDING', 'ACCEPTED'],
         },
@@ -495,7 +662,51 @@ router.get('/lab-tech/my-assignments', async (req, res) => {
       },
     });
 
-    res.json({ assignments });
+    // 2. Also fetch unassigned pending lab orders so any technician can see and fulfill them
+    const assignedOrderIds = new Set(assignments.map(a => a.labOrderId));
+
+    const unassignedOrders = await prisma.labOrder.findMany({
+      where: {
+        status: 'ORDERED',
+        id: { notIn: Array.from(assignedOrderIds) },
+        labAssignments: {
+          none: {
+            status: { in: ['PENDING', 'ACCEPTED'] },
+          },
+        },
+      },
+      include: {
+        encounter: {
+          include: {
+            patient: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    const directAssignments = unassignedOrders.map(order => ({
+      id: `order-${order.id}`,
+      labOrderId: order.id,
+      labTechId: staffProfile ? staffProfile.id : userId,
+      assignedBy: 'System',
+      assignedAt: order.createdAt,
+      acceptedAt: null,
+      rejectedAt: null,
+      rejectionReason: null,
+      completedAt: null,
+      status: 'PENDING',
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      labOrder: order,
+    }));
+
+    const allAssignments: any[] = [...assignments, ...directAssignments];
+    const validAssignments = allAssignments.filter(a => a.labOrder && a.labOrder.encounter && a.labOrder.encounter.patient);
+
+    res.json({ assignments: validAssignments });
   } catch (error) {
     console.error('Error fetching lab assignments:', error);
     res.status(500).json({ error: 'Failed to fetch assignments' });

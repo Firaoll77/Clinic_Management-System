@@ -162,15 +162,6 @@ export default function ReceptionistDashboardPage() {
   const [patientsListPage, setPatientsListPage] = useState(1);
   const [patientsListPerPage] = useState(12);
 
-  // Fetch data on component mount
-  useEffect(() => {
-    fetchWaitingPatients();
-    fetchDoctors();
-    fetchNurses();
-    fetchAllPatients();
-    fetchInvoices();
-    fetchPatientsList();
-  }, []);
 
   const handleViewFullRecord = async (patientIdOrMrn?: string) => {
     const targetId = patientIdOrMrn || selectedPatient?.patientId || selectedPatient?.mrn || selectedPatient?.id;
@@ -457,14 +448,15 @@ export default function ReceptionistDashboardPage() {
       console.log('Check-in patientId:', patientId, 'nurseId:', nurseId);
       
       // Check if patient already has an active encounter
-      const existingEncounter = waitingPatients.find(p => p.id === patientId);
+      const existingEncounter = waitingPatients.find(p => p.id === patientId || p.patientId === patientId);
       if (existingEncounter && existingEncounter.visitStatus !== 'WAITING') {
         showInfo('Patient is already checked in. Current status: ' + existingEncounter.visitStatus);
         return;
       }
       
       // First create an encounter
-      const encounterResponse = await apiClient.post(`/medical/patients/${patientId}/encounters`, {
+      const encounterResponse = await apiClient.post('/medical/patients/encounter', {
+        patientId,
         nurseId: nurseId || undefined,
         visitStatus: 'TRIAGE',
         chiefComplaint: 'Walk-in visit',
@@ -532,9 +524,10 @@ export default function ReceptionistDashboardPage() {
       }
       
       // Automatically create encounter and send to triage queue
-      const patientId = (response.data as any)?.id;
+      const patientId = (response.data as any)?.patient?.id || (response.data as any)?.id;
       if (patientId) {
-        const encounterResponse = await apiClient.post(`/medical/patients/${patientId}/encounters`, {
+        const encounterResponse = await apiClient.post('/medical/patients/encounter', {
+          patientId,
           visitStatus: 'TRIAGE',
           chiefComplaint: 'Walk-in visit',
           subjective: '',
@@ -549,7 +542,7 @@ export default function ReceptionistDashboardPage() {
           showSuccess('Patient registered and sent to triage queue!');
           
           // Upload attachments if any
-          const encounterId = (encounterResponse.data as any)?.encounter?.id;
+          const encounterId = (encounterResponse.data as any)?.encounter?.id || (encounterResponse.data as any)?.id;
           if (encounterId && newPatient.attachments && newPatient.attachments.length > 0) {
             for (const file of newPatient.attachments) {
               const formData = new FormData();
@@ -621,6 +614,16 @@ export default function ReceptionistDashboardPage() {
       console.error('Failed to fetch invoices:', error);
     }
   };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchWaitingPatients();
+    fetchDoctors();
+    fetchNurses();
+    fetchAllPatients();
+    fetchInvoices();
+    fetchPatientsList();
+  }, []);
 
   const hasPaidInvoice = (patientId: string) => {
     return invoices.some(invoice => 
@@ -856,8 +859,8 @@ export default function ReceptionistDashboardPage() {
                   
                   <div className="p-5 space-y-4">
                     <div className="flex items-center space-x-3">
-                      <div className="bg-[green-600]/10 p-2.5 rounded-lg">
-                        <User className="h-5 w-5 text-[green-600]" />
+                      <div className="bg-emerald-50 p-2.5 rounded-lg">
+                        <User className="h-5 w-5 text-emerald-600" />
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">{selectedPatient.name}</p>
@@ -884,7 +887,7 @@ export default function ReceptionistDashboardPage() {
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Total Fees</p>
-                        <p className="font-semibold text-[green-600]">{formatCurrency(selectedPatient.totalExpectedFees || 0)}</p>
+                        <p className="font-semibold text-emerald-600">{formatCurrency(selectedPatient.totalExpectedFees || 0)}</p>
                       </div>
                     </div>
                     
@@ -905,7 +908,7 @@ export default function ReceptionistDashboardPage() {
                       <select
                         value={selectedNurse || ''}
                         onChange={(e) => setSelectedNurse(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm"
                       >
                         <option value="">No specific nurse (any available)</option>
                         {nurses.map(nurse => (
@@ -926,7 +929,7 @@ export default function ReceptionistDashboardPage() {
                           const targetNurseId = selectedNurse || (nurses.length > 0 ? nurses[0].id : undefined);
                           handleCheckIn(selectedPatient.id, targetNurseId);
                         }}
-                        className="px-3 py-2 bg-[green-600] text-white rounded-lg hover:bg-[#b92b3a] transition-colors text-sm font-medium"
+                        className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium shadow-sm"
                       >
                         Send to Triage
                       </button>
@@ -951,7 +954,7 @@ export default function ReceptionistDashboardPage() {
                         )}
                         <button
                           onClick={() => handleDischargePatient(selectedPatient.encounterId || selectedPatient.id)}
-                          className="w-full px-4 py-2 bg-[green-600] text-white rounded-lg hover:bg-[#b92b3a] transition-colors text-sm font-medium flex items-center justify-center"
+                          className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium flex items-center justify-center shadow-sm"
                         >
                           <User className="h-4 w-4 mr-2" />
                           Discharge Patient
@@ -978,7 +981,7 @@ export default function ReceptionistDashboardPage() {
               onClick={() => setShowPatientForm(true)}
               className="w-full bg-white rounded-lg border border-gray-200 p-8 flex items-center justify-center space-x-3 hover:bg-gray-50 transition-colors shadow-sm"
             >
-              <Plus className="h-6 w-6 text-[green-600]" />
+              <Plus className="h-6 w-6 text-emerald-600" />
               <span className="font-medium text-gray-900 text-lg">Register New Patient</span>
             </button>
           ) : (
@@ -986,7 +989,7 @@ export default function ReceptionistDashboardPage() {
               <div className="p-5 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 flex items-center">
-                    <UserPlus className="h-5 w-5 mr-2 text-[green-600]" />
+                    <UserPlus className="h-5 w-5 mr-2 text-emerald-600" />
                     New Patient Registration
                   </h3>
                   <button
@@ -1007,7 +1010,7 @@ export default function ReceptionistDashboardPage() {
                       required
                       value={newPatient.firstName}
                       onChange={(e) => setNewPatient({...newPatient, firstName: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm" 
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm" 
                     />
                   </div>
                   <div>
@@ -1017,7 +1020,7 @@ export default function ReceptionistDashboardPage() {
                       required
                       value={newPatient.lastName}
                       onChange={(e) => setNewPatient({...newPatient, lastName: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm" 
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm" 
                     />
                   </div>
                 </div>
@@ -1029,7 +1032,7 @@ export default function ReceptionistDashboardPage() {
                       required
                       value={newPatient.dob}
                       onChange={(e) => setNewPatient({...newPatient, dob: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm" 
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm" 
                     />
                   </div>
                   <div>
@@ -1038,7 +1041,7 @@ export default function ReceptionistDashboardPage() {
                       required
                       value={newPatient.gender}
                       onChange={(e) => setNewPatient({...newPatient, gender: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm"
                     >
                       <option value="">Select gender...</option>
                       <option value="MALE">Male</option>
@@ -1054,7 +1057,7 @@ export default function ReceptionistDashboardPage() {
                       required
                       value={newPatient.phone}
                       onChange={(e) => setNewPatient({...newPatient, phone: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm" 
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm" 
                     />
                   </div>
                   <div>
@@ -1063,7 +1066,7 @@ export default function ReceptionistDashboardPage() {
                       type="email" 
                       value={newPatient.email}
                       onChange={(e) => setNewPatient({...newPatient, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm" 
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm" 
                     />
                   </div>
                 </div>
@@ -1072,7 +1075,7 @@ export default function ReceptionistDashboardPage() {
                   <textarea
                     value={newPatient.address}
                     onChange={(e) => setNewPatient({...newPatient, address: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] h-20 text-sm"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 h-20 text-sm"
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1082,7 +1085,7 @@ export default function ReceptionistDashboardPage() {
                       type="text"
                       value={newPatient.nationalId}
                       onChange={(e) => setNewPatient({...newPatient, nationalId: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm"
                     />
                   </div>
                   <div>
@@ -1090,7 +1093,7 @@ export default function ReceptionistDashboardPage() {
                     <select
                       value={newPatient.bloodGroup}
                       onChange={(e) => setNewPatient({...newPatient, bloodGroup: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm"
                     >
                       <option value="">Select blood group...</option>
                       <option value="A+">A+</option>
@@ -1106,7 +1109,7 @@ export default function ReceptionistDashboardPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Attachments (Optional)</label>
-                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:border-[green-600] transition-colors">
+                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center hover:border-emerald-600 transition-colors">
                     <input
                       type="file"
                       multiple
@@ -1147,13 +1150,13 @@ export default function ReceptionistDashboardPage() {
                     type="tel"
                     value={newPatient.emergencyContact}
                     onChange={(e) => setNewPatient({...newPatient, emergencyContact: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm"
                   />
                 </div>
                 <div className="pt-4">
                   <button 
                     type="submit"
-                    className="w-full bg-[green-600] text-white py-3 rounded-lg hover:bg-[#b92b3a] transition-colors font-medium"
+                    className="w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm"
                   >
                     Register Patient
                   </button>
@@ -1170,7 +1173,7 @@ export default function ReceptionistDashboardPage() {
             <div className="p-5 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Database className="h-5 w-5 mr-2 text-[green-600]" />
+                  <Database className="h-5 w-5 mr-2 text-emerald-600" />
                   Patients List
                 </h2>
                 <button
@@ -1192,7 +1195,7 @@ export default function ReceptionistDashboardPage() {
                   placeholder="Search by name, MRN, phone, email, or national ID..."
                   value={patientsListSearch}
                   onChange={(e) => setPatientsListSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[green-600]/20 focus:border-[green-600] text-sm"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm"
                 />
               </div>
 
@@ -1202,7 +1205,7 @@ export default function ReceptionistDashboardPage() {
                   <button
                     onClick={() => handleSort('name')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      patientsListSort === 'name' ? 'bg-[green-600] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      patientsListSort === 'name' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     Name
@@ -1213,7 +1216,7 @@ export default function ReceptionistDashboardPage() {
                   <button
                     onClick={() => handleSort('mrn')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      patientsListSort === 'mrn' ? 'bg-[green-600] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      patientsListSort === 'mrn' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     MRN
@@ -1224,7 +1227,7 @@ export default function ReceptionistDashboardPage() {
                   <button
                     onClick={() => handleSort('registrationDate')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      patientsListSort === 'registrationDate' ? 'bg-[green-600] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      patientsListSort === 'registrationDate' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
                     Registration Date
@@ -1238,7 +1241,7 @@ export default function ReceptionistDashboardPage() {
               {/* Patient Cards */}
               {patientsListLoading ? (
                 <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[green-600] mx-auto mb-4"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-4"></div>
                   <p className="text-gray-500 text-sm">Loading patients...</p>
                 </div>
               ) : getPaginatedPatients().length === 0 ? (
@@ -1264,8 +1267,8 @@ export default function ReceptionistDashboardPage() {
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center space-x-3">
-                            <div className="bg-[green-600]/10 p-2 rounded-lg">
-                              <User className="h-5 w-5 text-[green-600]" />
+                            <div className="bg-emerald-50 p-2 rounded-lg">
+                              <User className="h-5 w-5 text-emerald-600" />
                             </div>
                             <div>
                               <h3 className="font-semibold text-gray-900 text-sm">{patient.firstName} {patient.lastName}</h3>
@@ -1357,7 +1360,7 @@ export default function ReceptionistDashboardPage() {
             <div className="p-5 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900 flex items-center">
-                  <DollarSign className="h-5 w-5 mr-2 text-[green-600]" />
+                  <DollarSign className="h-5 w-5 mr-2 text-emerald-600" />
                   Patient Invoices
                 </h3>
                 <span className="text-sm text-gray-500">{invoices.length} invoices</span>
@@ -1404,7 +1407,7 @@ export default function ReceptionistDashboardPage() {
                     <div className="mt-3 flex space-x-2">
                       <button
                         onClick={() => handleViewInvoice(invoice.id)}
-                        className="px-3 py-1.5 bg-[green-600] text-white rounded-md hover:bg-[#b92b3a] transition-colors text-xs font-medium"
+                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors text-xs font-medium shadow-sm"
                       >
                         View Invoice
                       </button>
@@ -1432,7 +1435,7 @@ export default function ReceptionistDashboardPage() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Receipt className="h-5 w-5 mr-2 text-[green-600]" />
+                  <Receipt className="h-5 w-5 mr-2 text-emerald-600" />
                   Encounter Fees
                 </h3>
                 <button
@@ -1469,7 +1472,7 @@ export default function ReceptionistDashboardPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-900">Total</span>
                     <div className="flex items-center">
-                      <span className="text-2xl font-bold text-[green-600]">{formatCurrency(totalFees)}</span>
+                      <span className="text-2xl font-bold text-emerald-600">{formatCurrency(totalFees)}</span>
                     </div>
                   </div>
                 </div>
@@ -1477,7 +1480,7 @@ export default function ReceptionistDashboardPage() {
 
               <button
                 onClick={() => setShowFees(false)}
-                className="mt-6 w-full bg-[green-600] text-white py-3 rounded-lg hover:bg-[#b92b3a] transition-colors font-medium"
+                className="mt-6 w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700 transition-colors font-medium shadow-sm"
               >
                 Close
               </button>
@@ -1493,7 +1496,7 @@ export default function ReceptionistDashboardPage() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Receipt className="h-5 w-5 mr-2 text-[green-600]" />
+                  <Receipt className="h-5 w-5 mr-2 text-emerald-600" />
                   Invoice Details
                 </h3>
                 <button
@@ -1609,8 +1612,8 @@ export default function ReceptionistDashboardPage() {
             {/* Modal Header */}
             <div className="px-6 py-4 bg-white border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="bg-[green-600]/10 p-2.5 rounded-lg">
-                  <FileText className="h-6 w-6 text-[green-600]" />
+                <div className="bg-emerald-50 p-2.5 rounded-lg">
+                  <FileText className="h-6 w-6 text-emerald-600" />
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
@@ -1655,7 +1658,7 @@ export default function ReceptionistDashboardPage() {
                 onClick={() => setFullRecordTab('overview')}
                 className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-1.5 ${
                   fullRecordTab === 'overview'
-                    ? 'border-[green-600] text-[green-600]'
+                    ? 'border-emerald-600 text-emerald-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -1667,7 +1670,7 @@ export default function ReceptionistDashboardPage() {
                 onClick={() => setFullRecordTab('encounters')}
                 className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-1.5 ${
                   fullRecordTab === 'encounters'
-                    ? 'border-[green-600] text-[green-600]'
+                    ? 'border-emerald-600 text-emerald-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -1679,7 +1682,7 @@ export default function ReceptionistDashboardPage() {
                 onClick={() => setFullRecordTab('labs')}
                 className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-1.5 ${
                   fullRecordTab === 'labs'
-                    ? 'border-[green-600] text-[green-600]'
+                    ? 'border-emerald-600 text-emerald-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -1691,7 +1694,7 @@ export default function ReceptionistDashboardPage() {
                 onClick={() => setFullRecordTab('billing')}
                 className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-all flex items-center space-x-1.5 ${
                   fullRecordTab === 'billing'
-                    ? 'border-[green-600] text-[green-600]'
+                    ? 'border-emerald-600 text-emerald-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -1704,7 +1707,7 @@ export default function ReceptionistDashboardPage() {
             <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
               {fullRecordLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-                  <RefreshCw className="h-8 w-8 animate-spin text-[green-600] mb-3" />
+                  <RefreshCw className="h-8 w-8 animate-spin text-emerald-600 mb-3" />
                   <p className="text-sm font-medium">Loading patient record...</p>
                 </div>
               ) : !fullRecordPatient ? (
@@ -1730,7 +1733,7 @@ export default function ReceptionistDashboardPage() {
                         </div>
                         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                           <p className="text-xs text-gray-500 font-medium">Total Invoiced</p>
-                          <p className="text-xl font-bold text-[green-600] mt-1">
+                          <p className="text-xl font-bold text-emerald-600 mt-1">
                             {formatCurrency(fullRecordPatient.invoices?.reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0))}
                           </p>
                         </div>
@@ -1756,7 +1759,7 @@ export default function ReceptionistDashboardPage() {
                             </div>
                             <div>
                               <span className="text-xs text-gray-500 block">MRN</span>
-                              <span className="font-mono font-semibold text-[green-600]">{fullRecordPatient.mrn}</span>
+                              <span className="font-mono font-semibold text-emerald-600">{fullRecordPatient.mrn}</span>
                             </div>
                             <div>
                               <span className="text-xs text-gray-500 block">Date of Birth</span>
@@ -2071,7 +2074,7 @@ export default function ReceptionistDashboardPage() {
                               </div>
                               <div className="text-right">
                                 <span className="text-xs text-gray-500 block">Total</span>
-                                <span className="text-base font-bold text-[green-600]">{formatCurrency(inv.total)}</span>
+                                <span className="text-base font-bold text-emerald-600">{formatCurrency(inv.total)}</span>
                                 {inv.balance > 0 && (
                                   <span className="text-xs font-semibold text-rose-600 block">Due: {formatCurrency(inv.balance)}</span>
                                 )}

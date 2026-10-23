@@ -17,7 +17,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes
-  if (publicRoutes.some(route => pathname === route || pathname.startsWith(route))) {
+  const isPublic = publicRoutes.some(route =>
+    route === '/' ? pathname === '/' : pathname.startsWith(route)
+  );
+
+  if (isPublic) {
     // If user is already authenticated and tries to access login, redirect to dashboard
     if (pathname === '/login' || pathname === '/register') {
       const accessToken = request.cookies.get('accessToken')?.value;

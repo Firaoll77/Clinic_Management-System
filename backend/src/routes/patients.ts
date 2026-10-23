@@ -116,6 +116,7 @@ router.post('/register', authenticate, async (req: Request, res: Response) => {
     res.status(201).json({
       message: 'Patient registered successfully',
       patient: filteredPatient,
+      id: filteredPatient.id,
     });
   } catch (error) {
     if (error instanceof Error && error.name === 'ZodError') {

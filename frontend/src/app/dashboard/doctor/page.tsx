@@ -270,21 +270,6 @@ export default function DoctorDashboardPage() {
     instructions: ''
   });
 
-  useEffect(() => {
-    fetchDoctorPatients();
-    fetchAvailableLabTechs();
-    fetchDoctorAvailability();
-
-    // Initialize workflow steps
-    setWorkflowSteps(['vitals', 'encounter', 'orders', 'lab-results', 'prescription']);
-
-    // Auto-poll doctor patient queue every 10 seconds so patients sent by nurse appear immediately
-    const interval = setInterval(() => {
-      fetchDoctorPatients(true);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const fetchDoctorAvailability = async () => {
     try {
@@ -359,6 +344,22 @@ export default function DoctorDashboardPage() {
       if (!silent) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDoctorPatients();
+    fetchAvailableLabTechs();
+    fetchDoctorAvailability();
+
+    // Initialize workflow steps
+    setWorkflowSteps(['vitals', 'encounter', 'orders', 'lab-results', 'prescription']);
+
+    // Auto-poll doctor patient queue every 10 seconds so patients sent by nurse appear immediately
+    const interval = setInterval(() => {
+      fetchDoctorPatients(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleAcceptPatient = async (assignmentId: string) => {
     try {

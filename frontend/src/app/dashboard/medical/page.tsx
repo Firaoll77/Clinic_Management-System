@@ -60,10 +60,6 @@ export default function MedicalRecordsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchEncounters();
-  }, []);
-
   const fetchEncounters = async () => {
     setLoading(true);
     try {
@@ -77,6 +73,10 @@ export default function MedicalRecordsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchEncounters();
+  }, []);
 
   const fetchPatientEncounters = async (patientId: string) => {
     setLoading(true);

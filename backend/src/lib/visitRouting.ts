@@ -184,7 +184,7 @@ export class VisitRoutingService {
   static async getTriagePatients() {
     return await prisma.encounter.findMany({
       where: {
-        visitStatus: VisitStatus.TRIAGE,
+        visitStatus: { in: [VisitStatus.TRIAGE, VisitStatus.NURSE_EXAMINATION] },
       },
       include: {
         patient: {
@@ -442,7 +442,7 @@ export class VisitRoutingService {
     return await prisma.encounter.findMany({
       where: {
         visitStatus: {
-          in: [VisitStatus.TRIAGE, VisitStatus.WAITING_FOR_DOCTOR, VisitStatus.DOCTOR_CONSULT, VisitStatus.LAB_PENDING, VisitStatus.LAB_RESULTS_READY, VisitStatus.DOCTOR_REVIEW, VisitStatus.BILLING]
+          in: [VisitStatus.TRIAGE, VisitStatus.NURSE_EXAMINATION, VisitStatus.WAITING_FOR_DOCTOR, VisitStatus.DOCTOR_CONSULT, VisitStatus.LAB_PENDING, VisitStatus.LAB_RESULTS_READY, VisitStatus.DOCTOR_REVIEW, VisitStatus.BILLING]
         },
       },
       select: {

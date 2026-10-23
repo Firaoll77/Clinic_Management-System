@@ -49,6 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    if (typeof document !== 'undefined') {
+      document.cookie = 'accessToken=; path=/; max-age=0; SameSite=Lax';
+    }
     setLoading(false);
     setIsLoggedOut(true);
 
@@ -70,6 +73,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    if (typeof document !== 'undefined') {
+      document.cookie = 'accessToken=; path=/; max-age=0; SameSite=Lax';
+    }
     setLoading(false);
     setIsLoggedOut(true);
 
@@ -157,10 +163,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(loggedInUser);
         setIsLoggedOut(false); // Reset logout flag on successful login
 
-        // Fallback: store tokens in localStorage if cookies don't work
+        // Store tokens in localStorage and cookies
         if (tokens) {
           localStorage.setItem('accessToken', tokens.accessToken);
           localStorage.setItem('refreshToken', tokens.refreshToken);
+          if (typeof document !== 'undefined') {
+            document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+          }
         }
 
         return { success: true };

@@ -52,7 +52,7 @@ export default function NurseDashboardLayout({
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600 mx-auto mb-3"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-600 mx-auto mb-3"></div>
           <div className="text-sm font-medium text-slate-600">Verifying nurse station access...</div>
         </div>
       </div>
@@ -84,7 +84,7 @@ export default function NurseDashboardLayout({
         {/* Brand Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between min-w-[16rem]">
           <div className="flex items-center space-x-3">
-            <div className="bg-teal-600 p-2 rounded-lg text-white shadow-sm">
+            <div className="bg-pink-600 p-2 rounded-lg text-white shadow-sm">
               <HeartPulse className="h-5 w-5" />
             </div>
             <div>
@@ -117,15 +117,15 @@ export default function NurseDashboardLayout({
                   onClick={() => setCurrentStep(step.id)}
                   className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                     isCurrent
-                      ? 'bg-teal-600 text-white font-semibold shadow-sm'
+                      ? 'bg-pink-600 text-white font-semibold shadow-sm'
                       : isCompleted
-                      ? 'text-teal-400 hover:bg-slate-800/80 hover:text-teal-300'
+                      ? 'text-pink-400 hover:bg-slate-800/80 hover:text-pink-300'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
                   }`}
                 >
                   <div className="flex-shrink-0">
                     {isCompleted ? (
-                      <CheckCircle className="h-4 w-4 text-teal-400" />
+                      <CheckCircle className="h-4 w-4 text-pink-400" />
                     ) : (
                       <Icon className="h-4 w-4" />
                     )}
@@ -143,7 +143,7 @@ export default function NurseDashboardLayout({
         {/* User Card & Logout */}
         <div className="p-3 border-t border-slate-800 min-w-[16rem] space-y-2">
           <div className="flex items-center space-x-3 px-3 py-2 bg-slate-800/60 rounded-lg">
-            <div className="h-8 w-8 rounded-md bg-teal-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+            <div className="h-8 w-8 rounded-md bg-pink-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
               RN
             </div>
             <div className="flex-1 min-w-0">
@@ -170,7 +170,7 @@ export default function NurseDashboardLayout({
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
           roleTitle="Nurse Station"
           roleBadge="Nurse"
-          badgeColorClass="bg-teal-50 text-teal-700 border-teal-200"
+          badgeColorClass="bg-pink-50 text-pink-700 border-pink-200"
         />
 
         {/* Main Content Canvas */}
@@ -185,8 +185,8 @@ export default function NurseDashboardLayout({
           <div className="flex items-center justify-between text-xs text-slate-500">
             <p>© {new Date().getFullYear()} Clinic Management System</p>
             <div className="flex items-center space-x-4">
-              <span className="inline-flex items-center text-emerald-600 font-medium">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+              <span className="inline-flex items-center text-pink-600 font-medium">
+                <span className="h-1.5 w-1.5 rounded-full bg-pink-500 mr-1.5"></span>
                 Triage Station Active
               </span>
               <span>v1.0.0</span>

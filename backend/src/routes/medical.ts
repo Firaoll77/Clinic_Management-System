@@ -528,7 +528,7 @@ router.post('/encounters/:id/complete-consultation', authenticate, authorize('DO
   try {
     const { id } = req.params;
     const { medications, instructions } = req.body;
-    const userId = (req as any).user.id;
+    const userId = req.user?.userId || (req as any)?.user?.id || '';
 
     // Create or update prescription
     if (medications) {
@@ -537,7 +537,7 @@ router.post('/encounters/:id/complete-consultation', authenticate, authorize('DO
         where: { encounterId },
         create: {
           encounterId,
-          doctorId: userId,
+          doctorId: userId || 'system',
           medications,
           instructions
         },
@@ -559,7 +559,7 @@ router.post('/encounters/:id/complete-consultation', authenticate, authorize('DO
             feeType: 'PRESCRIPTION',
             description: 'Prescription fee',
             amount: prescriptionFee.amount,
-            loggedBy: userId
+            loggedBy: userId || 'system'
           }
         });
       }
@@ -571,14 +571,26 @@ router.post('/encounters/:id/complete-consultation', authenticate, authorize('DO
       data: {
         visitStatus: 'BILLING',
         signedAt: new Date(),
-        signedBy: userId
+        signedBy: userId || 'DOCTOR'
       }
+    });
+
+    // Complete any active doctor assignment for this encounter
+    await prisma.doctorAssignment.updateMany({
+      where: {
+        encounterId: encounter.id,
+        status: { in: ['PENDING', 'ACCEPTED'] },
+      },
+      data: {
+        status: 'COMPLETED',
+        completedAt: new Date(),
+      },
     });
 
     // Log activity
     await prisma.activityLog.create({
       data: {
-        userId,
+        userId: userId || 'system',
         action: 'COMPLETE_CONSULTATION',
         entityType: 'ENCOUNTER',
         entityId: encounter.id,
@@ -608,6 +620,8 @@ router.post('/patients/:patientId/encounters', authenticate, async (req: Request
     const { patientId } = req.params;
     const {
       doctorId,
+      nurseId,
+      visitStatus,
       chiefComplaint,
       subjective,
       objective,
@@ -619,9 +633,9 @@ router.post('/patients/:patientId/encounters', authenticate, async (req: Request
 
     const actualPatientId = Array.isArray(patientId) ? patientId[0] : patientId;
     
-    // Resolve doctor ID from payload, staffProfile or user
+    // Resolve doctor ID from payload, staffProfile or user (only for doctors)
     let resolvedDoctorId = doctorId;
-    if (!resolvedDoctorId && req.user?.userId) {
+    if (!resolvedDoctorId && req.user?.userId && req.user?.role === 'DOCTOR') {
       const staff = await prisma.staffProfile.findUnique({
         where: { userId: req.user.userId },
       });
@@ -650,14 +664,16 @@ router.post('/patients/:patientId/encounters', authenticate, async (req: Request
           icd10Code: icd10Code || undefined,
           labResultInterpretation: labResultInterpretation || undefined,
           doctorId: resolvedDoctorId || undefined,
-          visitStatus: 'DOCTOR_CONSULT',
+          nurseId: nurseId || undefined,
+          visitStatus: visitStatus || 'DOCTOR_CONSULT',
         },
       });
     } else {
       encounter = await prisma.encounter.create({
         data: {
           patientId: actualPatientId,
-          doctorId: resolvedDoctorId,
+          doctorId: resolvedDoctorId || undefined,
+          nurseId: nurseId || undefined,
           chiefComplaint: chiefComplaint || undefined,
           subjective: subjective || undefined,
           objective: objective || undefined,
@@ -665,7 +681,7 @@ router.post('/patients/:patientId/encounters', authenticate, async (req: Request
           plan: plan || undefined,
           icd10Code: icd10Code || undefined,
           labResultInterpretation: labResultInterpretation || undefined,
-          visitStatus: 'DOCTOR_CONSULT',
+          visitStatus: visitStatus || (resolvedDoctorId ? 'DOCTOR_CONSULT' : 'TRIAGE'),
         },
       });
     }

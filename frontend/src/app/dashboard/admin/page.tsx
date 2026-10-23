@@ -293,28 +293,28 @@ export default function AdminDashboardPage() {
         load: doctorLoad, 
         activeStaff: `${activeDoctors} Doctors, ${activeNurses} Nurses`, 
         status: doctorLoad > 80 ? 'High Load' : doctorLoad > 60 ? 'Moderate' : 'Optimal',
-        color: doctorLoad > 80 ? 'from-amber-500 to-orange-600' : 'from-red-500 to-rose-600'
+        color: doctorLoad > 80 ? 'from-amber-500 to-orange-600' : 'from-gray-700 to-black'
       },
       { 
         name: 'Emergency & Triage', 
         load: nurseLoad, 
         activeStaff: `${activeNurses} Nurses`, 
         status: nurseLoad > 80 ? 'High Load' : nurseLoad > 60 ? 'Moderate' : 'Optimal',
-        color: nurseLoad > 80 ? 'from-amber-500 to-orange-600' : 'from-red-500 to-rose-600'
+        color: nurseLoad > 80 ? 'from-amber-500 to-orange-600' : 'from-gray-700 to-black'
       },
       { 
         name: 'Laboratory Diagnostics', 
         load: labLoad, 
         activeStaff: `${activeLabTechs} Laboratorists`, 
         status: labLoad > 80 ? 'High Load' : labLoad > 60 ? 'Moderate' : 'Optimal',
-        color: labLoad > 80 ? 'from-amber-500 to-orange-600' : 'from-red-500 to-rose-600'
+        color: labLoad > 80 ? 'from-amber-500 to-orange-600' : 'from-gray-700 to-black'
       },
       { 
         name: 'Reception & Intake', 
         load: receptionLoad, 
         activeStaff: `${activeReceptionists} Receptionists`, 
         status: receptionLoad > 80 ? 'High Load' : receptionLoad > 60 ? 'Moderate' : 'Optimal',
-        color: receptionLoad > 80 ? 'from-amber-500 to-orange-600' : 'from-red-500 to-rose-600'
+        color: receptionLoad > 80 ? 'from-amber-500 to-orange-600' : 'from-gray-700 to-black'
       },
     ];
   }, [staffList, patientCounts.active]);
@@ -767,7 +767,7 @@ export default function AdminDashboardPage() {
       case 'PHARMACIST':
         return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-pink-100 text-pink-800 border border-pink-200"><FileText className="w-3 h-3 mr-1" /> Pharmacist</span>;
       case 'ADMIN':
-        return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-300"><Shield className="w-3 h-3 mr-1" /> Administrator</span>;
+        return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-black text-white border border-gray-800"><Shield className="w-3 h-3 mr-1" /> Administrator</span>;
       default:
         return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">{role}</span>;
     }
@@ -861,7 +861,7 @@ export default function AdminDashboardPage() {
           </div>
           {(activeTab === 'staff' || activeTab === 'patients') && (
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (activeTab === 'staff') {
                   setStaffForm({
                     fullName: '',
@@ -877,12 +877,29 @@ export default function AdminDashboardPage() {
                   });
                   setFormError('');
                   setIsAddStaffOpen(true);
+                } else if (activeTab === 'patients') {
+                  await fetchPatients();
+                  await fetchDashboardStats();
+                  showToast('Patient records refreshed successfully', 'success');
                 }
               }}
-              className="px-6 py-3 bg-[#D93344] hover:bg-[#b92b3a] text-white rounded-xl text-base font-bold transition-colors flex items-center space-x-2 shadow-lg"
+              disabled={activeTab === 'patients' && patientsLoading}
+              className={`px-6 py-3 bg-[#D93344] hover:bg-[#b92b3a] text-white rounded-xl text-base font-bold transition-colors flex items-center space-x-2 shadow-lg ${
+                activeTab === 'patients' && patientsLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
-              <Plus className="h-5 w-5" />
-              <span>{activeTab === 'staff' ? 'Add Staff' : 'Refresh'}</span>
+              {activeTab === 'staff' ? (
+                <Plus className="h-5 w-5" />
+              ) : (
+                <RefreshCw className={`h-5 w-5 ${patientsLoading ? 'animate-spin' : ''}`} />
+              )}
+              <span>
+                {activeTab === 'staff'
+                  ? 'Add Staff'
+                  : patientsLoading
+                  ? 'Refreshing...'
+                  : 'Refresh'}
+              </span>
             </button>
           )}
         </div>
@@ -903,8 +920,8 @@ export default function AdminDashboardPage() {
               className="bg-white p-5 sm:p-6 border border-slate-200/90 rounded-xl shadow-sm hover:border-slate-300 transition-colors"
             >
               <div className="flex items-center justify-between mb-3.5">
-                <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-lg">
-                  <Users className="h-5 w-5 text-rose-600" />
+                <div className="p-2.5 bg-gray-100 border border-gray-300 rounded-lg">
+                  <Users className="h-5 w-5 text-black" />
                 </div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total</span>
               </div>
@@ -965,7 +982,7 @@ export default function AdminDashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:border-slate-300 transition-colors flex flex-col justify-between">
               <div>
-                <div className="inline-flex p-2.5 bg-rose-50 text-rose-700 rounded-lg mb-3.5 border border-rose-100">
+                <div className="inline-flex p-2.5 bg-gray-100 text-gray-900 rounded-lg mb-3.5 border border-gray-300">
                   <UserPlus className="h-6 w-6" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-1.5">Onboard Staff</h3>
@@ -978,7 +995,7 @@ export default function AdminDashboardPage() {
                   setActiveTab('staff');
                   setIsAddStaffOpen(true);
                 }}
-                className="w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg text-sm transition-colors flex items-center justify-center space-x-2 shadow-sm"
+                className="w-full py-2.5 px-4 bg-black hover:bg-gray-900 text-white font-semibold rounded-lg text-sm transition-colors flex items-center justify-center space-x-2 shadow-sm"
               >
                 <UserPlus className="h-4 w-4" />
                 <span>Add Staff Member</span>
@@ -1034,7 +1051,7 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-bold text-slate-900 flex items-center">
-                    <Activity className="h-4 w-4 mr-2 text-rose-600" />
+                    <Activity className="h-4 w-4 mr-2 text-black" />
                     Department Real-Time Capacity
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">Live workload and staffing metrics across clinic wings</p>
@@ -1230,7 +1247,7 @@ export default function AdminDashboardPage() {
                     setStaffRoleFilter('ALL');
                     setStaffStatusFilter('all');
                   }}
-                  className="px-4 py-2 text-sm font-bold text-[#D93344] hover:bg-red-50 rounded-xl border border-red-200 transition-colors whitespace-nowrap"
+                  className="px-4 py-2 text-sm font-bold text-black hover:bg-gray-100 rounded-xl border border-gray-300 transition-colors whitespace-nowrap"
                 >
                   Reset
                 </button>
@@ -1248,7 +1265,7 @@ export default function AdminDashboardPage() {
             ) : staffList.length === 0 ? (
               /* No Results Empty State */
               <div className="p-12 text-center">
-                <div className="w-12 h-12 bg-red-50 text-[#D93344] rounded-lg flex items-center justify-center mx-auto mb-4 border border-red-100">
+                <div className="w-12 h-12 bg-gray-100 text-black rounded-lg flex items-center justify-center mx-auto mb-4 border border-gray-300">
                   <UserX className="h-6 w-6" />
                 </div>
                 <h3 className="text-base font-bold text-gray-900 mb-1">No staff members found</h3>
@@ -1379,7 +1396,7 @@ export default function AdminDashboardPage() {
                             {/* Edit Button */}
                             <button
                               onClick={() => handleEditStaffOpen(member)}
-                              className="p-1.5 text-[#D93344] hover:bg-red-50 rounded transition-colors"
+                              className="p-1.5 text-black hover:bg-gray-100 rounded transition-colors"
                               title="Edit Staff Details"
                             >
                               <Edit3 className="h-4 w-4" />
@@ -1392,7 +1409,7 @@ export default function AdminDashboardPage() {
                                   setSelectedStaff(member);
                                   setIsDeleteStaffOpen(true);
                                 }}
-                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                className="p-1.5 text-black hover:bg-gray-100 rounded transition-colors"
                                 title="Delete Staff Account"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1425,9 +1442,9 @@ export default function AdminDashboardPage() {
               <p className="text-xs font-semibold text-amber-700">Archived</p>
               <p className="text-base font-bold text-amber-900">{patientCounts.archived}</p>
             </div>
-            <div className="bg-red-50 border border-red-200 px-3 py-2 rounded-md text-center min-w-[80px]">
-              <p className="text-xs font-semibold text-red-700">Total</p>
-              <p className="text-base font-bold text-red-900">{patientCounts.total}</p>
+            <div className="bg-gray-100 border border-gray-300 px-3 py-2 rounded-md text-center min-w-[80px]">
+              <p className="text-xs font-semibold text-gray-900">Total</p>
+              <p className="text-base font-bold text-black">{patientCounts.total}</p>
             </div>
           </div>
 
@@ -1614,7 +1631,7 @@ export default function AdminDashboardPage() {
                             {/* View Profile */}
                             <Link
                               href={`/dashboard/patients/${patient.id}`}
-                              className="p-1.5 text-gray-500 hover:text-[#D93344] hover:bg-red-50 rounded transition-colors"
+                              className="p-1.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded transition-colors"
                               title="View Patient Record"
                               onClick={(e) => {
                                 console.log('Navigating to patient:', patient.id);
@@ -1746,7 +1763,7 @@ export default function AdminDashboardPage() {
             <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Revenue Collected</span>
-                <div className="p-2 bg-red-50 text-[#D93344] rounded-md">
+                <div className="p-2 bg-gray-100 text-black rounded-md">
                   <DollarSign className="h-4 w-4" />
                 </div>
               </div>
@@ -1931,7 +1948,7 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-start space-x-3.5">
-              <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-lg text-rose-600 shrink-0">
+              <div className="p-2.5 bg-gray-100 border border-gray-300 rounded-lg text-black shrink-0">
                 <Shield className="h-5 w-5" />
               </div>
               <div className="min-w-0 flex-1">
@@ -1951,7 +1968,7 @@ export default function AdminDashboardPage() {
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
               <div className="flex items-center space-x-3">
-                <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-lg text-rose-600">
+                <div className="p-2.5 bg-gray-100 border border-gray-300 rounded-lg text-black">
                   <Building2 className="h-5 w-5" />
                 </div>
                 <div>
@@ -2059,7 +2076,7 @@ export default function AdminDashboardPage() {
               <div className="pt-3 flex justify-end">
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg text-sm transition-colors shadow-sm flex items-center space-x-2"
+                  className="px-5 py-2.5 bg-black hover:bg-gray-900 text-white font-semibold rounded-lg text-sm transition-colors shadow-sm flex items-center space-x-2"
                 >
                   <CheckCircle className="h-4 w-4" />
                   <span>Save Facility Configuration</span>

@@ -251,6 +251,47 @@ router.post('/results', authenticate, async (req: Request, res: Response) => {
       }
     });
 
+    // Mark lab order as COMPLETED
+    const labOrder = await prisma.labOrder.update({
+      where: { id: labOrderId },
+      data: {
+        status: 'COMPLETED',
+      },
+      include: {
+        encounter: true,
+      },
+    });
+
+    // Complete any active lab assignment
+    await prisma.labAssignment.updateMany({
+      where: {
+        labOrderId,
+        status: { in: ['PENDING', 'ACCEPTED'] },
+      },
+      data: {
+        status: 'COMPLETED',
+        completedAt: new Date(),
+      },
+    });
+
+    // Automatically transition encounter visitStatus to LAB_RESULTS_READY
+    if (labOrder && labOrder.encounterId) {
+      await prisma.encounter.update({
+        where: { id: labOrder.encounterId },
+        data: { visitStatus: 'LAB_RESULTS_READY' },
+      });
+
+      await prisma.activityLog.create({
+        data: {
+          userId: req.user!.userId,
+          action: 'STATUS_CHANGE',
+          entityType: 'ENCOUNTER',
+          entityId: labOrder.encounterId,
+          details: 'Lab results completed - patient routed to doctor review (LAB_RESULTS_READY)',
+        },
+      });
+    }
+
     res.status(201).json({
       message: 'Lab result entered successfully',
       labResult,
@@ -322,17 +363,40 @@ router.post('/orders/:id/results', authenticate, async (req: Request, res: Respo
       }
     });
 
-    // Get lab order to update encounter status
-    const labOrder = await prisma.labOrder.findUnique({
+    // Mark lab order as COMPLETED
+    const labOrder = await prisma.labOrder.update({
       where: { id: labOrderId },
+      data: { status: 'COMPLETED' },
       include: { encounter: true }
     });
 
-    if (labOrder && labOrder.encounter) {
+    // Complete any active lab assignment
+    await prisma.labAssignment.updateMany({
+      where: {
+        labOrderId,
+        status: { in: ['PENDING', 'ACCEPTED'] },
+      },
+      data: {
+        status: 'COMPLETED',
+        completedAt: new Date(),
+      },
+    });
+
+    if (labOrder && labOrder.encounterId) {
       // Update encounter status to LAB_RESULTS_READY
       await prisma.encounter.update({
         where: { id: labOrder.encounterId },
         data: { visitStatus: 'LAB_RESULTS_READY' }
+      });
+
+      await prisma.activityLog.create({
+        data: {
+          userId: req.user!.userId,
+          action: 'STATUS_CHANGE',
+          entityType: 'ENCOUNTER',
+          entityId: labOrder.encounterId,
+          details: 'Lab results completed - patient routed to doctor review (LAB_RESULTS_READY)',
+        },
       });
     }
 
