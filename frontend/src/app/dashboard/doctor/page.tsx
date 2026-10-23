@@ -466,14 +466,16 @@ export default function DoctorDashboardPage() {
         };
 
         const subjective = currentEncounter.subjective || '';
+        const hasStructuredTags = /Chief Complaint:|Current Medications:|Allergies:|Medical History:|Nurse Notes:/i.test(subjective);
+
         const chiefComplaint = extractField(subjective, 'Chief Complaint') || currentEncounter.chiefComplaint || '';
-        const currentMedications = extractField(subjective, 'Current Medications');
+        const currentMedications = extractField(subjective, 'Current Medications') || (nurseIntake?.currentMedications || '');
         const allergies = extractField(subjective, 'Allergies') || 
           (currentEncounter.patient?.allergies && currentEncounter.patient.allergies.length > 0
             ? currentEncounter.patient.allergies.map((a: { substance: string }) => a.substance).join(', ')
-            : '');
-        const medicalHistory = extractField(subjective, 'Medical History');
-        const notes = extractField(subjective, 'Nurse Notes') || currentEncounter.plan || '';
+            : (nurseIntake?.allergies || ''));
+        const medicalHistory = extractField(subjective, 'Medical History') || (nurseIntake?.medicalHistory || '');
+        const notes = extractField(subjective, 'Nurse Notes') || (!hasStructuredTags && subjective ? subjective : currentEncounter.plan || '');
 
         setNurseIntake({
           chiefComplaint,

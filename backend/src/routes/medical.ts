@@ -72,6 +72,11 @@ router.get('/patients/:patientId/encounters', authenticate, authorize('DOCTOR', 
     const encounters = await prisma.encounter.findMany({
       where: { patientId: patientIdValue },
       include: {
+        patient: {
+          include: {
+            allergies: true,
+          },
+        },
         vitals: {
           orderBy: { recordedAt: 'desc' }
         },
