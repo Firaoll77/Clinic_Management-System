@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Lock,
   CheckCircle,
+  Pill,
   X
 } from 'lucide-react';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
@@ -36,7 +37,7 @@ export default function DoctorDashboardLayout({
 
   // Initialize workflow steps for doctor
   useEffect(() => {
-    setWorkflowSteps(['intake', 'vitals', 'encounter', 'orders', 'lab-results']);
+    setWorkflowSteps(['intake', 'vitals', 'encounter', 'orders', 'lab-results', 'prescription']);
   }, [setWorkflowSteps]);
 
   // Initialize to patients tab
@@ -68,8 +69,9 @@ export default function DoctorDashboardLayout({
     { id: 'intake' as const, label: 'Nurse Intake', icon: Users },
     { id: 'vitals' as const, label: 'Vital Signs', icon: Activity },
     { id: 'encounter' as const, label: 'Clinical SOAP Note', icon: HeartPulse },
-    { id: 'orders' as const, label: 'Lab & Prescription Orders', icon: Beaker },
-    { id: 'lab-results' as const, label: 'Lab Results Review', icon: CheckCircle }
+    { id: 'orders' as const, label: 'Lab Orders', icon: Beaker },
+    { id: 'lab-results' as const, label: 'Lab Results Review', icon: CheckCircle },
+    { id: 'prescription' as const, label: 'Write Prescription', icon: Pill }
   ];
 
   const getDoctorName = () => {

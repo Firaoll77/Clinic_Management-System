@@ -35,7 +35,9 @@ import {
   ToggleRight,
   Send,
   Clipboard,
-  FileCheck
+  FileCheck,
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 
 interface Patient {
@@ -351,7 +353,7 @@ export default function DoctorDashboardPage() {
     fetchDoctorAvailability();
 
     // Initialize workflow steps
-    setWorkflowSteps(['vitals', 'encounter', 'orders', 'lab-results', 'prescription']);
+    setWorkflowSteps(['intake', 'vitals', 'encounter', 'orders', 'lab-results', 'prescription']);
 
     // Auto-poll doctor patient queue every 10 seconds so patients sent by nurse appear immediately
     const interval = setInterval(() => {
@@ -376,20 +378,24 @@ export default function DoctorDashboardPage() {
     }
   };
 
-  const handleCreatePrescription = async (encounterId: string) => {
+  const handleCreatePrescription = async (targetId?: string) => {
+    const encId = targetId || selectedPatient?.encounterId || currentEncounterId;
+    if (!encId) {
+      showError('Please save the clinical encounter first before saving a prescription.');
+      return;
+    }
     try {
       const response = await apiClient.post('/prescription', {
-        encounterId,
+        encounterId: encId,
         medications: prescription.medications,
         instructions: prescription.instructions
       });
 
       if (response.data) {
-        showSuccess('Prescription created successfully!');
+        showSuccess('Prescription saved successfully!');
         setShowPrescriptionForm(false);
-        setPrescription({ medications: '', instructions: '' });
         if (selectedPatient) {
-          fetchPatientData(selectedPatient.patientId, encounterId);
+          fetchPatientData(selectedPatient.patientId, encId);
         }
       }
     } catch (error) {
@@ -411,14 +417,20 @@ export default function DoctorDashboardPage() {
     }
   };
 
-  const handleCompleteConsultation = async (encounterId: string) => {
+  const handleCompleteConsultation = async (targetId?: string) => {
+    const encId = targetId || selectedPatient?.encounterId || currentEncounterId;
+    if (!encId) {
+      showError('No active encounter found for this patient');
+      return;
+    }
     try {
-      const response = await apiClient.post(`/medical/encounters/${encounterId}/complete-consultation`, {
+      const response = await apiClient.post(`/medical/encounters/${encId}/complete-consultation`, {
         medications: prescription.medications,
         instructions: prescription.instructions
       });
 
       if (response.data) {
+        completeStep('prescription');
         showSuccess('Consultation completed and patient sent to billing!');
         setShowPrescriptionForm(false);
         setPrescription({ medications: '', instructions: '' });
@@ -527,6 +539,22 @@ export default function DoctorDashboardPage() {
       if (labResponse.data && labResponse.data.labOrders) {
         setPatientLabOrders(labResponse.data.labOrders);
       }
+
+      // Fetch existing prescription if encounter exists
+      const targetEncId = preferredEncounterId || currentEncounter?.id;
+      if (targetEncId) {
+        try {
+          const rxRes = await apiClient.get<{ prescription: { medications: string; instructions?: string } }>(`/prescription/${targetEncId}`);
+          if (rxRes.data?.prescription) {
+            setPrescription({
+              medications: rxRes.data.prescription.medications || '',
+              instructions: rxRes.data.prescription.instructions || ''
+            });
+          }
+        } catch {
+          // No existing prescription found yet
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch patient data:', error);
     }
@@ -539,6 +567,8 @@ export default function DoctorDashboardPage() {
     setVitals(null);
     setEncounters([]);
     setPatientLabOrders([]);
+    setPrescription({ medications: '', instructions: '' });
+    setPrescriptionForm({ medication: '', dosage: '', frequency: '', duration: '' });
     setCurrentStep('intake'); // Reset workflow to first step
     fetchPatientData(patient.patientId, patient.encounterId);
 
@@ -649,15 +679,76 @@ export default function DoctorDashboardPage() {
     showInfo('Prescription added to treatment plan!');
   };
 
+  const handleAddMedicationToPrescription = () => {
+    if (!prescriptionForm.medication.trim()) {
+      showError('Please enter a medication name');
+      return;
+    }
+    const medLine = `• ${prescriptionForm.medication.trim()}${prescriptionForm.dosage ? ` ${prescriptionForm.dosage.trim()}` : ''}${prescriptionForm.frequency ? ` - ${prescriptionForm.frequency.trim()}` : ''}${prescriptionForm.duration ? ` for ${prescriptionForm.duration.trim()}` : ''}`;
+    
+    setPrescription(prev => ({
+      ...prev,
+      medications: prev.medications ? `${prev.medications}\n${medLine}` : medLine
+    }));
+
+    setPrescriptionForm({
+      medication: '',
+      dosage: '',
+      frequency: '',
+      duration: ''
+    });
+    showSuccess('Medication added to prescription!');
+  };
+
+  const handleAddQuickMedication = (name: string, dosage: string, freq: string, dur: string) => {
+    const medLine = `• ${name}${dosage ? ` ${dosage}` : ''}${freq ? ` - ${freq}` : ''}${dur ? ` for ${dur}` : ''}`;
+    setPrescription(prev => ({
+      ...prev,
+      medications: prev.medications ? `${prev.medications}\n${medLine}` : medLine
+    }));
+    showSuccess(`Added ${name} to prescription!`);
+  };
+
+  const handleImportFromSoapPlan = () => {
+    if (encounterForm.plan) {
+      setPrescription(prev => ({
+        ...prev,
+        medications: prev.medications ? `${prev.medications}\n${encounterForm.plan}` : encounterForm.plan
+      }));
+      showSuccess('Imported treatment plan from SOAP note!');
+    } else {
+      showInfo('No treatment plan found in SOAP note');
+    }
+  };
+
+  const handleApplyCdsToPrescription = () => {
+    if (cdsRecommendations.length > 0) {
+      const cdsTexts = cdsRecommendations.map(r => `• ${r.suggestedPlanEntry}`).join('\n');
+      setPrescription(prev => ({
+        ...prev,
+        medications: prev.medications ? `${prev.medications}\n${cdsTexts}` : cdsTexts
+      }));
+      showSuccess('Applied CDS recommendations to prescription!');
+    }
+  };
+
   const handlePrintPrescription = async () => {
-    if (!currentEncounterId) {
+    const targetId = selectedPatient?.encounterId || currentEncounterId;
+    if (!targetId) {
       showInfo('Please save the encounter first before printing prescription');
       return;
     }
 
     try {
+      if (prescription.medications) {
+        await apiClient.post('/prescription', {
+          encounterId: targetId,
+          medications: prescription.medications,
+          instructions: prescription.instructions
+        });
+      }
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-      const prescriptionUrl = `${apiUrl}/medical/prescription/${currentEncounterId}`;
+      const prescriptionUrl = `${apiUrl}/medical/prescription/${targetId}`;
       
       // Open in new window for printing
       const newWindow = window.open(prescriptionUrl, '_blank');
@@ -1153,59 +1244,6 @@ export default function DoctorDashboardPage() {
                 </div>
               )}
 
-              {currentStep === 'prescription' && (
-                <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
-                  <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
-                    <Pill className="h-4 w-4 mr-2 text-blue-600" />
-                    Prescription
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Medications</label>
-                      <textarea
-                        value={prescription.medications}
-                        onChange={(e) => setPrescription({...prescription, medications: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        rows={6}
-                        placeholder="Enter medications (e.g., Amoxicillin 500mg - Take 1 tablet every 8 hours for 7 days)"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Instructions</label>
-                      <textarea
-                        value={prescription.instructions}
-                        onChange={(e) => setPrescription({...prescription, instructions: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        rows={3}
-                        placeholder="Additional instructions for the patient"
-                      />
-                    </div>
-                    <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
-                      <button
-                        onClick={() => {
-                          const prevStep = getPreviousStep('prescription');
-                          if (prevStep) setCurrentStep(prevStep);
-                        }}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
-                      >
-                        Back
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (selectedPatient) {
-                            handleCompleteConsultation((selectedPatient as any).encounterId || selectedPatient.id);
-                          }
-                        }}
-                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                      >
-                        Complete Consultation & Send to Billing
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {currentStep === 'orders' && (
                 <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
                   <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
@@ -1379,11 +1417,287 @@ export default function DoctorDashboardPage() {
                     <button
                       onClick={() => {
                         completeStep('lab-results');
-                        showSuccess('Lab results reviewed!');
+                        setCurrentStep('prescription');
+                        showSuccess('Lab results reviewed! Proceed to write prescription.');
                       }}
-                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                      className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold flex items-center justify-center space-x-2 shadow-sm"
                     >
-                      Review Complete
+                      <span>Review Complete & Write Prescription</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 'prescription' && (
+                <div className="bg-white rounded-lg border border-gray-200 p-4 lg:p-6 space-y-6">
+                  {/* Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-gray-200 gap-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                        <Pill className="h-5 w-5 mr-2 text-blue-600" />
+                        Prescription & Discharge Plan
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Post-lab review prescription writing, patient instructions, and consultation finalization.
+                      </p>
+                    </div>
+                    {/* Patient safety badges */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md border border-gray-200">
+                        MRN: <strong className="text-gray-900">{selectedPatient?.mrn}</strong>
+                      </span>
+                      {nurseIntake?.allergies ? (
+                        <span className="px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 text-xs font-semibold rounded-md flex items-center space-x-1">
+                          <AlertCircle className="h-3.5 w-3.5 text-red-600" />
+                          <span>Allergies: {nurseIntake.allergies}</span>
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-md">
+                          NKDA (No Known Allergies)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Lab Results Context & CDS Smart Suggestions */}
+                  {(patientLabOrders.length > 0 || cdsRecommendations.length > 0 || encounterForm.plan) && (
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
+                          <Sparkles className="h-3.5 w-3.5 mr-1.5 text-amber-600" />
+                          Lab Findings & Clinical Intelligence
+                        </span>
+                        <div className="flex items-center space-x-2">
+                          {encounterForm.plan && (
+                            <button
+                              type="button"
+                              onClick={handleImportFromSoapPlan}
+                              className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-300 rounded text-xs font-medium text-slate-700 transition-colors flex items-center space-x-1 shadow-sm"
+                            >
+                              <Clipboard className="h-3 w-3 text-blue-600" />
+                              <span>Import SOAP Plan</span>
+                            </button>
+                          )}
+                          {cdsRecommendations.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={handleApplyCdsToPrescription}
+                              className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs font-semibold transition-colors flex items-center space-x-1 shadow-sm"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                              <span>Apply CDS Recommendations</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Display findings if any */}
+                      {cdsRecommendations.length > 0 ? (
+                        <div className="space-y-1.5 text-xs">
+                          {cdsRecommendations.map((rec) => (
+                            <div key={rec.id} className="p-2 bg-white rounded border border-amber-200 text-amber-900 flex items-start justify-between">
+                              <div>
+                                <span className="font-bold">{rec.testName} ({rec.value} [{rec.flag}]):</span>{' '}
+                                <span className="text-slate-600">{rec.recommendation}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleAddQuickMedication(rec.suggestedPlanEntry.replace(/^•\s*/, ''), '', '', '')}
+                                className="ml-2 text-xs text-blue-600 hover:text-blue-800 font-semibold underline whitespace-nowrap"
+                              >
+                                + Add
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : patientLabOrders.length > 0 ? (
+                        <p className="text-xs text-slate-600">
+                          Lab tests reviewed. No critical abnormalities detected. You can proceed with standard outpatient therapy.
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
+
+                  {/* Structured Medication Quick-Adder */}
+                  <div className="p-4 border border-gray-200 rounded-lg bg-gray-50/70 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Add Medication to Regimen
+                      </label>
+                      {/* Common Medication Presets */}
+                      <div className="hidden sm:flex items-center space-x-1.5 text-xs text-gray-500">
+                        <span className="text-[11px] font-semibold text-gray-400">Quick-Add:</span>
+                        <button
+                          type="button"
+                          onClick={() => handleAddQuickMedication('Amoxicillin-Clavulanate', '875/125mg', 'PO BID', '7 days')}
+                          className="px-2 py-0.5 bg-white border border-gray-300 rounded text-gray-700 hover:bg-blue-50 hover:border-blue-300 transition-colors text-[11px]"
+                        >
+                          + Augmentin
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddQuickMedication('Acetaminophen', '500mg', 'PO q6h PRN fever/pain', '5 days')}
+                          className="px-2 py-0.5 bg-white border border-gray-300 rounded text-gray-700 hover:bg-blue-50 hover:border-blue-300 transition-colors text-[11px]"
+                        >
+                          + Paracetamol
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddQuickMedication('Ibuprofen', '400mg', 'PO TID with meals PRN', '5 days')}
+                          className="px-2 py-0.5 bg-white border border-gray-300 rounded text-gray-700 hover:bg-blue-50 hover:border-blue-300 transition-colors text-[11px]"
+                        >
+                          + Ibuprofen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAddQuickMedication('Azithromycin', '500mg Day 1, 250mg', 'PO Daily', '5 days')}
+                          className="px-2 py-0.5 bg-white border border-gray-300 rounded text-gray-700 hover:bg-blue-50 hover:border-blue-300 transition-colors text-[11px]"
+                        >
+                          + Azithromycin
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">Medication Name</label>
+                        <input
+                          type="text"
+                          value={prescriptionForm.medication}
+                          onChange={(e) => setPrescriptionForm({ ...prescriptionForm, medication: e.target.value })}
+                          placeholder="e.g. Amoxicillin"
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-xs text-gray-900 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">Dosage / Strength</label>
+                        <input
+                          type="text"
+                          value={prescriptionForm.dosage}
+                          onChange={(e) => setPrescriptionForm({ ...prescriptionForm, dosage: e.target.value })}
+                          placeholder="e.g. 500mg"
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-xs text-gray-900 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">Frequency / Route</label>
+                        <input
+                          type="text"
+                          value={prescriptionForm.frequency}
+                          onChange={(e) => setPrescriptionForm({ ...prescriptionForm, frequency: e.target.value })}
+                          placeholder="e.g. PO TID"
+                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-xs text-gray-900 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">Duration</label>
+                        <div className="flex space-x-1.5">
+                          <input
+                            type="text"
+                            value={prescriptionForm.duration}
+                            onChange={(e) => setPrescriptionForm({ ...prescriptionForm, duration: e.target.value })}
+                            placeholder="e.g. 7 days"
+                            className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-xs text-gray-900 bg-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddMedicationToPrescription}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs font-semibold hover:bg-blue-700 transition-colors whitespace-nowrap"
+                          >
+                            + Add
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Formatted Medications Field */}
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-gray-800">
+                          Prescribed Medications & Regimen <span className="text-red-500">*</span>
+                        </label>
+                        {prescription.medications && (
+                          <button
+                            type="button"
+                            onClick={() => setPrescription({ ...prescription, medications: '' })}
+                            className="text-[11px] text-gray-400 hover:text-red-600"
+                          >
+                            Clear All
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        value={prescription.medications}
+                        onChange={(e) => setPrescription({ ...prescription, medications: e.target.value })}
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono text-gray-900 bg-white shadow-sm"
+                        rows={5}
+                        placeholder="• Amoxicillin-Clavulanate 875/125mg PO BID x 7d&#10;• Acetaminophen 500mg PO q6h PRN fever&#10;• Oral Rehydration Salts 1 packet in 1L water daily"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-800 mb-1">
+                        Patient Instructions & Guidance
+                      </label>
+                      <textarea
+                        value={prescription.instructions}
+                        onChange={(e) => setPrescription({ ...prescription, instructions: e.target.value })}
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 bg-white shadow-sm"
+                        rows={3}
+                        placeholder="e.g. Take with food or milk. Complete full antibiotic course. Hydrate with 2-3L fluids daily. Return to clinic if fever persists beyond 48 hours."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between pt-5 border-t border-gray-200 gap-3">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prevStep = getPreviousStep('prescription');
+                          if (prevStep) setCurrentStep(prevStep);
+                        }}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-xs font-semibold"
+                      >
+                        ← Back to Lab Results
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCreatePrescription()}
+                        className="px-3.5 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors text-xs font-semibold flex items-center space-x-1.5 shadow-sm"
+                      >
+                        <Save className="h-3.5 w-3.5 text-gray-600" />
+                        <span>Save Draft</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handlePrintPrescription}
+                        className="px-3.5 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors text-xs font-semibold flex items-center space-x-1.5 shadow-sm"
+                      >
+                        <Printer className="h-3.5 w-3.5 text-gray-600" />
+                        <span>Print</span>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!prescription.medications.trim()) {
+                          if (!confirm('No medications entered. Are you sure you want to finalize consultation without a prescription?')) {
+                            return;
+                          }
+                        }
+                        handleCompleteConsultation();
+                      }}
+                      className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors text-sm font-bold flex items-center justify-center space-x-2 shadow-md hover:shadow-lg"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Complete Consultation & Send to Billing</span>
                     </button>
                   </div>
                 </div>
